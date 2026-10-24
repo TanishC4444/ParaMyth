@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import copy
 
 class ContractError(ValueError):
     pass
@@ -46,11 +47,18 @@ def request(value):
 def plan(value, req):
     require(isinstance(value, dict) and isinstance(value.get('scenes'), list), 'Plan requires scenes')
     require(len(value['scenes']) == req['chapters'] * req['scenes_per_chapter'], 'Wrong scene count')
+    value = copy.deepcopy(value)
+    supplied_ids = [s.get('id') for s in value['scenes'] if isinstance(s, dict) and s.get('id') is not None]
+    require(all(isinstance(x, str) for x in supplied_ids), 'Invalid scene ID')
+    require(len(supplied_ids) == len(set(supplied_ids)), 'Duplicate scene IDs')
     ids = {x['id'] for x in req['characters']}
     for i, scene in enumerate(value['scenes']):
         chapter = i // req['scenes_per_chapter'] + 1
         expected = f'ch{chapter:02}-sc{i % req["scenes_per_chapter"] + 1:02}'
-        require(scene.get('id') == expected and scene.get('chapter') == chapter, f'Expected scene {expected}')
+        require(isinstance(scene, dict), 'Scene must be an object')
+        require(scene.get('id') in (None, expected), f'Expected scene {expected}')
+        scene['id'] = expected
+        scene['chapter'] = chapter
         require(scene.get('pov') in ids, 'Unknown POV')
         require(isinstance(scene.get('participants'), list) and bool(scene['participants']) and set(scene['participants']) <= ids and scene['pov'] in scene['participants'], 'Invalid participants')
         for name in ['goal', 'obstacle', 'intended_change', 'location', 'time']:
