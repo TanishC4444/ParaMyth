@@ -1,0 +1,9 @@
+{
+  "project_id": "harbor",
+  "title": "The Harbor Bell",
+  "premise": "Mara and Oren repair a harbor bell before the next storm.",
+  "characters": [{"id": "mara", "name": "Mara"}, {"id": "oren", "name": "Oren"}],
+  "chapters": 3,
+  "scenes_per_chapter": 3,
+  "initial_facts": [{"text": "Oren has the spare key.", "known_by": ["oren"]}]
+}
