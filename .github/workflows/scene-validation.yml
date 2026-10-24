@@ -1,0 +1,32 @@
+name: Scene validation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  scenes:
+    name: Scene checks - ${{ matrix.case }} - Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        python: ['3.11', '3.12']
+        case: [test_scene_grid, test_truncation_preserves_prefix, test_truncation_retry, test_transport_error_diagnostics, test_metadata_assignment, test_invalid_plans_preserve_canon]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate scene boundary
+        env:
+          PYTHONPATH: .:tests
+          CASE: ${{ matrix.case }}
+        run: |
+          set -o pipefail
+          python -m unittest "test_scene_validation.SceneValidationTests.$CASE" -v 2>&1 | tee results.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scene-results-${{ matrix.case }}-${{ matrix.python }}
+          path: results.txt
