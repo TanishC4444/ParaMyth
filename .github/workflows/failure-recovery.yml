@@ -1,0 +1,48 @@
+name: Failure recovery checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  injected-fault:
+    name: Failure recovery - ${{ matrix.scenario }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - scenario: malformed-json
+            test: test_invalid_json_retries_are_bounded
+          - scenario: rejected-review
+            test: test_rejected_review_preserves_canon
+          - scenario: unsupported-memory
+            test: test_unsupported_memory_preserves_canon
+          - scenario: changed-request
+            test: test_changed_request_is_rejected
+          - scenario: checkpoint-resume
+            test: test_approval_stop_resume_and_idempotency
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exercise injected fault or recovery boundary
+        env:
+          PYTHONPATH: .:tests
+          TEST_NAME: ${{ matrix.test }}
+        run: |
+          set -o pipefail
+          python -m unittest "test_pipeline.PipelineTests.$TEST_NAME" -v 2>&1 | tee result.txt
+      - name: Explain test semantics
+        if: always()
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+        run: |
+          echo "### Failure recovery: $SCENARIO" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deterministic fixture test with injected faults or checkpoint interruption. A green job means the expected rejection/recovery assertions passed; this is not a live provider incident." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: failure-recovery-${{ matrix.scenario }}
+          path: result.txt
