@@ -11,3 +11,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m unittest discover -s tests -p 'test_fixture.py' -v
+      - run: python -m unittest discover -s tests -p 'test_pipeline.py' -v
