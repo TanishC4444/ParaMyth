@@ -208,3 +208,13 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing[data-intro=true]){over
 .cinematic-landing .atlas-map .atlas-border{stroke:#79d6be;stroke-opacity:.35;stroke-dasharray:none}
 .cinematic-landing .atlas-map .leaflet-bar a{background:#0d1923;color:#b4dacf;border-color:#48665e}
 @media(min-width:1350px){.cinematic-landing .atlas-page .atlas-side{width:280px}}
+
+/* Brand light stays continuous through the book, horizon and Atlas. */
+.cinematic-landing{
+  background:
+    radial-gradient(ellipse 65vw 70vh at 0% 42%,#79d6be24,transparent 72%),
+    radial-gradient(ellipse 62vw 75vh at 100% 24%,#4c83b528,transparent 74%),
+    radial-gradient(ellipse 65vw 44vh at 65% 100%,#efbc6a12,transparent 75%),
+    #030507;
+  background-attachment:fixed;
+}
