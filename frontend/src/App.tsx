@@ -213,9 +213,8 @@ function Shell() {
             >
               <Icon name="settings" />
             </button>
-            <a className="text-action" href="/studio/teams.html?mode=signup">
-              Create account / Sign in
-            </a>
+            <a className="text-action" href="/studio/teams.html">Sign in</a>
+            <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>
           </div>
         </header>
         {error && (

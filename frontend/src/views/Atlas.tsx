@@ -63,10 +63,13 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
 
   const [idea, setIdea] = useState(atlasQuery),
     [retrieved, setRetrieved] = useState<any[]>([]),
-    [searchMode, setSearchMode] = useState("lexical"),
+    [searchMode, setSearchMode] = useState("hybrid"),
+    [matchCount, setMatchCount] = useState(8),
+    [matchingOnly, setMatchingOnly] = useState(true),
     [searchingIdea, setSearchingIdea] = useState(false),
     [searchError, setSearchError] = useState(""),
-    [retrievalInfo, setRetrievalInfo] = useState("")
+    [retrievalInfo, setRetrievalInfo] = useState(""),
+    [rankingWarning, setRankingWarning] = useState("")
 
   const [focus, setFocus] = useState<{ id: string; at: number } | null>(null)
 
@@ -79,6 +82,16 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
   const [limit, setLimit] = useState(LIST_LIMIT)
 
   const request = useRef(0)
+  const searchRequest = useRef(0)
+  const modeChosen = useRef(false)
+
+  useEffect(() => {
+    let active = true
+    api("/api/ui/retrieval-connection").then((r) => {
+      if (active && !modeChosen.current) setSearchMode(r.semantic ? "hybrid" : "lexical")
+    }).catch(() => {})
+    return () => { active = false; searchRequest.current++ }
+  }, [])
 
   const side = useRef<HTMLElement>(null)
 
@@ -113,15 +126,18 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
 
   const all = data?.index.stories ?? []
 
+  const matchedIds = useMemo(() => new Set(retrieved.map((r) => r.atlas_id).filter(Boolean)), [retrieved])
+
   const visible = useMemo(
     () =>
       all.filter(
         (s) =>
+          (!matchingOnly || !matchedIds.size || matchedIds.has(s.id)) &&
           !hidden.has(s.region) &&
           (!detailedOnly || s.detailed) &&
           matches(s, q),
       ),
-    [all, hidden, detailedOnly, q],
+    [all, hidden, detailedOnly, q, matchedIds, matchingOnly],
   )
 
   const counts = useMemo(
@@ -174,14 +190,24 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
   }
 
   const findIdeas = async (value = idea) => {
+    const current = ++searchRequest.current
+    request.current++
+    setRetrieved([])
+    setStory(null)
+    setCluster(null)
+    setLoading("")
     setSearchingIdea(true)
     setSearchError("")
+    setRankingWarning("")
     try {
       const result = await api("/api/ui/search", {
         query: value,
         mode: searchMode,
+        limit: matchCount,
       })
+      if (current !== searchRequest.current) return
       setRetrieved(result.sources)
+      setRankingWarning(result.ranking_warning || "")
       if (!result.sources.length)
         setSearchError(
           "No matches yet. Try a theme, conflict, or character choice.",
@@ -193,9 +219,9 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
       const first = result.sources.find((r: any) => r.atlas_id)
       if (first) await select(first.atlas_id, true)
     } catch (e) {
-      setSearchError(String(e))
+      if (current === searchRequest.current) setSearchError(e instanceof Error && e.name === "TimeoutError" ? "Search is taking too long. Try again in a moment, or choose Story keywords." : String(e))
     } finally {
-      setSearchingIdea(false)
+      if (current === searchRequest.current) setSearchingIdea(false)
     }
   }
 
@@ -319,10 +345,13 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
           <select
             aria-label="Literary search method"
             value={searchMode}
-            onChange={(e) => setSearchMode(e.target.value)}
+            onChange={(e) => { modeChosen.current = true; setSearchMode(e.target.value) }}
           >
             <option value="lexical">Story keywords</option>
             <option value="hybrid">Semantic + keywords</option>
+          </select>
+          <select aria-label="Number of story matches" value={matchCount} onChange={(e) => setMatchCount(Number(e.target.value))}>
+            <option value={6}>Up to 6 stories</option><option value={8}>Up to 8 stories</option><option value={12}>Up to 12 stories</option>
           </select>
           <button
             className="primary"
@@ -332,29 +361,37 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
           </button>
         </form>
         {searchError && <p role="alert">{searchError}</p>}
+        {rankingWarning && <p role="status">{rankingWarning}</p>}
         {retrieved.length > 0 && (
           <>
             <p className="hint">
-              Matches from literary retrieval · {retrievalInfo}. Select a story
-              to travel there.
+              {retrieved.length} {retrieved.length === 1 ? "story match" : "related stories"} · {retrievalInfo === "hybrid" ? "Meaning + keywords" : "Story keywords"}. Choose any match to turn the globe and explore it.
             </p>
+            <div className="atlas-match-controls">
+              <label><input type="checkbox" checked={matchingOnly} onChange={(e) => setMatchingOnly(e.target.checked)} /> Show matches on the globe</label>
+              <button className="text-action" onClick={() => { setRetrieved([]); setSearchError(""); setRankingWarning(""); setStory(null); setCluster(null) }}>Clear matches</button>
+            </div>
             <div className="atlas-matches">
-              {retrieved.map((r: any) => (
+              {retrieved.map((r: any, index: number) => (
                 <button
                   key={r.id}
+                  aria-pressed={story?.id === r.atlas_id}
                   disabled={!r.atlas_id}
                   onClick={() => void select(r.atlas_id, true)}
                 >
+                  <span className="match-rank">{String(index + 1).padStart(2, "0")}</span>
                   <b>{r.title || r.id}</b>
+                  {r.match_kind && <span className="match-kind">{r.match_kind === "direct" ? "Close match" : "Related idea"}</span>}
                   <small>
                     {String(
-                      r.excerpt ||
+                      r.match_reason ||
+                        r.excerpt ||
                         r.summary ||
                         r.analysis ||
                         r.mechanism ||
                         r.instruction ||
                         "",
-                    ).slice(0, 180)}
+                    ).slice(0, 300)}
                   </small>
                   {!r.atlas_id && <small>No geographic anchor recorded</small>}
                 </button>

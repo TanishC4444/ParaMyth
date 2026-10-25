@@ -28,6 +28,7 @@ export async function api<T = any>(
     headers["X-ParaMyth-Token"] = await token()
   const r = await fetch(path, {
     method: verb,
+    signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : undefined,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "same-origin",
