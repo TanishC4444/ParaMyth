@@ -1,14 +1,15 @@
 import {api} from "../api";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { download, hash, manuscriptLabel, mechanicalReview, MODES, modeOf, now, slug, uid, validateBrief, words } from "../data";
-import { useStudio } from "../store";
+import { useStudio, useDraftState } from "../store";
 import { FACT_KINDS, MEDIA, type Brief, type Character, type Dimension, type Fact, type FactKind, type Finding, type Project, type ProjectTab, type Scene } from "../types";
 import { ago, Chips, fmtTime, Icon, Segmented, Status } from "../ui";
 
 const TABS: [ProjectTab, string][] = [["brief", "Brief"], ["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
 
 export default function ProjectWorkspace() {
-  const { project, tab, setTab, go } = useStudio();
+  const { project, go } = useStudio();
+  const [tab, setTab] = useDraftState<ProjectTab>("project.tab", "brief");
   return <div className="workspace">
     <div className="editor-top">
       <button className="back" onClick={() => go("projects")}>‹ <span>Projects</span></button>
@@ -79,9 +80,8 @@ const mediumHint: Record<Brief["medium"], string> = {
 
 function ManuscriptTab() {
   const { project, updateProject, notify, flush } = useStudio();
-  const [sceneId, setSceneId] = useState(project.scenes[0]?.id || ""), [filter, setFilter] = useState<Dimension | "All">("All"), [side, setSide] = useState<"findings" | "versions">("findings");
+  const [sceneId, setSceneId] = useDraftState("manuscript.scene", project.scenes[0]?.id || ""), [filter, setFilter] = useDraftState<Dimension | "All">("manuscript.filter", "All"), [side, setSide] = useDraftState<"findings" | "versions">("manuscript.side", "findings");
   const textRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => setSceneId(project.scenes[0]?.id || ""), [project.id]);
   const scene = project.scenes.find((s) => s.id === sceneId) || project.scenes[0];
   const chapters = useMemo(() => [...new Set(project.scenes.map((s) => s.chapter))], [project.scenes]);
   if (!scene) return <div className="page empty"><h3>No scenes</h3></div>;

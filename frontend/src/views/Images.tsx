@@ -1,26 +1,37 @@
 import { useEffect, useState } from "react"
-import { api, projectPath, waitJob } from "../api"
-import { useStudio } from "../store"
+import { useSavedJob } from "../useSavedJob"
+import { api, projectPath } from "../api"
+import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
 import { Artwork } from "../art"
 export default function Images() {
-  const { project, flush, refresh, go, setMediaDirection, mediaDirection } =
+  const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
   const [models, setModels] = useState<any[]>([]),
-    [model, setModel] = useState(""),
+    [model, setModel] = useDraftState("images.model", ""),
     [images, setImages] = useState<any[]>([]),
-    [kind, setKind] = useState("scene"),
-    [subject, setSubject] = useState(""),
-    [style, setStyle] = useState("Auto - match story"),
-    [shape, setShape] = useState(""),
-    [resolution, setResolution] = useState(""),
-    [prompt, setPrompt] = useState(""),
+    [kind, setKind] = useDraftState("images.kind", "scene"),
+    [subject, setSubject] = useDraftState("images.subject", ""),
+    [style, setStyle] = useDraftState("images.style", "Auto - match story"),
+    [shape, setShape] = useDraftState("images.shape", ""),
+    [resolution, setResolution] = useDraftState("images.resolution", ""),
+    [prompt, setPrompt] = useDraftState("images.prompt", ""),
     [status, setStatus] = useState(""),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [enhance, setEnhance] = useState(true),
-    [backup, setBackup] = useState(true),
-    [provenance, setProvenance] = useState<any>(null)
+    [submitting, setSubmitting] = useState(false),
+    [enhance, setEnhance] = useDraftState("images.enhance", true),
+    [backup, setBackup] = useDraftState("images.backup", true),
+    [provenance, setProvenance] = useDraftState<any>("images.provenance", null)
+  const [pendingJob, setPendingJob] = useSavedJob("images.pendingJob", ["image", "image-prompt"], {
+    progress: (j) => { setStatus(j.message); setError("") },
+    complete: async (j) => {
+      if (j.kind === "image") { await load(); setStatus("Your image is ready.") }
+      else { setPrompt(j.result.prompt); setProvenance(j.result); setStatus("Your prompt is ready to review.") }
+      await refresh()
+    },
+    failed: setError,
+  })
+  const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
   const load = async () => setImages((await api(path("/api/images"))).images)
   useEffect(() => {
@@ -33,7 +44,7 @@ export default function Images() {
       .then((v) => {
         if (live) {
           setModels(v.models)
-          setModel(v.models[0]?.id || "")
+          setModel((previous) => v.models.some((m: any) => m.id === previous) ? previous : v.models[0]?.id || "")
         }
       })
       .catch((e) => live && setError(e.message))
@@ -45,7 +56,7 @@ export default function Images() {
     try{
       const record=await api(path('/api/images/'+img.id));
       if(destination==='prompt'){setPrompt(record.request.prompt);setProvenance({prompt_provider:record.provider,sources:[],assumptions:record.fallback?[record.fallback.reason]:[]});return}
-      if(destination==='production')sessionStorage.setItem('paramyth-scout-'+project.id,img.id);
+      if(destination==='production')setDraft(project.id,'production.imageId',img.id);
       setMediaDirection(img.title+': '+record.request.prompt.slice(0,650));go(destination);
     }catch(e){setError(String(e))}
   };
@@ -54,11 +65,12 @@ export default function Images() {
     shapes = params.aspect_ratio?.values || [],
     resolutions = params.resolution?.values || []
   useEffect(() => {
-    setShape(shapes.includes("16:9") ? "16:9" : shapes[0] || "")
-    setResolution(resolutions[0] || "")
+    if (!selected) return
+    setShape((previous) => shapes.includes(previous) ? previous : shapes.includes("16:9") ? "16:9" : shapes[0] || "")
+    setResolution((previous) => resolutions.includes(previous) ? previous : resolutions[0] || "")
   }, [model, models])
   const submit = async (generate: boolean) => {
-    setBusy(true)
+    setSubmitting(true)
     setError("")
     try {
       await flush()
@@ -89,21 +101,12 @@ export default function Images() {
       setStatus(
         "Your request is queued. You can keep working in another part of your story.",
       )
-      await refresh()
-      const job = await waitJob(queued.job_id, (j) => setStatus(j.message))
-      if (generate) {
-        await load()
-        setStatus("Your image is ready.")
-      } else {
-        setPrompt(job.result.prompt)
-        setProvenance(job.result)
-        setStatus("Your prompt is ready to review.")
-      }
+      setPendingJob({ id: queued.job_id, kind: generate ? "image" : "image-prompt" })
       await refresh()
     } catch (e) {
       setError(String(e))
     } finally {
-      setBusy(false)
+      setSubmitting(false)
     }
   }
   return (

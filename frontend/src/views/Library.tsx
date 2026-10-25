@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
 import { api, projectPath } from "../api"
-import { useStudio } from "../store"
+import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
 export default function Library() {
   const { project } = useStudio()
   const [files, setFiles] = useState<any[]>([]),
-    [q, setQ] = useState(""),
-    [selected, setSelected] = useState<any>(null),
+    [q, setQ] = useDraftState("library.query", ""),
+    [selected, setSelected] = useDraftState<any>("library.selected", null),
     [body, setBody] = useState(""),
     [error, setError] = useState("")
   const url = (f: any, download = false) =>
@@ -18,7 +18,6 @@ export default function Library() {
     )
   useEffect(() => {
     let live = true
-    setSelected(null)
     api(projectPath("/api/studio/outputs", project.id))
       .then((v) => live && setFiles(v.files))
       .catch((e) => live && setError(e.message))

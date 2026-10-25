@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { api, projectPath, waitJob } from "../api"
-import { useStudio } from "../store"
+import { useSavedJob } from "../useSavedJob"
+import { api, projectPath } from "../api"
+import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
 export default function Production() {
   const { project, mediaDirection, flush, refresh } = useStudio()
-  const [config, setConfig] = useState<any>({
+  const [config, setConfig] = useDraftState<any>("production.config", {
     region: "",
     start_date: new Date().toISOString().slice(0, 10),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -17,18 +18,29 @@ export default function Production() {
     search_limit: 2,
     skip_weekends: true,
   })
-  const [plan, setPlan] = useState<any>(null),
+  const [plan, setPlan] = useDraftState<any>("production.plan", null),
     [ids, setIds] = useState<string[]>([]),
     [images, setImages] = useState<any[]>([]),
-    [imageId, setImageId] = useState(
+    [imageId, setImageId] = useDraftState("production.imageId",
       sessionStorage.getItem("paramyth-scout-" + project.id) || "",
     ),
-    [busy, setBusy] = useState(false),
+    [submitting, setSubmitting] = useState(false),
     [status, setStatus] = useState(""),
     [error, setError] = useState(""),
-    [scenes, setScenes] = useState<any[]>([]),
-    [budget, setBudget] = useState<any[]>([]),
+    [scenes, setScenes] = useDraftState<any[]>("production.scenes", []),
+    [budget, setBudget] = useDraftState<any[]>("production.budget", []),
     [google, setGoogle] = useState(false)
+  const [pendingJob, setPendingJob] = useSavedJob("production.pendingJob", ["production"], {
+    progress: (j) => { setStatus(j.message); setError("") },
+    complete: async (j) => {
+      open(j.result)
+      setIds((v) => [j.result.id, ...v.filter((x) => x !== j.result.id)])
+      setStatus("Your production plan is ready.")
+      await refresh()
+    },
+    failed: setError,
+  })
+  const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
   const open = (p: any) => {
     setPlan(p)
@@ -38,15 +50,14 @@ export default function Production() {
   }
   useEffect(() => {
     let live = true
-    setPlan(null)
     api(path("/api/config"))
       .then(async (c) => {
         if (!live) return
         setIds(c.plans)
         setGoogle(c.google)
-        if (c.plans.length) {
+        if (c.plans.length && !plan) {
           const p = await api(path("/api/plan/" + c.plans[0]))
-          if (live) open(p)
+          if (live) { setPlan(p); if (!scenes.length) setScenes(p.breakdown.scenes); if (!budget.length) setBudget(p.breakdown.budget_items); }
         }
       })
       .catch((e) => live && setError(e.message))
@@ -62,7 +73,7 @@ export default function Production() {
     }
   }, [project.id])
   const create = async () => {
-    setBusy(true)
+    setSubmitting(true)
     setError("")
     try {
       await flush()
@@ -85,22 +96,16 @@ export default function Production() {
         config: { ...config, brief: mediaDirection },
         images: references,
       })
-      await refresh()
-      const job = await waitJob(q.job_id, (j) => setStatus(j.message))
-      open(job.result)
-      setIds((v) => [job.result.id, ...v.filter((x) => x !== job.result.id)])
-      setStatus(
-        "Your production plan is ready. Review the estimates and research below.",
-      )
+      setPendingJob({ id: q.job_id, kind: "production" })
       await refresh()
     } catch (e) {
       setError(String(e))
     } finally {
-      setBusy(false)
+      setSubmitting(false)
     }
   }
   const recalc = async () => {
-    setBusy(true)
+    setSubmitting(true)
     try {
       const result = await api(path("/api/recalculate"), {
         id: plan.id,
@@ -114,16 +119,16 @@ export default function Production() {
     } catch (e) {
       setError(String(e))
     } finally {
-      setBusy(false)
+      setSubmitting(false)
     }
   }
   const set = (k: string, v: any) => setConfig((c: any) => ({ ...c, [k]: v }))
   return (
-    <div className="page">
+    <div className="page simple-workspace">
       <PageTitle
-        eyebrow="FROM PAGE TO POSSIBILITY"
+        eyebrow=""
         title="Production"
-        text="Make a practical plan from your story, with visual references, a schedule, a budget and location research."
+        text="Turn your story into a shoot schedule, budget and location plan."
       />
       {error && (
         <p className="live-status error" role="alert">
@@ -136,7 +141,7 @@ export default function Production() {
         </p>
       )}
       <div className="production-layout">
-        <section className="panel">
+        <section className="panel composer">
           <h2>Plan your shoot</h2>
           <div className="form-grid">
             <label className="field">
@@ -144,7 +149,7 @@ export default function Production() {
               <input
                 value={config.region}
                 onChange={(e) => set("region", e.target.value)}
-                placeholder="City or region for location research"
+                placeholder="City or region"
               />
             </label>
             <label className="field">
@@ -155,6 +160,9 @@ export default function Production() {
                 onChange={(e) => set("start_date", e.target.value)}
               />
             </label>
+          </div>
+          <details className="workspace-options"><summary>Budget & visual reference</summary>
+            <div className="form-grid">
             <label className="field">
               Currency
               <input
@@ -164,17 +172,18 @@ export default function Production() {
               />
             </label>
             <label className="field">
-              Budget cap (0 means undecided)
+              Budget cap
               <input
                 type="number"
                 min={0}
-                value={config.budget_cap}
+                value={config.budget_cap || ""}
+                placeholder="Undecided"
                 onChange={(e) => set("budget_cap", Number(e.target.value))}
               />
             </label>
           </div>
           <label className="field">
-            Use a visual reference
+            Visual reference
             <select
               value={imageId}
               onChange={(e) => {
@@ -200,8 +209,9 @@ export default function Production() {
               alt="Selected location reference"
             />
           )}
+          </details>
           <details>
-            <summary>Schedule and research settings</summary>
+            <summary>Schedule settings</summary>
             <div className="form-grid">
               {[
                 ["day_hours", "Workday hours"],
@@ -265,9 +275,9 @@ export default function Production() {
           )}
         </section>
         <section className="panel">
-          <h2>Your saved plans</h2>
-          <label className="field">
-            Plan
+          <h2>Your plan</h2>
+          {ids.length > 1 && <label className="field">
+            Saved version
             <select
               value={plan?.id || ""}
               onChange={(e) =>
@@ -279,27 +289,27 @@ export default function Production() {
               <option value="" disabled>
                 Select a plan
               </option>
-              {ids.map((id) => (
-                <option key={id}>{id}</option>
+              {ids.map((id, i) => (
+                <option key={id} value={id}>{i === 0 ? "Latest plan" : `Earlier version ${ids.length - i}`}</option>
               ))}
             </select>
-          </label>
+          </label>}
           {plan ? (
             <>
-              <span className="eyebrow">{plan.provider}</span>
               <h3>{plan.title}</h3>
-              <p>{plan.recommendations.summary}</p>
               <p>
                 <b>{plan.schedule.shoot_days} shoot days</b> ·{" "}
-                {plan.budget.currency} {plan.budget.total_low.toLocaleString()}–
-                {plan.budget.total_high.toLocaleString()}
+                {plan.budget.total_high > 0 ? `${plan.budget.currency} ${plan.budget.total_low.toLocaleString()}–${plan.budget.total_high.toLocaleString()}` : "Budget not estimated"}
               </p>
-              <p className="hint">{plan.status}</p>
-              {plan.warnings.map((w: string, i: number) => (
+              <p className="hint">Budget estimates need review before booking.</p>
+              <details><summary>Plan overview</summary><p>{plan.recommendations.summary}</p></details>
+              {plan.warnings.length > 0 && <details><summary>Review notes ({plan.warnings.length})</summary>{plan.warnings.map((w: string, i: number) => (
                 <p className="hint" key={i}>
                   {w}
                 </p>
-              ))}
+              ))}</details>}
+              <a className="secondary" href={path(`/export/${plan.id}/schedule.csv`)}>Download schedule</a>
+              <details><summary>More downloads & calendar</summary>
               <div className="export-row">
                 {[
                   "schedule.csv",
@@ -314,14 +324,10 @@ export default function Production() {
                     key={k}
                     href={path(`/export/${plan.id}/${k}`)}
                   >
-                    {k}
+                    {{ "schedule.csv": "Schedule", "budget.csv": "Budget", "tasks.csv": "Task list", "calendar.ics": "Calendar file", "call-sheets.txt": "Call sheets", "plan.json": "Full plan data" }[k]}
                   </a>
                 ))}
               </div>
-              <p className="hint">
-                Based on {plan.source_files.join(", ")} · {plan.image_count}{" "}
-                visual references
-              </p>
               {google ? (
                 <button
                   className="secondary"
@@ -338,26 +344,28 @@ export default function Production() {
                       .catch((e) => setError(e.message))
                   }
                 >
-                  Add tentative events to Google Calendar
+                  Add to calendar
                 </button>
               ) : (
                 <a href="/connections" target="_blank" rel="noreferrer">
                   Connect Google Calendar
                 </a>
               )}
+              <p className="hint">Calendar events are added as tentative.</p>
+              </details>
             </>
           ) : (
             <p className="quiet">
-              Your real production outputs will appear here after you create a
-              plan.
+              Create a plan to see your schedule, estimated budget and locations here.
             </p>
           )}
         </section>
       </div>
       {plan && (
         <>
-          <section className="panel">
-            <h2>Schedule</h2>
+          {plan.schedule.unscheduled.length > 0 && <p className="live-status error">{plan.schedule.unscheduled.length} scenes still need scheduling. Open Schedule & budget to review.</p>}
+          <details className="panel workspace-section">
+            <summary>Schedule & budget <span>{plan.schedule.shoot_days} shoot days</span></summary>
             <div className="schedule">
               {plan.schedule.events.map((e: any) => (
                 <div key={e.scene_id}>
@@ -468,12 +476,12 @@ export default function Production() {
                 disabled={busy}
                 onClick={() => void recalc()}
               >
-                Recalculate and save a new version
+                Save revised plan
               </button>
             </details>
-          </section>
-          <section className="panel production-evidence">
-            <h2>Scouting and next steps</h2>
+          </details>
+          <details className="panel production-evidence workspace-section">
+            <summary>Locations & next steps <span>{plan.recommendations.locations.length} locations</span></summary>
             {plan.recommendations.locations.map((l: any, i: number) => (
               <article key={i}>
                 <h3>{l.name}</h3>
@@ -497,7 +505,8 @@ export default function Production() {
               </p>
             ))}
             <details>
-              <summary>Full research, logistics and assumptions</summary>
+              <summary>Research details</summary>
+              <p className="hint">{plan.provider} · {plan.status} · Based on {plan.source_files.join(", ")} · {plan.image_count} visual references</p>
               <pre className="real-output">
                 {JSON.stringify(
                   {
@@ -511,7 +520,7 @@ export default function Production() {
                 )}
               </pre>
             </details>
-          </section>
+          </details>
         </>
       )}
     </div>

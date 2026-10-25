@@ -49,3 +49,4 @@
 @media(prefers-reduced-motion:reduce){.hero-painting,.hero-art-note{animation:none!important}.project-card .art-image,.continue-card .art-image{transition:none!important}.project-card:hover .art-image,.continue-card:hover .art-image{transform:none}}
 @media(max-width:1100px){.brand-tagline{display:none}}
 @media(max-width:600px){.landing-header .brand-logo{width:114px;border-radius:6px}.landing-header nav>a[href='/studio/teams.html']{display:block;font-size:11px}.landing-header nav{gap:12px}.landing-header{padding:0 16px}.landing-header .primary{padding:10px 12px}.landing-main:focus{outline:none}}
+@media(max-width:600px){.hero-art-note{background:#f8f7f2eb;padding:10px 14px;bottom:12px}.hero-art-note p{font-size:20px}}

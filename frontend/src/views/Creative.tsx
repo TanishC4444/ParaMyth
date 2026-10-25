@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { api } from "../api";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { api, studioJobs, type Job } from "../api";
 import { label } from "../atlas";
 import "../atlas.css";
 import { uid } from "../data";
-import { useStudio } from "../store";
+import { useStudio, useDraftState } from "../store";
 import type { AtlasSource, CreativeMode } from "../types";
 import { ago, Icon, PageTitle, Segmented } from "../ui";
 import { Artwork } from "../art";
@@ -16,8 +16,7 @@ const HELP: Record<CreativeMode, string> = {
   Revise: "Improve a passage using your feedback.",
 };
 type Output = { title?: string; text?: string; summary?: string; pass?: boolean; completed_brief?: Record<string, unknown>; assumptions?: unknown[]; suggestions?: unknown[]; issues?: unknown[] };
-type CreativeRecord = { id: string; created_at: string; status: string; model: string; request: { operation: string; loop_mode?: string; guidance_mode?: string }; result?: Output; steps: { stage: string; output: Output; usage?: Record<string, unknown> }[] };
-type Job = { id: string; kind: string; status: string; message?: string; project_id?: string };
+type CreativeRecord = { id: string; created_at: string; status: string; model: string; request: { operation: string; loop_mode?: string; guidance_mode?: string }; result?: Output; preview?: Job["preview"]; steps: { stage: string; output: Output; usage?: Record<string, unknown> }[] };
 const pending = (j: Job) => ["queued", "running"].includes(j.status);
 const readable = (v: unknown): string => typeof v === "string" ? v : JSON.stringify(v, null, 2);
 const FIELD_NAMES: Record<string, string> = { pov: "Point of view", worldRules: "World rules", mustAvoid: "Things to avoid", ending_direction: "Ending direction", scenesPerChapter: "Scenes per chapter", wordMin: "Minimum scene length", wordMax: "Maximum scene length" };
@@ -45,11 +44,13 @@ function ideaPolicy(guidance: string, structure: string) {
 
 export default function Creative() {
   const { project, selectProject, notify, seed, clearSeed, go, refresh, ready, flush } = useStudio();
-  const [mode, setMode] = useState<CreativeMode>("Ideas"), [input, setInput] = useState(""), [feedback, setFeedback] = useState(""), [target, setTarget] = useState(600), [rounds, setRounds] = useState(1), [context, setContext] = useState(true);
-  const [guidance, setGuidance] = useState("Suggest improvements"), [structure, setStructure] = useState(""), [refine, setRefine] = useState(false);
-  const [source, setSource] = useState<AtlasSource | undefined>();
+  const [mode, setMode] = useDraftState<CreativeMode>("creative.mode", "Ideas"), [input, setInput] = useDraftState("creative.input", ""), [feedback, setFeedback] = useDraftState("creative.feedback", ""), [target, setTarget] = useDraftState("creative.target", 600), [rounds, setRounds] = useDraftState("creative.rounds", 1), [context, setContext] = useDraftState("creative.context", true);
+  const [guidance, setGuidance] = useDraftState("creative.guidance", "Suggest improvements"), [structure, setStructure] = useDraftState("creative.structure", ""), [refine, setRefine] = useDraftState("creative.refine", false);
+  const [source, setSource] = useDraftState<AtlasSource | undefined>("creative.source", undefined);
   const [records, setRecords] = useState<CreativeRecord[]>([]), [jobs, setJobs] = useState<Job[]>([]), [error, setError] = useState(""), [loading, setLoading] = useState(true), [submitting, setSubmitting] = useState(false), [adopting, setAdopting] = useState("");
   const [revision, setRevision] = useState(0);
+  const [selectedResult, setSelectedResult] = useDraftState("creative.selectedResult", "");
+  const revisionInput = useRef<HTMLTextAreaElement>(null);
   const currentProject = useRef(project.id), mounted = useRef(false);
   currentProject.current = project.id;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -67,32 +68,57 @@ export default function Creative() {
     if (!id || !ready) { setLoading(false); return; }
     setLoading(true); setError("");
     const saved = async () => {
-      const response = await api<{ results: CreativeRecord[] }>(projectPath("/api/studio/creative", id));
+      const response = await api<{ results: CreativeRecord[] }>(projectPath("/api/ui/creative", id));
       if (active) setRecords(response.results);
     };
     const poll = async (previous: Job[]) => {
       try {
-        const next = await Promise.all(previous.map((j) => pending(j) ? api<Job>(`/api/job/${j.id}`) : Promise.resolve(j)));
+        const next = await Promise.all(previous.map((j) => pending(j) && !j.streaming ? api<Job>(`/api/job/${j.id}`) : Promise.resolve(j)));
         if (!active) return;
-        setJobs(next);
-        if (next.some((j, index) => j.status !== previous[index].status && !pending(j))) await saved();
-        if (active && next.some(pending)) timer = setTimeout(() => { void poll(next); }, 2500);
+        setJobs((current) => next.map((j) => j.streaming ? current.find((c) => c.id === j.id) || j : j));
+        if (next.some((j, index) => j.status !== previous[index].status)) await saved();
+        if (active && next.some((j) => pending(j) && !j.streaming)) timer = setTimeout(() => { void poll(next); }, 2500);
       } catch (e) { if (active) setError(message(e)); }
     };
     void (async () => {
       try {
-        const response = await api<{ jobs: Job[] }>(projectPath("/api/studio/jobs", id));
+        const allJobs = await studioJobs(id);
         // Read outputs after statuses so a just-completed job cannot be missed.
         await saved();
         if (!active) return;
-        const creative = response.jobs.filter((j) => j.kind === "creative");
+        const creative = allJobs.filter((j) => j.kind === "creative");
         setJobs(creative);
-        if (creative.some(pending)) timer = setTimeout(() => { void poll(creative); }, 1500);
+        if (creative.some((j) => pending(j) && !j.streaming)) timer = setTimeout(() => { void poll(creative); }, 1500);
       } catch (e) { if (active) setError(message(e)); }
       finally { if (active) setLoading(false); }
     })();
     return () => { active = false; if (timer) clearTimeout(timer); };
   }, [project.id, ready, revision]);
+
+  const streamingIds = jobs.filter((j) => j.streaming && pending(j)).map((j) => j.id).sort().join(",");
+  useEffect(() => {
+    if (!streamingIds) return;
+    let active = true;
+    const connections = streamingIds.split(",").map((id) => {
+      const events = new EventSource(projectPath(`/api/ui/creative/jobs/${id}/events`, project.id));
+      events.addEventListener("progress", (event) => {
+        if (!active) return;
+        const next = JSON.parse((event as MessageEvent).data) as Job;
+        setJobs((previous) => previous.map((j) => j.id === id ? next : j));
+        if (!pending(next)) {
+          events.close();
+          if (next.result) setRecords((previous) => [next.result, ...previous.filter((r) => r.id !== next.result.id)]);
+          else void api<{ results: CreativeRecord[] }>(projectPath("/api/ui/creative", project.id)).then((r) => { if (active) setRecords(r.results); }).catch(() => {});
+          window.dispatchEvent(new Event("studio-refresh"));
+        }
+      });
+      // EventSource reconnects to the same job and receives its latest saved text.
+      // Reconnecting never submits another generation request.
+      return events;
+    });
+    return () => { active = false; connections.forEach((events) => events.close()); };
+  }, [streamingIds, project.id]);
+  const liveJob = jobs.find((j) => j.streaming && pending(j));
 
   const needsText = mode === "Review" || mode === "Revise";
   const working = submitting || jobs.some(pending);
@@ -105,12 +131,12 @@ export default function Creative() {
     const brief = [needsText ? "" : input, sourceContext, mode === "Ideas" ? ideaPolicy(guidanceMode, structure) : ""].filter(Boolean).join("\n\n");
     try {
       await flush();
-      const response = await api<{ job_id: string }>(projectPath("/api/studio/creative", id), {
+      const response = await api<{ job_id: string }>(projectPath("/api/ui/creative", id), {
         operation: refine && (mode === "Ideas" || mode === "Draft") ? "loop" : mode.toLowerCase(), loop_mode: mode === "Ideas" ? "ideas" : "prose",
         brief, text: needsText ? input : "", feedback, words: target, rounds, use_story: context,
         guidance_mode: guidanceMode, structure,
       });
-      if (mounted.current && currentProject.current === id) setJobs((previous) => [{ id: response.job_id, kind: "creative", status: "queued", project_id: id }, ...previous]);
+      if (mounted.current && currentProject.current === id) setJobs((previous) => [{ id: response.job_id, kind: "creative", status: "queued", project_id: id, streaming: true, created_at: new Date().toISOString(), message: "Preparing your request…" }, ...previous]);
       window.dispatchEvent(new Event("studio-refresh"));
       if (mounted.current && currentProject.current === id) notify("Started. Your result will be saved here while you explore the studio.");
     } catch (e) { if (mounted.current && currentProject.current === id) setError(message(e)); }
@@ -127,60 +153,83 @@ export default function Creative() {
     finally { if (mounted.current && currentProject.current === id) setAdopting(""); }
   };
 
-  return <div className="page">
-    <PageTitle eyebrow="FROM A SPARK TO A STORY" title="Develop your idea" text="Tell us as much or as little as you like. Keep your choices, let the AI fill the gaps, and edit the result whenever you want." />
+  const shown = records.find((r) => r.id === selectedResult) || records[0];
+  return <div className="page simple-workspace">
+    <PageTitle eyebrow="" title="Creative workspace" text="Start with an idea. We’ll fill in the gaps, and you can edit every choice." />
     {!project.id && ready && <div className="panel"><p>Create a project to keep your ideas and results together.</p><button className="primary" onClick={() => go("projects")}>Go to projects</button></div>}
     {error && <div className="panel" role="alert"><p>{error}</p><button onClick={() => setRevision((n) => n + 1)}>Try loading again</button> <button onClick={() => go("connections")}>Check connections</button></div>}
     <div className="creative-layout">
-      <section className="panel">
-        {source ? <div className="atlas-seed"><Icon name="atlas" size={18} /><div>
-          <span className="eyebrow">FROM THE STORY ATLAS · {source.approach.toUpperCase()}</span><b>{source.title}</b>
-          <p>{source.tradition} · {source.place}<br />Story mechanism: {label(source.mechanism)}: {source.instruction}</p>
-          <div className="comment-actions"><button onClick={() => go("atlas")}>Back to atlas</button><button onClick={() => setSource(undefined)}>Remove source</button></div>
-        </div></div> : <button className="text-action atlas-start" onClick={() => go("atlas")}><Icon name="atlas" size={15} />Find inspiration in the story atlas</button>}
+      <section className="panel composer">
         <Segmented label="Creative mode" value={mode} options={MODES} onChange={setMode} />
-        <p className="hint">{HELP[mode]}</p>
+        {mode !== "Ideas" && <p className="hint">{HELP[mode]}</p>}
         <label className="field">{needsText ? "Your writing" : "Your idea"}<textarea className="tall" value={input} maxLength={needsText ? 20000 : 12000} onChange={(e) => setInput(e.target.value)} placeholder={needsText ? "Paste the passage" : "A lighthouse keeper starts receiving letters from the future…"} /></label>
-        {mode === "Ideas" && <>
-          <Segmented label="How should we develop your idea?" value={guidance} options={["Suggest improvements", "Use my idea"]} onChange={setGuidance} />
-          <p className="hint">{guidance === "Use my idea" ? "Your choices stay as they are. We’ll only decide details you haven’t specified." : "We’ll develop your idea and offer optional suggestions. You decide whether to use them."}</p>
-          <label className="field">Story structure <span className="hint">Optional</span><textarea value={structure} maxLength={2000} onChange={(e) => setStructure(e.target.value)} placeholder="For example: two timelines, a mystery told backwards, or three acts. Leave blank and we’ll choose." /></label>
-          <p className="hint">No need to name every character, setting or plot point. We’ll explain the choices we make.</p>
-        </>}
-        {mode === "Revise" && <label className="field">What should change?<textarea value={feedback} maxLength={4000} onChange={(e) => setFeedback(e.target.value)} placeholder="Optional: tell us what to improve, or let the AI decide." /></label>}
-        <details><summary>Writing preferences</summary><div className="form-grid">
+        {mode === "Ideas" && <label className="inline-suggestion"><input type="checkbox" checked={guidance === "Suggest improvements"} onChange={(e) => setGuidance(e.target.checked ? "Suggest improvements" : "Use my idea")} />Suggest improvements <span>Optional</span></label>}
+        {mode === "Revise" && <label className="field">What should change?<textarea ref={revisionInput} value={feedback} maxLength={4000} onChange={(e) => setFeedback(e.target.value)} placeholder="Optional: tell us what to improve, or let the AI decide." /></label>}
+        <details className="workspace-options"><summary>Writing preferences</summary>
+          {mode === "Ideas" && <><p className="hint">Suggestions are optional. Uncheck them to use your idea as given.</p><label className="field">Story structure <span className="hint">Optional</span><textarea value={structure} maxLength={2000} onChange={(e) => setStructure(e.target.value)} placeholder="Leave blank and we’ll choose a structure that fits." /></label></>}
+          <label className="toggle"><input type="checkbox" checked={context} onChange={(e) => setContext(e.target.checked)} />Use writing from <b>{project.title || "this project"}</b></label>
           <label className="field">Target length · {target} words<input type="range" min={100} max={3000} step={50} value={target} onChange={(e) => setTarget(Number(e.target.value))} /></label>
-          {(mode === "Ideas" || mode === "Draft") && <><label className="toggle"><input type="checkbox" checked={refine} onChange={(e) => setRefine(e.target.checked)} />Review and refine the result automatically</label>{refine && <label className="field">Maximum revision rounds<select value={rounds} onChange={(e) => setRounds(Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>{n} · stops early when ready</option>)}</select></label>}</>}
-        </div><p className="hint">Each extra review and revision uses the connected AI provider.</p></details>
-        <label className="toggle"><input type="checkbox" checked={context} onChange={(e) => setContext(e.target.checked)} />Use writing from <b>{project.title || "this project"}</b></label>
-        <button className="primary" disabled={!ready || !project.id || working || (needsText && !input.trim())} onClick={() => { void run(); }}><Icon name="sparkle" size={15} />{working ? "Working on your idea…" : mode === "Ideas" ? "Develop my idea" : `${mode} my writing`}</button>
-        <p className="hint">Generated by your connected AI provider. Results are saved to this project.</p>
+          {(mode === "Ideas" || mode === "Draft") && <><label className="toggle"><input type="checkbox" checked={refine} onChange={(e) => setRefine(e.target.checked)} />Review and refine automatically</label>{refine && <><label className="field">Maximum revision rounds<select value={rounds} onChange={(e) => setRounds(Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>{n} · stops early when ready</option>)}</select></label><p className="hint">Extra reviews use your connected AI provider.</p></>}</>}
+          {source && <div className="atlas-seed"><div><b>{source.title}</b><p>{source.tradition} · {source.place}<br />{label(source.mechanism)}: {source.instruction}</p><button className="text-action" onClick={() => setSource(undefined)}>Remove source</button></div></div>}
+        </details>
+        <div className="composer-actions">
+          <button className="primary" disabled={!ready || !project.id || working || (needsText && !input.trim())} onClick={() => { setSelectedResult(""); void run(); }}><Icon name="sparkle" size={15} />{working ? "Working…" : mode === "Ideas" ? "Develop my idea" : `${mode} my writing`}</button>
+          <button className="text-action" onClick={() => go("atlas")}>{source ? "View inspiration" : "Find inspiration"}</button>
+        </div>
+        {source && <p className="hint">Inspired by {source.title}</p>}
       </section>
       <section className="results" aria-label="Creative results">
-        {working && <div className="panel" role="status"><span className="eyebrow">YOUR STORY IS TAKING SHAPE</span><h3>You can keep creating while we work.</h3><p>{jobs.find(pending)?.message || "Preparing your request…"} Your result will be waiting here when you return.</p><div className="comment-actions"><button onClick={() => go("images")}>Create a visual</button><button onClick={() => go("music")}>Find its sound</button><button onClick={() => go("production")}>Plan production</button></div></div>}
-        {jobs.filter((j) => ["failed", "interrupted"].includes(j.status)).slice(0, 1).map((j) => <div className="panel" role="status" key={j.id}><b>Earlier request {j.status}</b><p>{j.message || "The request did not finish. You can try again when the connection is ready."}</p></div>)}
+        <div className="workspace-result-head"><h2>Your result</h2>{records.length > 1 && <select aria-label="Saved creative result" value={shown?.id || ""} onChange={(e) => setSelectedResult(e.target.value)}>{records.map((r, i) => <option key={r.id} value={r.id}>{i === 0 ? "Latest" : `Earlier ${records.length - i}`} · {r.result?.title || r.request.operation}</option>)}</select>}</div>
+        {liveJob?.preview && <StreamingDraft key={liveJob.id} job={liveJob} />}
+        {working && <div className="panel working-note" role="status"><h3>Your writing is underway.</h3><p>Results save here. Try a visual or soundtrack while you wait.</p><div className="comment-actions"><button onClick={() => go("images")}>Create a visual</button><button onClick={() => go("music")}>Create a soundtrack</button><button onClick={() => go("production")}>Plan production</button></div><details><summary>Progress</summary><p>{jobs.find(pending)?.message || "Preparing your request…"}</p></details></div>}
+        {jobs.filter((j) => ["failed", "interrupted"].includes(j.status)).slice(0, 1).map((j) => <details className="panel" key={j.id}><summary>Earlier request {j.status}</summary><p>{j.message || "The request did not finish. You can try again when the connection is ready."}</p></details>)}
         {loading && !records.length && <p role="status">Loading saved results…</p>}
-        {records.map((r) => {
-          const output = displayOutput(r.result);
+        {(shown && shown.status !== "running" && !liveJob ? [shown] : []).map((r) => {
+          const output = displayOutput(r.result || r.preview || r.steps.at(-1)?.output);
           return <article className="panel result" key={r.id}>
-            <div className="finding-head"><b>{output?.title || r.request.operation}</b><small>{ago(r.created_at)} · {r.status} · {r.steps.length} AI call{r.steps.length === 1 ? "" : "s"}</small></div>
+            {r.status !== "complete" && <p className="hint">Unfinished draft · Your partial writing is saved.</p>}
+            <div className="finding-head"><h3>{output?.title || r.request.operation}</h3><small>{ago(r.created_at)}</small></div>
             {output?.text && <pre>{output.text}</pre>}
             {output?.summary && <p>{output.summary}</p>}
             {!!output?.issues?.length && <div><h3>Feedback</h3>{output.issues.map((issue, i) => <pre key={i}>{describe(issue)}</pre>)}</div>}
-            {!!output?.assumptions?.length && <div><h3>Details we filled in</h3><p className="hint">These are editable choices, not facts you supplied.</p><ul>{output.assumptions.map((a, i) => <li key={i}>{describe(a)}</li>)}</ul></div>}
-            {!!output?.suggestions?.length && <div><h3>Optional improvements</h3><p className="hint">Keep your idea as it is, or copy a suggestion into your next revision.</p>{output.suggestions.map((s, i) => {
-              return <pre key={i}>{describe(s)}</pre>;
-            })}</div>}
-            {output?.completed_brief && <details><summary>Your developed brief</summary><dl>{Object.entries(output.completed_brief).map(([key, value]) => <div key={key}><dt>{fieldName(key)}</dt><dd><pre>{describe(value)}</pre></dd></div>)}</dl></details>}
-            {output && <div className="comment-actions"><button onClick={() => { setMode("Revise"); setInput(output.text || output.summary || ""); }}>Revise this</button><button onClick={async () => { try { await navigator.clipboard.writeText(output.text || describe(output)); notify("Copied"); } catch { notify("Could not copy. Select the text to copy it manually."); } }}>Copy</button>{output.text && r.status === "complete" && <button disabled={!!adopting} onClick={() => { void adopt(r); }}>{adopting === r.id ? "Creating project…" : "Use as project"}</button>}</div>}
-            <details><summary>Generation details</summary><p className="hint">{r.model}</p>{r.steps.map((step, index) => <details key={index}><summary>{index + 1}. {step.stage}</summary><pre>{readable(step.output)}</pre></details>)}</details>
+            {!!output?.suggestions?.length && <div className="inline-feedback"><h4>Suggestions <span>Optional</span></h4>{output.suggestions.map((s, i) => <div key={i}><p>{describe(s)}</p><button className="text-action" onClick={() => { setMode("Revise"); setInput(output.text || output.summary || ""); setFeedback(describe(s)); requestAnimationFrame(() => revisionInput.current?.focus()); notify("Suggestion added to your revision. Review it, then choose Revise my writing."); }}>Try this</button></div>)}</div>}
+            {output && <div className="comment-actions"><button onClick={() => { setMode("Revise"); setInput(output.text || output.summary || ""); setFeedback(""); }}>Revise this</button><button onClick={async () => { try { await navigator.clipboard.writeText(output.text || describe(output)); notify("Copied"); } catch { notify("Could not copy. Select the text to copy it manually."); } }}>Copy</button>{output.text && r.status === "complete" && <button disabled={!!adopting} onClick={() => { void adopt(r); }}>{adopting === r.id ? "Creating project…" : "Use as project"}</button>}</div>}
+            {(!!output?.assumptions?.length || output?.completed_brief) && <details><summary>Story details</summary>
+              {!!output?.assumptions?.length && <><h4>Details we filled in</h4><p className="hint">You can change any of these choices.</p><ul>{output.assumptions.map((a, i) => <li key={i}>{describe(a)}</li>)}</ul></>}
+              {output?.completed_brief && <dl>{Object.entries(output.completed_brief).map(([key, value]) => <div key={key}><dt>{fieldName(key)}</dt><dd><pre>{describe(value)}</pre></dd></div>)}</dl>}
+            </details>}
+            <details><summary>Generation details</summary><p className="hint">{r.model} · {r.status} · {r.steps.length} AI calls</p>{r.steps.map((step, index) => <details key={index}><summary>{index + 1}. {step.stage}</summary><pre>{readable(step.output)}</pre></details>)}</details>
           </article>;
         })}
-        {!loading && !records.length && !working && <div className="empty illustrated-empty"><Artwork name="enchanted" /><div className="empty-copy"><span className="eyebrow">ROOM FOR POSSIBILITY</span><h3>Every idea opens a door.</h3><p>Start with one sentence. Your saved results and the decisions behind them will appear here.</p></div></div>}
+        {!loading && !records.length && !working && <div className="empty illustrated-empty"><Artwork name="enchanted" /><div className="empty-copy"><h3>A little idea is enough.</h3><p>Your developed idea will appear here, ready to shape into a story.</p></div></div>}
       </section>
     </div>
-    <IdeaBoard />
+    <details className="workspace-notes"><summary>Notes & ideas</summary><IdeaBoard /></details>
   </div>;
+}
+
+function StreamingDraft({ job }: { job: Job }) {
+  const box = useRef<HTMLPreElement>(null);
+  const following = useRef(true);
+  const [paused, setPaused] = useState(false);
+  const text = job.preview?.text || job.preview?.summary || "Waiting for the first words…";
+  const latest = () => {
+    following.current = true; setPaused(false);
+    if (box.current) box.current.scrollTop = box.current.scrollHeight;
+  };
+  useLayoutEffect(() => {
+    if (following.current && box.current?.getClientRects().length) box.current.scrollTop = box.current.scrollHeight;
+  }, [text]);
+  return <article className="panel result streaming-result" aria-label="Writing in progress">
+    <div className="finding-head"><h3>{job.preview?.title || "Your writing"}</h3><small role="status">{job.preview?.stage} · Writing…</small></div>
+    <pre ref={box} tabIndex={0} aria-label="Draft being written" onScroll={() => {
+      const el = box.current;
+      if (!el || !el.getClientRects().length) return;
+      following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+      setPaused(!following.current);
+    }}>{text}<span className="writing-cursor" aria-hidden="true" /></pre>
+    {paused && <button className="text-action" onClick={latest}>Jump to latest</button>}
+  </article>;
 }
 
 function IdeaBoard() {

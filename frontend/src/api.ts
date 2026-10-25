@@ -28,7 +28,7 @@ export async function api<T = any>(
     headers["X-ParaMyth-Token"] = await token()
   const r = await fetch(path, {
     method: verb,
-    signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : undefined,
+    signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : path.startsWith("/api/studio/jobs") || path.startsWith("/api/ui/creative/jobs") ? AbortSignal.timeout(5000) : undefined,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "same-origin",
@@ -57,9 +57,21 @@ export type Job = {
   message: string
   created_at: string
   result?: any
+  streaming?: boolean
+  preview?: { record_id: string; stage: string; title?: string; text?: string; summary?: string }
 }
 export const projectPath = (path: string, id: string) =>
   `${path}${path.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(id)}`
+export async function studioJobs(id: string): Promise<Job[]> {
+  const results = await Promise.allSettled([
+    api<{ jobs: Job[] }>(projectPath("/api/studio/jobs", id)),
+    api<{ jobs: Job[] }>(projectPath("/api/ui/creative/jobs", id)),
+  ])
+  const available = results.filter((r) => r.status === "fulfilled")
+  if (!available.length) throw Error("Could not load running jobs. Check Connections.")
+  return [...new Map(available.flatMap((r) => r.value.jobs).map((j) => [j.id, j])).values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
 export async function waitJob(
   id: string,
   update?: (job: Job) => void,
