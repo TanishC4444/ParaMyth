@@ -35,13 +35,19 @@ def connection(*, migration=False):
         raise HTTPException(503, 'Studio storage is temporarily unavailable') from None
 
 
-def migrate():
+def migrate(*, import_storyforge=False):
     """Explicit deploy command, using a separately supplied migration-owner connection."""
     with connection(migration=True) as conn:
         conn.execute('SELECT pg_advisory_xact_lock(747836251)')
         conn.execute(files('paramyth.studio').joinpath('migrations/001_studios.sql').read_text(encoding='utf-8'))
+        if import_storyforge:
+            conn.execute(files('paramyth.studio').joinpath('migrations/002_import_storyforge.sql').read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':
-    migrate()
+    import argparse
+    parser = argparse.ArgumentParser(description='Prepare ParaMyth account storage.')
+    parser.add_argument('--import-storyforge', action='store_true',
+                        help='Copy legacy accounts and teams into an empty ParaMyth schema (stop legacy writes first).')
+    migrate(import_storyforge=parser.parse_args().import_storyforge)
     print('Studio schema is ready.')

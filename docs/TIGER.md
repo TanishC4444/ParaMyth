@@ -110,3 +110,47 @@ python -X utf8 -m unittest discover -s tests -p test_tiger_db.py -v
 
 Database integration tests skip when the test URL is absent. Never point these
 tests at production; they create and remove generated test accounts and studios.
+
+## Upgrading a Storyforge database
+
+ParaMyth uses the `paramyth` schema and `PARAMYTH_DATABASE_URL`; the old
+`STORYFORGE_DATABASE_URL` variable and `storyforge` tables are not used by the
+new server. A database containing only the old tables will return HTTP 503 on
+signup and login until it is migrated and the runtime role has access.
+
+Stop legacy account/team writers during the cutover. With the owner connection
+in `PARAMYTH_MIGRATION_DATABASE_URL`, run:
+
+```sh
+python -m paramyth.studio.studio_db --import-storyforge
+```
+
+This explicit, transactional import creates the new schema and copies accounts,
+password hashes, studios, memberships, invitations, projects, revisions, comments
+and authentication throttles. It verifies each copied table before recording
+migration 2. The destination must be empty; conflicting data causes a rollback
+instead of silently merging users or overwriting passwords. Repeating a completed
+import does nothing. Legacy sessions are not imported because their token prefix
+differs; sign in again with the existing password.
+
+The legacy schema remains intact. If the migration fails, the transaction rolls
+back automatically. Before the new app accepts writes, rollback means continuing
+to run the old app against its untouched schema. After new writes, reconcile
+those changes before reverting; the two schemas are not synchronized. Do not
+continue using the legacy account server after the cutover.
+
+Grant the new schema/table permissions documented above to the actual runtime
+role. Reusing an existing restricted role (for example `storyforge_app`) is fine;
+substitute its name in those grants. Set `PARAMYTH_DATABASE_URL` to that role's
+connection string in the server process, install `.[studio,tiger]`, and restart
+the new server. Do not put the owner connection or credentials in the frontend.
+
+The account page is `/studio/teams.html?mode=signup`, served by both API entry
+points when running from the repository, with or without a frontend build. Its
+form submits to `/api/v1/accounts/signup` on the same origin. A name, valid email,
+and a 12–128 character password are required. Existing email addresses return
+409 and switch the form to sign-in. Password recovery is still not implemented.
+
+The legacy migration tests require an **empty disposable database** and an owner
+connection in `PARAMYTH_MIGRATION_TEST_DATABASE_URL`. Each test rolls back its
+fixture schemas. Run `python -m unittest discover -s tests -p test_legacy_migration.py -v`.

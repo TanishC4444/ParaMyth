@@ -64,3 +64,13 @@ class TigerConnectionTests(unittest.TestCase):
             self.assertIn('CREATE SCHEMA IF NOT EXISTS paramyth', executed[1].args[0])
         with patch.dict(os.environ, {'PARAMYTH_MIGRATION_DATABASE_URL': ''}), self.assertRaises(HTTPException):
             studio_db.migrate()
+
+    def test_legacy_import_is_explicit_and_transactional(self):
+        with patch.dict(os.environ, {'PARAMYTH_MIGRATION_DATABASE_URL': 'postgresql://owner@localhost/app',
+                'PARAMYTH_DB_LOCAL_TEST': '1'}), patch('psycopg.connect') as connect:
+            studio_db.migrate(import_storyforge=True)
+            executed = connect.return_value.__enter__.return_value.execute.call_args_list
+            self.assertEqual(len(executed), 3)
+            self.assertIn('pg_advisory_xact_lock', executed[0].args[0])
+            self.assertIn('CREATE SCHEMA IF NOT EXISTS paramyth', executed[1].args[0])
+            self.assertIn('Legacy storyforge account tables are missing', executed[2].args[0])

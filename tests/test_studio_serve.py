@@ -19,6 +19,14 @@ class ServeTests(StudioTestCase):
             self.assertIn('ParaMyth', client.get('/').text)
             self.assertEqual(client.get('/assets/app.js').text, 'console.log(1)')
             self.assertEqual(client.get('/api/v1/health').json(), {'status': 'ok'})
+            page = client.get('/studio/teams.html?mode=signup')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn('id="account-form"', page.text)
+            self.assertEqual(client.get('/studio/js/teams.js').status_code, 200)
+
+    def test_account_page_is_available_without_frontend_build(self):
+        self.assertEqual(self.client.get('/studio/teams.html?mode=signup').status_code, 200)
+        self.assertIn('/accounts/${mode}', self.client.get('/studio/js/teams.js').text)
 
     def test_without_a_build_only_the_api_answers(self):
         self.assertEqual(self.client.get('/').status_code, 404)
