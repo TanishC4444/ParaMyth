@@ -88,7 +88,7 @@ class MediaWorkspaceTests(unittest.TestCase):
         with self.assertRaises(ValueError):current_production(request,{'track_ids':['../../elsewhere']},runtime)
 
     def test_transient_draft_failure_retries_same_saved_record(self):
-        good={'choices':[{'message':{'content':'{"title":"Winter","text":"A complete draft."}'}}]}
+        good={'choices':[{'message':{'content':'{"title":"Winter","text":"A complete draft."}'},'finish_reason':'stop'}]}
         for first in (creative_stream.StreamError('Connection dropped'),{'choices':[{'message':{'content':'{"text":"unfinished'}}]}):
             with self.subTest(first=type(first).__name__),patch.object(creative_stream,'configuration',return_value=('Gemini','model')),patch.object(creative_stream,'completion',side_effect=[first,good]) as call,patch('paramyth.pipeline.creative_studio.time.sleep'):
                 result=creative_studio.run(self.root,{'operation':'draft','use_story':False},lambda _,**kw:None,stream=True)
@@ -99,7 +99,7 @@ class MediaWorkspaceTests(unittest.TestCase):
     def test_retry_limit_and_permanent_failure(self):
         for retryable,expected in ((True,3),(False,1)):
             with patch.object(creative_stream,'configuration',return_value=('Gemini','model')),patch.object(creative_stream,'completion',side_effect=creative_stream.StreamError('Unavailable',retryable=retryable)) as call,patch('paramyth.pipeline.creative_studio.time.sleep'):
-                with self.assertRaises(creative_stream.StreamError):creative_studio.run(self.root,{'operation':'draft','use_story':False},lambda _,**kw:None,stream=True)
+                with self.assertRaises(creative_stream.ProviderError):creative_studio.run(self.root,{'operation':'draft','use_story':False},lambda _,**kw:None,stream=True)
             self.assertEqual(call.call_count,expected)
 
     def test_file_lock_retries_same_atomic_write(self):

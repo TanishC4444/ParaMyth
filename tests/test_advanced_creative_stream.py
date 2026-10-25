@@ -17,6 +17,53 @@ from paramyth.pipeline.production_research import ProviderError
 
 
 class StreamTests(unittest.TestCase):
+    def test_complete_wrapped_json_and_literal_newlines_preserve_writing(self):
+        for raw in ('{"text":"First line\nSecond line"}', '\ufeff```json\n{"text":"First line\\nSecond line"}\n```'):
+            response={'choices':[{'message':{'content':raw},'finish_reason':'stop'}]}
+            self.assertEqual(creative_stream.writing_result(response,'Draft')['text'],'First line\nSecond line')
+
+    def test_invalid_responses_are_safe_errors_not_completed_drafts(self):
+        for raw in (None, [], '{}', '[]', '{"text":""}', '{"text":"cut off', '```json\n{"text":"unfinished fence"}'):
+            response={'choices':[{'message':{'content':raw},'finish_reason':'stop'}]}
+            with self.subTest(raw=raw),self.assertRaisesRegex(creative_stream.StreamError,'could not be read'):
+                creative_stream.writing_result(response,'Draft')
+        with self.assertRaises(creative_stream.StreamError):
+            creative_stream.writing_result({'choices':[{'message':{'content':'{"pass":"yes"}'},'finish_reason':'stop'}]},'Review')
+
+    def test_failed_validation_retries_then_keeps_the_complete_result(self):
+        complete={'choices':[{'message':{'content':'{"title":"Story","text":"Finished writing"}'},'finish_reason':'stop'}]}
+        for failed in ({'choices':[{'message':{'content':'{"text":"Looks complete"}'},'finish_reason':'length'}]},
+                       {'choices':[{'message':{'content':'{"text":"cut off'},'finish_reason':'stop'}]}):
+            with self.subTest(failed=failed),tempfile.TemporaryDirectory() as root,patch('paramyth.pipeline.creative_stream.configuration',return_value=('Gemini','model')),patch('paramyth.pipeline.creative_stream.completion',side_effect=[failed,complete]) as provider,patch('paramyth.pipeline.creative_studio.time.sleep'):
+                record=creative_studio.run(Path(root),{'operation':'draft','use_story':False},lambda *args,**kwargs:None,stream=True)
+                self.assertEqual(provider.call_count,2)
+                self.assertEqual(record['status'],'complete')
+                self.assertEqual(record['result']['text'],'Finished writing')
+                self.assertEqual(len(record['attempts']),1)
+                self.assertEqual(len(record['steps']),1)
+
+    def test_retry_exhaustion_preserves_partial_writing_and_explains_attempts(self):
+        def incomplete(_provider,_model,_messages,_temperature,on_chunk,**kwargs):
+            on_chunk('{"title":"Story","text":"Saved partial writing')
+            return {'choices':[{'message':{'content':'{"text":"incomplete'},'finish_reason':'stop'}]}
+        with tempfile.TemporaryDirectory() as root,patch('paramyth.pipeline.creative_stream.configuration',return_value=('Gemini','model')),patch('paramyth.pipeline.creative_stream.completion',side_effect=incomplete) as provider,patch('paramyth.pipeline.creative_studio.time.sleep'):
+            with self.assertRaisesRegex(ProviderError,'after 3 attempts'):
+                creative_studio.run(Path(root),{'operation':'draft','use_story':False},lambda *args,**kwargs:None,stream=True)
+            saved=json.loads(next((Path(root)/'creative').glob('*.json')).read_text(encoding='utf-8'))
+        self.assertEqual(provider.call_count,3)
+        self.assertEqual(saved['status'],'failed')
+        self.assertEqual(saved['preview']['text'],'Saved partial writing')
+        self.assertEqual(len(saved['attempts']),3)
+        self.assertIn('after 3 attempts',saved['error'])
+        self.assertNotIn('result',saved)
+
+    def test_blocked_response_is_not_retried_or_saved_as_success(self):
+        blocked={'choices':[{'message':{'content':'{"text":"Not a completed draft"}'},'finish_reason':'content_filter'}]}
+        with tempfile.TemporaryDirectory() as root,patch('paramyth.pipeline.creative_stream.configuration',return_value=('Gemini','model')),patch('paramyth.pipeline.creative_stream.completion',return_value=blocked) as provider:
+            with self.assertRaises(ProviderError):
+                creative_studio.run(Path(root),{'operation':'draft','use_story':False},lambda *args,**kwargs:None,stream=True)
+        self.assertEqual(provider.call_count,1)
+
     def test_partial_json_never_exposes_escapes_or_nested_text(self):
         raw=json.dumps({'title':'A title','text':'A "quote"\nAnd a dragon 🐉.', 'summary':'Done'})
         for end in range(len(raw)+1):

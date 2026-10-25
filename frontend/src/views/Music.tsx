@@ -3,9 +3,14 @@ import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
+import { useMaterials } from "../materials"
 import { Artwork } from "../art"
 export default function Music() {
   const { project, mediaDirection, flush, refresh, go } = useStudio()
+  const { source, sourceTitle, signature, streaming } = useMaterials()
+  const [prompt, setPrompt] = useDraftState("music.prompt", "")
+  const [automatic, setAutomatic] = useDraftState("music.automatic", true)
+  const [useStory, setUseStory] = useDraftState("music.useStory", true)
   const [mode, setMode] = useDraftState("music.mode", "ambience"),
     [seconds, setSeconds] = useDraftState("music.seconds", 30),
     [lyrics, setLyrics] = useDraftState("music.lyrics", ""),
@@ -42,9 +47,9 @@ export default function Music() {
         }
       })
       .catch((e) => live && setError(e.message))
-    return () => {
-      live = false
-    }
+    const changed = () => { void api(path("/api/studio/music")).then((v) => { if (live) setTracks(v.tracks); }).catch(() => {}); }
+    window.addEventListener("studio-refresh", changed)
+    return () => { live = false; window.removeEventListener("studio-refresh", changed) }
   }, [project.id])
   useEffect(() => {
     const active = tracks.filter(
@@ -58,6 +63,7 @@ export default function Music() {
         const values = await Promise.all(
           active.map((t) => api(path("/api/studio/music/" + t.job.id))),
         )
+        if (live && values.some((v) => ["completed", "failed", "cancelled", "expired"].includes(v.job.status))) window.dispatchEvent(new Event("studio-refresh"))
         if (live)
           setTracks((prev) =>
             prev.map((t) => values.find((v) => v.job.id === t.job.id) || t),
@@ -77,14 +83,15 @@ export default function Music() {
     setError("")
     try {
       await flush()
-      const q = await api(path("/api/studio/music"), {
+      const q = await api(path("/api/ui/music"), {
         mode,
         seconds,
-        direction: mediaDirection,
+        prompt: [prompt, mediaDirection].filter(Boolean).join("\n"),
+        source, use_story: useStory, automatic,
         model,
         lyrics,
       })
-      setPendingJob({ id: q.job_id, kind: "music" })
+      setPendingJob({ id: q.job_id, kind: "music", local: q.local })
       await refresh()
     } catch (e) {
       setError(String(e))
@@ -109,12 +116,19 @@ export default function Music() {
   const trackName = (t: any) => t.cue.mode === "ambience" ? "Ambient soundscape" : t.cue.mode === "song" ? "Song" : "Cinematic score"
   return (
     <div className="page simple-workspace">
+      {streaming && <p className="hint" role="status">Following the live draft. New soundtracks use its current mood and story details.</p>}
+      {shown?.writing_signature && shown.writing_signature !== signature && <p className="source-changed">Your writing has changed since this soundtrack. <button disabled={busy} onClick={()=>void create()}>Create an updated soundtrack</button></p>}
       <PageTitle eyebrow="" title="Soundtracks" text="Choose a sound. Your story sets the mood." />
       {error && <p className="live-status error" role="alert">{error}</p>}
       {status && <p className="live-status" role="status">{status}</p>}
       <div className="creative-layout">
         <section className="panel composer">
           <h2>Create a soundtrack</h2>
+          <label className="field">Describe the sound<textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={4000} placeholder="Soft piano, an uneasy pulse, distant forest sounds… or leave it to us." /></label>
+          <label className="inline-suggestion"><input type="checkbox" checked={useStory} onChange={(e) => setUseStory(e.target.checked)} />Use {sourceTitle}</label>
+          <label className="inline-suggestion"><input type="checkbox" checked={automatic} onChange={(e) => setAutomatic(e.target.checked)} />Choose sound and settings for me</label>
+          <details className="workspace-options"><summary>Sound settings{automatic ? " · automatic" : ""}</summary>
+          <p className="hint">Turn off automatic settings to use your choices below.</p>
           <label className="field">Sound type
             <select value={mode} onChange={(e) => setMode(e.target.value)}>
               <option value="ambience">Ambient soundscape</option>
@@ -130,8 +144,9 @@ export default function Music() {
             {!model && <p className="hint">Connect a music provider in Connections to create scores and songs.</p>}
             <details className="workspace-options"><summary>Sound settings</summary><label className="field">Music model<select value={model} onChange={(e) => setModel(e.target.value)}>{models.map((m) => <option value={m.id} key={m.id}>{m.name || m.id}</option>)}</select></label><p className="hint">Scores and songs use your connected music provider.</p></details>
           </>}
-          <button className="primary" disabled={busy || (mode !== "ambience" && !model) || (mode === "song" && !lyrics.trim())} onClick={() => void create()}>{busy ? "Preparing…" : "Create soundtrack"}</button>
-          <p className="hint">Uses your story{mediaDirection ? " and chosen direction" : ""}. Adjust Scene & direction above for a specific mood.</p>
+          </details>
+          <button className="primary" disabled={busy || (!useStory && !prompt.trim()) || (!automatic && ((mode !== "ambience" && !model) || (mode === "song" && !lyrics.trim())))} onClick={() => void create()}>{busy ? "Preparing…" : automatic ? "Create soundtrack for me" : "Create soundtrack"}</button>
+          <p className="hint">Your soundtrack uses the selected writing and your prompt. You can keep writing while it generates.</p>
         </section>
         <section className="results" aria-label="Saved soundtracks">
           <div className="workspace-result-head"><h2>Your soundtrack</h2><button className="text-action" onClick={() => void load().catch((e) => setError(e.message))}>Refresh</button></div>
@@ -143,7 +158,7 @@ export default function Music() {
               {t.job.status === "completed" ? <><button onClick={() => void action(t.job.id, "save")}>Save audio</button><a href={path(`/media/music/${t.job.id}/content`)} download>Download audio</a></> : !["failed", "cancelled", "expired"].includes(t.job.status) && <button onClick={() => void action(t.job.id, "cancel")}>Cancel generation</button>}
             </div>
             {t.job.error && <p role="alert">{String(t.job.error.message || t.job.error)}</p>}
-            <details><summary>Track details</summary><p>{t.cue.prompt}</p><small>{t.provider || t.job.model || "Saved audio"} · {t.cue.sources?.join(", ")}</small></details>
+            <details><summary>Track details</summary><p>{t.cue.prompt}</p><small>{t.settings?.seconds ? `${t.settings.seconds} seconds · ` : ""}{t.source_title ? `${t.source_title} · ` : ""}{t.provider || t.job.model || "Saved audio"} · {t.cue.sources?.join(", ")}</small></details>
           </article>)}
           {!tracks.length && <div className="empty illustrated-empty music-empty"><Artwork name="music" /><div className="empty-copy"><h3>Give your story a sound.</h3><p>Create a soundtrack to listen to it here.</p></div></div>}
           {tracks.length > 0 && <button className="text-action workspace-next" onClick={() => go("production")}>Next: plan production →</button>}

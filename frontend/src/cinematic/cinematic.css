@@ -1,0 +1,61 @@
+/* The atlas stays in normal document flow; only the illustrated prologue is pinned. */
+.cinematic-landing .landing-main{width:100%;max-width:none;margin:0;outline:none}
+.cinematic-landing .landing-header{position:absolute;inset:0 0 auto;z-index:12;height:100px;color:#eee6ce}
+.cinematic-landing .landing-header nav>a{color:#f1ead7}.cinematic-landing .brand-tagline{color:#b4c9b8}
+.cinematic-landing .landing-header .primary{background:#e6d5ac;color:#18323a;border-color:#e6d5ac}
+.cinematic-intro{height:360svh;position:relative;isolation:isolate;background:#f8f7f2}
+.cinema-stage{height:100svh;min-height:520px;position:sticky;top:0;overflow:clip;background:#142f37;color:#f1e5c7;isolation:isolate}
+.cinema-atmosphere,.cinema-grain,.cinema-world-light,.story-particles{position:absolute;inset:0;pointer-events:none}
+.cinema-atmosphere{z-index:-1;background:radial-gradient(ellipse at 50% 60%,#3e655d66,transparent 64%),linear-gradient(135deg,#132631,#294b4c)}
+.cinema-world-light{inset:30% 20% 2%;background:#6d9e81;opacity:.21;filter:blur(90px);border-radius:50%}
+.cinema-grain{background:url('/art/paper.webp') repeat;background-size:700px;mix-blend-mode:soft-light;opacity:.13}
+.cinema-orbit{position:absolute;border:1px solid #b3c6a318;border-radius:50%;width:950px;height:950px;left:50%;top:60%;transform:translate(-50%,-50%) rotateX(65deg)}
+.orbit-two{width:1250px;height:1250px;transform:translate(-50%,-50%) rotateX(65deg) rotateZ(18deg)}
+.cinema-opening-copy{position:absolute;top:17%;left:0;right:0;text-align:center;pointer-events:none;z-index:3}
+.cinema-eyebrow{font-size:9px;letter-spacing:3.2px;color:#bccfc2;margin:0 20px 16px}
+.cinema-prologue{font:400 clamp(28px,3.2vw,48px)/1.1 Georgia,serif;letter-spacing:-1.1px;margin:0}
+.cinema-prologue em{color:#c5d7b4;font-weight:400}
+.storybook-exit{position:absolute;inset:32% 0 19%;display:grid;place-items:center;pointer-events:none}
+.storybook-perspective{width:min(70vw,660px,75svh);aspect-ratio:1.65;perspective:1600px;position:relative}
+.storybook-assembly{width:100%;height:100%;position:relative;transform-style:preserve-3d;transform:rotateX(28deg) rotateZ(-5deg)}
+.book-ground-shadow{position:absolute;inset:65% 4% -12%;background:#040e15;opacity:.6;filter:blur(30px);border-radius:50%;transform:rotate(-5deg)}
+.book-left-block,.book-right-block{position:absolute;top:0;width:50%;height:100%;border-radius:4px 12px 12px 4px;background:repeating-linear-gradient(to bottom,#d4c49b 0px,#f1e4c0 1px,#b1a184 2px,#e8d8b6 3px);box-shadow:0 8px 0 #d0bd97,0 12px 0 #876a40,0 16px 0 #1f4645,0 18px 1px #b69959,0 24px 18px #0005}
+.book-left-block{left:0;border-radius:12px 4px 4px 12px;opacity:0}.book-right-block{left:50%}
+.book-spine{position:absolute;left:calc(50% - 5px);top:0;width:10px;height:103%;background:linear-gradient(90deg,#746648,#eee0b9,#64563f);transform:translateZ(2px);z-index:1;border-radius:4px}
+.book-leaf,.book-cover{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:0 50%;transform-style:preserve-3d;border-radius:0 10px 10px 0}
+.book-leaf-0{z-index:6}.book-leaf-1{z-index:5}.book-leaf-2{z-index:4}
+.book-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#f4e8c8 url('/art/paper.webp') center/cover;border-radius:2px 8px 8px 2px;padding:6.5% 7% 12%;overflow:hidden;border:1px solid #d2c2a0;box-shadow:inset 10px 0 22px #57452a20}
+.book-verso{transform:rotateY(180deg);border-radius:8px 2px 2px 8px;box-shadow:inset -10px 0 22px #57452a30}
+.book-recto{transform:translateZ(.3px)}
+.book-illustration{height:100%;position:relative;overflow:hidden;border:1px solid #997e4e90;outline:1px solid #c8ae7766;outline-offset:5px;background:#7c8c78}
+.book-illustration .art-image{filter:saturate(.78) contrast(.95);height:100%;width:100%;object-fit:cover;will-change:transform}
+.book-image-light{position:absolute;inset:0;background:linear-gradient(120deg,#f9ebbb40,transparent 45%,#163e3730);mix-blend-mode:soft-light}
+.book-page-caption{position:absolute;bottom:3.7%;left:10%;right:10%;display:flex;gap:10px;align-items:center;font:italic clamp(7px,.8vw,11px)/1.2 Georgia,serif;color:#625940;white-space:nowrap}
+.book-page-caption small{font-style:normal;font-size:8px;color:#8c774b}
+.book-page-shade{position:absolute;inset:0;background:linear-gradient(90deg,#241f2066,transparent 16%,transparent 78%,#f5dfac22);pointer-events:none}
+.book-verso .book-page-shade{background:linear-gradient(90deg,#f5dfac22,transparent 30%,transparent 82%,#241f2059)}
+.book-cover{z-index:8;height:102%;top:-1%;width:50.8%}
+.book-cover-front,.book-cover-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:2px 12px 12px 2px}
+.book-cover-front{padding:7%;background:linear-gradient(110deg,#0b282e,#255752 55%,#173b40);border:1px solid #ad935b;box-shadow:inset 4px 0 8px #0009,inset -2px 0 8px #dcd19433,0 6px 0 #0d2c31;transform:translateZ(1px)}
+.book-cover-front:before{content:"";position:absolute;inset:0;background:url('/art/paper.webp') center/cover;mix-blend-mode:soft-light;opacity:.3;border-radius:inherit}
+.book-cover-inlay{position:relative;height:100%;border:1px solid #ac975a;padding:10% 4%;outline:1px solid #ac975a88;outline-offset:5px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#ddc790}
+.book-edition{font-size:clamp(5px,.6vw,8px);letter-spacing:2px}.book-emblem{height:33%;width:auto;stroke:#c2ab72;stroke-width:.7;margin:8% auto 4%}.book-cover strong{font:italic 400 clamp(22px,3.5vw,43px)/1 Georgia,serif;letter-spacing:-1.5px}.book-cover em{font:italic clamp(7px,.9vw,11px)/1.8 Georgia,serif;margin-top:7%}.book-cover small{font-size:clamp(5px,.6vw,8px);letter-spacing:2px}.book-cover-rule{width:22%;height:1px;background:#bba36c;margin:9% auto}
+.book-cover-back{transform:rotateY(180deg);background:#e8d9b8;box-shadow:0 5px 0 #1b3c3d}
+.story-particles{z-index:4;width:100%;height:100%;mix-blend-mode:screen}
+.cinema-title-reveal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;pointer-events:none;z-index:5;padding:20px;text-align:center}
+.cinema-title-reveal h1{font:italic 400 clamp(60px,14vw,160px)/1.2 Georgia,serif;letter-spacing:-.065em;color:#f0dfb7;text-shadow:0 0 34px #dfd6ad28;margin:8px 0 16px;display:flex}
+.cinema-letter{display:inline-block;opacity:0}.cinema-title-kicker{font-size:9px;letter-spacing:4px;color:#b9cabb}.cinema-title-line{font:italic 17px Georgia,serif;color:#d5dfcb}
+.cinema-controls{position:absolute;right:28px;bottom:26px;display:flex;align-items:end;gap:16px;z-index:8}.cinema-controls button{border:0;background:transparent;color:#d0dbcd;font-size:10px;padding:10px 2px;text-underline-offset:5px}.cinema-controls button:hover{text-decoration:underline}.cinema-controls button:first-child{font-size:12px}.cinema-controls span{margin-left:8px}
+.cinema-scroll-cue{position:absolute;bottom:3.5%;left:50%;transform:translateX(-50%);border:0;background:transparent;color:#d8dfcf;z-index:8;display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;white-space:nowrap;font-size:10px;letter-spacing:1.2px}.cinema-scroll-cue i{font:20px Georgia,serif;display:grid;place-items:center;width:30px;height:40px;border:1px solid #c1d3bd44;border-radius:20px}
+.cinema-chapter{position:absolute;left:28px;bottom:40px;font-size:8px;letter-spacing:2px;color:#a8bbaf}
+.cinematic-landing .cinematic-atlas{position:relative;z-index:3;margin:-100svh auto 0;width:calc(100% - 80px);max-width:1280px;padding-top:60px;transform-origin:center top;scroll-margin-top:0;outline:none;min-height:100svh}
+.cinematic-landing .cinematic-atlas[inert]{pointer-events:none}
+.cinema-preferences{display:flex;justify-content:flex-end;gap:16px;margin:-20px 0 22px}.cinema-preferences button{border:0;background:transparent;padding:6px 0;color:#52665a;font-size:10px;text-underline-offset:4px}.cinema-preferences button:hover,.cinema-preferences button[aria-pressed=true]{text-decoration:underline}
+.cinematic-landing .landing-footer{width:calc(100% - 80px);margin-top:60px}
+.cinematic-intro[data-phase=atlas] .cinema-stage{pointer-events:none}.cinematic-intro[data-phase=atlas] .cinema-controls,.cinematic-intro[data-phase=atlas] .cinema-chapter{visibility:hidden}
+.cinematic-intro{outline:none}.cinematic-intro[data-phase=atlas] .story-particles{visibility:hidden}
+.cinematic-static{height:100svh;min-height:700px}.cinematic-static .cinema-stage{position:relative;min-height:700px}.cinematic-static .book-cover{transform:rotateY(-178deg);z-index:0}.cinematic-static .book-left-block{opacity:1}.cinematic-static .book-leaf{transform:rotateY(-176deg)}.cinematic-static .book-leaf-0{z-index:1}.cinematic-static .book-leaf-1{z-index:2}.cinematic-static .book-leaf-2{z-index:3}.cinematic-static .cinema-opening-copy{top:18%}.cinematic-static .cinema-title-reveal{display:none}.cinematic-static .cinema-prologue:before{content:"ParaMyth";display:block;font-size:18px;font-style:italic;color:#d6c18b;margin-bottom:12px}.cinematic-static+.cinematic-atlas{margin-top:0}
+@media(max-width:760px){.cinematic-landing .landing-header{height:82px;padding:0 18px;gap:12px}.cinematic-landing .landing-header .brand-logo{width:105px}.cinematic-landing .landing-header nav{gap:14px}.cinematic-landing .landing-header nav>a{font-size:10px}.cinematic-landing .landing-header nav>a[href='#/projects']{display:none}.cinematic-landing .landing-header .primary{font-size:10px;padding:10px 13px}.cinematic-landing .brand-tagline{display:none}.cinema-stage{min-height:460px}.cinema-opening-copy{top:20%}.cinema-eyebrow{font-size:7px;letter-spacing:2px}.cinema-prologue{font-size:34px}.storybook-exit{inset:37% 0 16%}.storybook-perspective{width:min(84vw,54svh);aspect-ratio:1.45}.cinema-world-light{filter:blur(50px);inset:35% 5% 15%}.cinema-controls{bottom:18px;right:18px;gap:12px}.cinema-chapter{left:18px;bottom:35px;font-size:7px;letter-spacing:1px}.cinema-scroll-cue{bottom:5%;font-size:9px}.cinema-title-kicker{font-size:7px;letter-spacing:2px}.cinematic-landing .cinematic-atlas{width:calc(100% - 32px);padding-top:35px}.cinematic-landing .landing-footer{width:calc(100% - 36px)}.cinematic-intro{height:320svh}.cinematic-static{height:100svh;min-height:650px}.cinematic-static .cinema-stage{min-height:650px}}
+@media(max-height:600px) and (min-width:761px){.cinema-opening-copy{top:22%;left:4%;right:auto;width:25%;text-align:left}.cinema-prologue{font-size:34px}.cinema-eyebrow{margin:0 0 16px;font-size:7px}.storybook-exit{inset:20% 2% 15% 20%}.storybook-perspective{width:min(65vw,590px)}.cinema-scroll-cue{bottom:5%}.cinema-stage{min-height:440px}}
+@media(prefers-reduced-motion:reduce){.cinema-stage *{animation:none!important;scroll-behavior:auto!important}.book-illustration .art-image{will-change:auto}}
+@supports not (transform-style:preserve-3d){.book-cover,.book-leaf{display:none}.storybook-assembly{transform:none}.book-left-block{opacity:1}}

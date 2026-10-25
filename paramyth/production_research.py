@@ -20,9 +20,21 @@ def safe_url(value):
         return ''
 
 
+def search_key():
+    """Allow the local Windows server to read a user-level key after hot reload."""
+    value=os.getenv('SERPAPI_API_KEY','').strip()
+    if value or os.name!='nt':return value
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,'Environment') as settings:
+            value,_=winreg.QueryValueEx(settings,'SERPAPI_API_KEY')
+        return value.strip() if isinstance(value,str) else ''
+    except OSError:return ''
+
+
 class Search:
     def __init__(self, folder, keys=None, daily_limit=10, plan_limit=2):
-        configured = keys if keys is not None else [os.getenv('SERPAPI_API_KEY', ''), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')]
+        configured = keys if keys is not None else [search_key(), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')]
         self.keys = list(dict.fromkeys(k.strip() for k in configured if isinstance(k, str) and k.strip()))
         self.daily_limit = min(30, max(0, int(daily_limit)))
         self.plan_limit = min(3, max(0, int(plan_limit)))
@@ -111,3 +123,4 @@ class Search:
                 c.execute('INSERT OR REPLACE INTO cache VALUES (?,?,?)', (ident, now + (21600 if purpose == 'legal' else 86400), json.dumps(result)))
             return result
         raise ProviderError('Search keys unavailable or exhausted; cooldown is active. Use cached research or try later.')
+

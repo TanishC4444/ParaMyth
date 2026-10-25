@@ -20,6 +20,7 @@ import type {
   View,
 } from "./types"
 const VIEWS: View[] = [
+  "workflow",
   "landing",
   "overview",
   "projects",
@@ -35,7 +36,8 @@ const VIEWS: View[] = [
   "connections",
 ]
 const routeView = (): View => {
-  const v = location.hash.replace(/^#\/?/, "") as View
+  const v = location.hash.replace(/^#\/?/, "").split("/")[0] as View
+  if (["creative", "images", "music", "production", "project"].includes(v)) return "workflow"
   return VIEWS.includes(v) ? v : "landing"
 }
 export const blankProject = (): Project => ({
@@ -156,6 +158,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setRaw(s)
   }
   const go = (v: View) => {
+    if (["creative", "images", "music", "production", "project"].includes(v)) {
+      setDraft(selection.current, "workflow.section", ["images", "music", "production"].includes(v) ? "media" : "writing")
+      if (["images", "music", "production"].includes(v)) setDraft(selection.current, "workflow.tool", v)
+      else setDraft(selection.current, "workflow.writing", v === "project" ? "manuscript" : "creative")
+      v = "workflow"
+    }
     setView(v)
     const h = v === "landing" ? "#/" : `#/${v}`
     if (location.hash !== h) location.hash = h
@@ -206,6 +214,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
             if (!Object.keys(fields).length) continue
             const snapshot = { ...fields }
             await api(`/api/ui/projects/${id}/workspace`, snapshot, "PATCH")
+            if (Object.keys(snapshot).some(key => key.startsWith("writing.") || key.startsWith("creative."))) window.dispatchEvent(new CustomEvent("studio-writing-progress", { detail: { projectId: id } }))
             for (const [key, value] of Object.entries(snapshot)) {
               if (dirtyDrafts.current[id]?.[key] === value) delete dirtyDrafts.current[id][key]
             }
@@ -320,6 +329,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       void flush().catch(() => {})
     }, 700)
   }
+  const startingAtlas = useRef(false)
   const selectProject = (id: string, t?: ProjectTab) => {
     void (async () => {
       try {
@@ -328,7 +338,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         selection.current = id
         setSelected(id)
         if (t) setDraft(id, "project.tab", t)
-        go("project")
+          setDraft(id, "workflow.section", "writing")
+          setDraft(id, "workflow.writing", t === "brief" ? "brief" : t ? "manuscript" : "creative")
+        go("workflow")
         await refresh()
       } catch (e) {
         notify(String(e))
@@ -385,8 +397,26 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     toast,
     seed,
     ideate: (s) => {
-      setSeed(s)
-      go("creative")
+      if (startingAtlas.current) return
+      startingAtlas.current = true
+      void (async () => {
+        try {
+          const next = blankProject()
+          next.title = `Inspired by ${s.source.title}`.slice(0, 150)
+          next.brief.premise = s.input
+          const saved = await createProject(next)
+          setDraft(saved.id, "creative.input", s.input)
+          setDraft(saved.id, "creative.source", s.source)
+          setDraft(saved.id, "creative.context", false)
+          setDraft(saved.id, "writing.chapter", 1)
+          setDraft(saved.id, "workflow.writing", "creative")
+          setDraft(saved.id, "workflow.section", "writing")
+          await flush()
+          go("workflow")
+          notify("New project created from your atlas inspiration.")
+        } catch (e) { notify(String(e)) }
+        finally { startingAtlas.current = false }
+      })()
     },
     clearSeed: () => setSeed(null),
     refresh,

@@ -3,10 +3,12 @@ import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
+import { useMaterials } from "../materials"
 import { Artwork } from "../art"
 export default function Images() {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
+  const { source, sourceId, signature, streaming } = useMaterials()
   const [models, setModels] = useState<any[]>([]),
     [model, setModel] = useDraftState("images.model", ""),
     [images, setImages] = useState<any[]>([]),
@@ -25,7 +27,9 @@ export default function Images() {
   const [pendingJob, setPendingJob] = useSavedJob("images.pendingJob", ["image", "image-prompt"], {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async (j) => {
-      if (j.kind === "image") { await load(); setStatus("Your image is ready.") }
+      if (j.kind === "image") {
+        if (provenance?.source_id && j.result?.id) await api(path(`/api/ui/images/${j.result.id}/source`), { source: provenance.source_id });
+        await load(); setStatus("Your image is ready.") }
       else { setPrompt(j.result.prompt); setProvenance(j.result); setStatus("Your prompt is ready to review.") }
       await refresh()
     },
@@ -48,15 +52,15 @@ export default function Images() {
         }
       })
       .catch((e) => live && setError(e.message))
-    return () => {
-      live = false
-    }
+    const changed = () => { void api(path("/api/images")).then((v) => { if (live) setImages(v.images); }).catch(() => {}); }
+    window.addEventListener("studio-refresh", changed)
+    return () => { live = false; window.removeEventListener("studio-refresh", changed) }
   }, [project.id])
   const useImage=async(img:any,destination:'prompt'|'production'|'music')=>{
     try{
       const record=await api(path('/api/images/'+img.id));
       if(destination==='prompt'){setPrompt(record.request.prompt);setProvenance({prompt_provider:record.provider,sources:[],assumptions:record.fallback?[record.fallback.reason]:[]});return}
-      if(destination==='production')setDraft(project.id,'production.imageId',img.id);
+      if(destination==='production'){ setDraft(project.id,'production.imageId',img.id); setDraft(project.id,'production.imageIds',[img.id]); }
       setMediaDirection(img.title+': '+record.request.prompt.slice(0,650));go(destination);
     }catch(e){setError(String(e))}
   };
@@ -77,7 +81,7 @@ export default function Images() {
       const body = generate
         ? {
             model,
-            prompt,
+            prompt: prompt.slice(0, 3700) + "\nNatural finish: Distinct faces, subtle asymmetry, unposed gestures, plausible anatomy and weight, motivated light, worn materials and restrained highlights. Avoid waxy skin, identical faces, excessive glow and oversharpening. Preserve the requested medium and story details.",
             aspect_ratio: shape,
             resolution,
             n: 1,
@@ -92,16 +96,17 @@ export default function Images() {
             style,
             use_story: true,
             natural_finish: true,
+            source,
             enhance,
           }
       const queued = await api(
-        path(generate ? "/api/images/generate" : "/api/images/prepare"),
+        path(generate ? "/api/images/generate" : "/api/ui/images/prepare"),
         body,
       )
       setStatus(
         "Your request is queued. You can keep working in another part of your story.",
       )
-      setPendingJob({ id: queued.job_id, kind: generate ? "image" : "image-prompt" })
+      setPendingJob({ id: queued.job_id, kind: generate ? "image" : "image-prompt", local: queued.local })
       await refresh()
     } catch (e) {
       setError(String(e))
@@ -116,6 +121,8 @@ export default function Images() {
         title="Images"
         text="Turn a character, place or moment from your story into a visual. Review the prompt before rendering."
       />
+      {streaming && <p className="hint" role="status">Following your live writing. Prepare a prompt to use its latest details.</p>}
+      {provenance?.source_signature && provenance.source_signature !== signature && <p className="source-changed">The writing has changed since this prompt. <button disabled={busy} onClick={()=>void submit(false)}>Update prompt from writing</button></p>}
       {error && (
         <p role="alert" className="live-status error">
           {error}
@@ -179,10 +186,11 @@ export default function Images() {
               className="tall"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              maxLength={4000}
+              maxLength={3700}
               placeholder="Prepare a prompt above, or write your own."
             />
           </label>
+          {prompt && provenance?.source_id !== sourceId && <p className="hint">Your saved prompt stays as written. Choose Prepare my prompt to use the current writing.</p>}
           <details>
             <summary>Image settings</summary>
             <label className="field">
