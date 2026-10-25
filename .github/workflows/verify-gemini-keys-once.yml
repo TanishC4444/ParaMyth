@@ -1,0 +1,21 @@
+name: Verify all ten Gemini keys
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify every credential and the three model routes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          GEMINI_DISTINCT_PROJECTS: 'false'
+          PYTHONUNBUFFERED: '1'
+        run: python -m scripts.verify_gemini_keys_once
