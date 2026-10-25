@@ -19,38 +19,28 @@ class CreativeGuidanceTests(unittest.TestCase):
             persisted = json.loads((Path(directory) / 'creative' / (record['id'] + '.json')).read_text(encoding='utf-8'))
         return record, persisted, provider
 
-    def test_short_brief_accepts_unspecified_structure_and_preserves_provider_choices(self):
-        result = {'title': 'The letters', 'text': 'A keeper receives letters from tomorrow.',
-                  'completed_brief': {'structure': 'A reverse chronology', 'pov': 'First person'},
-                  'assumptions': ['The keeper narrates in first person.'],
-                  'suggestions': [{'suggestion': 'Give the letters a personal cost.', 'reason': 'Clarifies the stakes.'}]}
-        record, saved, provider = self.run_idea({'operation': 'ideas', 'brief': 'Letters from tomorrow'}, result)
-        self.assertEqual(provider.call_count, 1)
-        request = provider.call_args.args[1]
-        user = json.loads(request['messages'][1]['content'])
-        self.assertEqual(user['author_brief'], 'Letters from tomorrow')
-        self.assertEqual(user['author_structure'], '')
-        self.assertEqual(user['guidance_mode'], 'suggest')
-        self.assertIn('Do not require a conventional three-act structure', request['messages'][0]['content'])
-        self.assertIn('Suggestions are not', request['messages'][0]['content'])
-        self.assertEqual(saved['result'], result)
-        self.assertEqual(record['steps'][0]['usage'], {'total_tokens': 12})
+    def test_short_brief_returns_opt_in_prompt_details_and_preserves_original(self):
+        from paramyth.pipeline.idea_development import analyze, targets
+        text='Letters from tomorrow'
+        result={'suggestions':[{'id':row['id'],'detail':'Use a cautious keeper who receives letters from tomorrow.','reason':'Give the premise a concrete focus.'} for row in targets(analyze(text))]}
+        record, saved, provider = self.run_idea({'operation':'ideas','brief':text}, result)
+        self.assertEqual(provider.call_count,1)
+        request=provider.call_args.args[1]
+        user=json.loads(request['messages'][1]['content'])
+        self.assertEqual(user['author_prompt'],text)
+        self.assertEqual(user['author_structure'],'')
+        self.assertEqual(saved['result']['text'],text)
+        self.assertEqual(len(saved['result']['suggestions']),len(result['suggestions']))
+        self.assertTrue(saved['result']['prompt_only'])
+        self.assertEqual(record['steps'][0]['usage'],{'total_tokens':12})
 
-    def test_use_idea_keeps_author_constraints_and_structure_in_provider_request(self):
-        result = {'title': 'Two voices', 'text': 'The original premise developed.',
-                  'completed_brief': {'structure': 'Two interleaved timelines'},
-                  'assumptions': ['The missing setting is an island.'], 'suggestions': []}
-        record, _, provider = self.run_idea({'operation': 'ideas', 'brief': 'No romance. Two narrators. An unresolved ending.',
-                                          'guidance_mode': 'use_idea', 'structure': 'Two interleaved timelines'}, result)
-        request = provider.call_args.args[1]
-        user = json.loads(request['messages'][1]['content'])
-        self.assertEqual(user['guidance_mode'], 'use_idea')
-        self.assertEqual(user['author_structure'], 'Two interleaved timelines')
-        self.assertEqual(user['author_brief'], 'No romance. Two narrators. An unresolved ending.')
-        self.assertIn('Do not replace', request['messages'][0]['content'])
-        self.assertIn('Use an empty suggestions array for use_idea', request['messages'][0]['content'])
-        self.assertEqual(record['request']['structure'], 'Two interleaved timelines')
-        self.assertEqual(record['result']['suggestions'], [])
+    def test_use_idea_keeps_author_constraints_without_a_model_rewrite(self):
+        text='No romance. Two narrators. An unresolved ending.'
+        record, _, provider = self.run_idea({'operation':'ideas','brief':text,'guidance_mode':'use_idea','structure':'Two interleaved timelines'}, {})
+        provider.assert_not_called()
+        self.assertEqual(record['request']['structure'],'Two interleaved timelines')
+        self.assertEqual(record['result']['text'],text)
+        self.assertEqual(record['result']['suggestions'],[])
 
     def test_ideas_can_start_without_a_complete_brief(self):
         cfg = creative_studio.validate({'operation': 'ideas'})

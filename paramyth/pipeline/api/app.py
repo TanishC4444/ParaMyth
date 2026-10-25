@@ -334,6 +334,7 @@ async def missing_local(_, exc):
 from fastapi.staticfiles import StaticFiles
 from .config import ROOT
 app.mount('/studio',StaticFiles(directory=ROOT/'web',html=True),name='accounts-ui')
+frontend_root=ROOT/('frontend' if (ROOT/'frontend'/'dist'/'index.html').is_file() else 'frontend-pipeline')/'dist'
 for asset in ('assets','art','brand','atlas'):
-    directory=ROOT/'frontend-pipeline'/'dist'/asset
+    directory=frontend_root/asset
     app.mount('/'+asset,StaticFiles(directory=directory,check_dir=False),name='frontend-pipeline-'+asset)

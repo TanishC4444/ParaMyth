@@ -19,6 +19,12 @@ def loopback(name):
 class StudioBridge(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path=request.url.path
+        # Production plans are created by the current workspace. Sending their
+        # edits/exports to an older connected studio drops department tasks and
+        # rejects newer schedule/research settings. Local routes retain their
+        # own request-token and project guards.
+        if path in ('/api/config','/api/recalculate','/api/calendar-sync') or path.startswith(('/api/plan/','/export/','/google/')):
+            return await call_next(request)
         account=path.startswith(('/api/v1/accounts','/api/v1/studios','/api/v1/invitations'))
         core=path.startswith(('/api/v1/auth','/api/v1/runs','/api/v1/requests'))
         upstream=loopback('PARAMYTH_ACCOUNT_ORIGIN') if account else loopback('PARAMYTH_SERVICE_ORIGIN')

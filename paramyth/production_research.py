@@ -1,4 +1,4 @@
-"""Cached SerpAPI web research for production plans, with a small allowance and key failover."""
+"""Small, cached SerpAPI search allowance with ordered credential failover."""
 from __future__ import annotations
 import hashlib
 from contextlib import contextmanager
@@ -8,16 +8,12 @@ from pathlib import Path
 import sqlite3
 import time
 from urllib.parse import urlencode, urlsplit
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
-from .providers import ProviderError, request_json
 
-
-def safe_url(value):
-    try:
-        u = urlsplit(str(value))
-        return str(value) if u.scheme in ('https', 'http') and u.hostname and not u.username else ''
-    except ValueError:
-        return ''
+class ProviderError(ValueError):
+    pass
 
 
 def search_key():
@@ -32,12 +28,33 @@ def search_key():
     except OSError:return ''
 
 
+def safe_url(value):
+    try:
+        u = urlsplit(str(value))
+        return str(value) if u.scheme in ('https', 'http') and u.hostname and not u.username else ''
+    except ValueError:
+        return ''
+
+
+def request_json(url, payload=None, headers=None, timeout=60):
+    """Never surface a request URL (SerpAPI puts credentials in its query)."""
+    data = json.dumps(payload).encode() if payload is not None else None
+    request = Request(url, data=data, headers=headers or {})
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            return json.load(response)
+    except HTTPError as exc:
+        raise ProviderError(f'Provider HTTP {exc.code}') from None
+    except (URLError, TimeoutError, OSError, ValueError):
+        raise ProviderError('Provider request failed or returned invalid JSON') from None
+
+
 class Search:
     def __init__(self, folder, keys=None, daily_limit=10, plan_limit=2):
-        configured = keys if keys is not None else [search_key(), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')]
-        self.keys = list(dict.fromkeys(k.strip() for k in configured if isinstance(k, str) and k.strip()))
+        self.keys = list(dict.fromkeys(keys if keys is not None else filter(None, [search_key(), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')])))
+        self.keys = [k.strip() for k in self.keys if k.strip()]
         self.daily_limit = min(30, max(0, int(daily_limit)))
-        self.plan_limit = min(3, max(0, int(plan_limit)))
+        self.plan_limit = min(12, max(0, int(plan_limit)))
         self.used = 0
         folder = Path(folder); folder.mkdir(parents=True, exist_ok=True)
         self.db = folder / 'search-cache.sqlite'
@@ -67,18 +84,13 @@ class Search:
             c.execute('INSERT INTO attempts VALUES (?,?)', (now, fingerprint))
         return True
 
-    def __call__(self, query, purpose='location'):
-        return self.search(query, purpose)
-
-    def search(self, query, purpose='location'):
-        if not isinstance(query, str) or not query.strip():
-            raise ValueError('Search query must be nonempty text')
-        if not isinstance(purpose, str) or not purpose.strip() or len(purpose) > 60:
-            raise ValueError('Search purpose must be text between 1 and 60 characters')
-        query = ' '.join(query.split())[:240]
-        purpose = purpose.strip().lower()
-        # Purpose controls freshness: a day-old location cache cannot satisfy legal research.
-        ident = hashlib.sha256(json.dumps([query.casefold(), purpose]).encode()).hexdigest()
+    def search(self, query, purpose='location', *, engine='google', parameters=None):
+        if engine not in ('google','google_maps','google_hotels','google_flights'):raise ValueError('Unsupported research service')
+        parameters=parameters or {}
+        allowed={'check_in_date','check_out_date','adults','currency','departure_id','arrival_id','outbound_date','return_date','type','ll','sort_by'}
+        if not isinstance(parameters,dict) or not set(parameters)<=allowed:raise ValueError('Unsupported research parameter')
+        query = ' '.join(str(query).split())[:240]
+        ident = hashlib.sha256(json.dumps([engine,query.casefold(),parameters],sort_keys=True).encode()).hexdigest()
         now = time.time()
         with self.connect() as c:
             row = c.execute('SELECT body FROM cache WHERE id=? AND expires>?', (ident, now)).fetchone()
@@ -88,7 +100,9 @@ class Search:
         self.used += 1
         for key in self.keys[:3]:
             if not self.reserve(key): continue
-            params = {'engine':'google', 'q':query, 'api_key':key, 'hl':'en', 'num':5}
+            params = {'engine':engine, 'api_key':key, 'hl':'en',**parameters}
+            if engine!='google_flights':params['q']=query
+            if engine=='google':params['num']=5
             try:
                 body = request_json('https://serpapi.com/search.json?' + urlencode(params), timeout=35)
             except ProviderError as exc:
@@ -98,8 +112,6 @@ class Search:
                         c.execute('INSERT OR REPLACE INTO cooldown VALUES (?,?)', (fingerprint, now + 3600))
                     continue
                 raise
-            if not isinstance(body, dict):
-                raise ProviderError('Search provider returned invalid results')
             if body.get('error'):
                 error = str(body['error']).lower()
                 if any(x in error for x in ('run out', 'limit', 'invalid api key', 'no searches')):
@@ -110,17 +122,38 @@ class Search:
                 # Empty results are a valid negative result: do not burn backup keys.
                 if 'no results' not in error and 'hasn\'t returned any results' not in error:
                     raise ProviderError('Search provider could not complete this query')
-            results = []
-            organic = body.get('organic_results', [])
-            if not isinstance(organic, list) or any(not isinstance(item, dict) for item in organic):
-                raise ProviderError('Search provider returned invalid results')
-            for item in organic[:5]:
-                url = safe_url(item.get('link', ''))
-                if url:
-                    results.append({'title':str(item.get('title',''))[:300], 'url':url, 'snippet':str(item.get('snippet',''))[:1200]})
-            result = {'query':query, 'purpose':purpose, 'results':results, 'retrieved_at':now, 'cached':False, 'evidence_level':'search_snippet_only'}
+            results=normalize_results(engine,body,parameters,query)
+            result = {'engine':engine,'parameters':parameters,'query':query, 'purpose':purpose, 'results':results, 'retrieved_at':now, 'cached':False, 'evidence_level':'structured_search_result' if engine!='google' else 'search_snippet_only'}
             with self.connect() as c:
                 c.execute('INSERT OR REPLACE INTO cache VALUES (?,?,?)', (ident, now + (21600 if purpose == 'legal' else 86400), json.dumps(result)))
             return result
         raise ProviderError('Search keys unavailable or exhausted; cooldown is active. Use cached research or try later.')
 
+
+def normalize_results(engine,body,parameters,query):
+    """Persist public leads and prices only, never raw credential-bearing URLs."""
+    results=[]
+    if engine=='google':
+        for item in body.get('organic_results',[])[:5]:
+            url=safe_url(item.get('link',''))
+            if url:results.append({'title':str(item.get('title',''))[:300],'url':url,'snippet':str(item.get('snippet',''))[:1200]})
+    elif engine=='google_maps':
+        places=body.get('local_results',[])
+        if isinstance(places,dict):places=places.get('places',[])
+        for item in places[:5]:
+            name=str(item.get('title',''))[:300];address=str(item.get('address',''))[:500]
+            url=safe_url(item.get('website','')) or 'https://www.google.com/maps/search/?'+urlencode({'api':1,'query':name+' '+address})
+            results.append({'title':name,'url':url,'snippet':address,'address':address,'rating':item.get('rating'),'price_level':item.get('price'),'coordinates':item.get('gps_coordinates'),'types':item.get('types',[])[:8]})
+    elif engine=='google_hotels':
+        for item in body.get('properties',[])[:5]:
+            rate=item.get('rate_per_night',{});total=item.get('total_rate',{})
+            name=str(item.get('name',''))[:300]
+            url=safe_url(item.get('link','')) or 'https://www.google.com/travel/hotels?'+urlencode({'q':name+' '+query})
+            amount=rate.get('extracted_lowest');amount=amount if isinstance(amount,(int,float)) and amount>=0 else None
+            results.append({'title':name,'url':url,'snippet':str(item.get('description',''))[:900],'coordinates':item.get('gps_coordinates'),'rating':item.get('overall_rating'),'amenities':item.get('amenities',[])[:12],'rate':amount,'currency':parameters.get('currency'),'rate_unit':'room-night','total_rate':total.get('extracted_lowest'),'dates':{k:parameters[k] for k in ('check_in_date','check_out_date','adults')},'price_status':'live search lead; room capacity, taxes, fees and availability need confirmation'})
+    elif engine=='google_flights':
+        for item in (body.get('best_flights',[])+body.get('other_flights',[]))[:5]:
+            legs=[{'airline':f.get('airline'),'flight_number':f.get('flight_number'),'departure':f.get('departure_airport'),'arrival':f.get('arrival_airport')} for f in item.get('flights',[])]
+            amount=item.get('price');amount=amount if isinstance(amount,(int,float)) and amount>=0 else None
+            results.append({'title':parameters['departure_id']+' to '+parameters['arrival_id'],'url':'https://www.google.com/travel/flights?'+urlencode({'q':query}),'snippet':'Round-trip economy fare lead; baggage, transfers and availability need confirmation.','rate':amount,'currency':parameters['currency'],'rate_unit':'person-return','itinerary':legs,'duration_minutes':item.get('total_duration'),'dates':{k:parameters[k] for k in ('outbound_date','return_date')}})
+    return results

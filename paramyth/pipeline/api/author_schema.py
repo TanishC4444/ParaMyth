@@ -16,7 +16,7 @@ def validate_project(p):
     require(len(json.dumps(p))<=5000000,'Project exceeds 5 MB')
     text(p,['title']);require(0<len(p['title'].strip())<=150,'Title must contain 1–150 characters')
     b=p.get('brief');text(b,['premise','medium','genre','tone','pov'])
-    require(b['medium'] in ('Novel','Short story','Stage play','Screenplay','Audio drama','Comic script'),'Unsupported medium')
+    require(b['medium'] in ('Novel','Short story','Stage play','Screenplay','Audio drama','Comic script','Documentary','Television script'),'Unsupported medium')
     for k in ('themes','worldRules','mustAvoid'):require(all(isinstance(x,str) for x in rows(b,k)),'Invalid '+k)
     for k,maximum in [('chapters',100),('scenesPerChapter',100),('wordMin',20000),('wordMax',20000)]:
         require(type(b.get(k)) is int and 1<=b[k]<=maximum,'Invalid '+k)

@@ -22,12 +22,16 @@ def ics_escape(value):
     return str(value).replace('\\','\\\\').replace('\r','').replace('\n','\\n').replace(';','\\;').replace(',','\\,')
 
 
+def calendar_events(plan):
+    return plan['schedule']['events']+plan.get('operations',{}).get('tasks',[])
+
+
 def calendar_ics(plan):
     lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ParaMyth//Production//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH']
-    for e in plan['schedule']['events']:
-        lines += ['BEGIN:VEVENT','UID:'+event_id(plan,e)+'@paramyth.pipeline.local','DTSTAMP:'+utc(plan['created_at']),
+    for e in calendar_events(plan):
+        lines += ['BEGIN:VEVENT','UID:'+event_id(plan,e)+'@paramyth.local','DTSTAMP:'+utc(plan['created_at']),
                   'DTSTART:'+utc(e['start']),'DTEND:'+utc(e['end']),'SUMMARY:'+ics_escape(e['summary']),
-                  'LOCATION:'+ics_escape(e['location']),'DESCRIPTION:'+ics_escape('Tentative production shoot. Scene '+e['scene_id']+'. Cast: '+', '.join(e['cast'])+'. Verify permits, venue and availability.'),'STATUS:TENTATIVE','END:VEVENT']
+                  'LOCATION:'+ics_escape(e['location']),'DESCRIPTION:'+ics_escape(e.get('deliverable') or 'Tentative production shoot. Scene '+e['scene_id']+'. Cast: '+', '.join(e['cast'])+'. Verify permits, venue and availability.'),'STATUS:TENTATIVE','END:VEVENT']
     lines+=['END:VCALENDAR']
     folded=[]
     for line in lines:
@@ -56,14 +60,23 @@ def csv_bytes(rows, fields):
 def export(plan, kind):
     if kind=='calendar.ics': return calendar_ics(plan),'text/calendar; charset=utf-8'
     if kind=='budget.csv': return csv_bytes(plan['budget']['items'],['category','description','quantity','unit','low_rate','high_rate','low_total','high_total','basis','status']),'text/csv; charset=utf-8'
-    if kind=='schedule.csv': return csv_bytes(plan['schedule']['events'],['scene_id','summary','start','end','location','cast','setup_move_minutes','meal_before','status']),'text/csv; charset=utf-8'
+    if kind=='schedule.csv': return csv_bytes(calendar_events(plan),['scene_id','summary','start','end','location','cast','department','deliverable','setup_move_minutes','meal_before','status']),'text/csv; charset=utf-8'
     if kind=='tasks.csv':
-        return csv_bytes(plan['recommendations'].get('legal_logistics',[]),['task','owner','source_ids','status','verification']),'text/csv; charset=utf-8'
+        rows=plan.get('operations',{}).get('tasks',[])+plan['recommendations'].get('legal_logistics',[])
+        return csv_bytes(rows,['task','department','owner','deliverable','start','end','dependencies','scene_ids','source_ids','status','verification']),'text/csv; charset=utf-8'
     if kind=='plan.json': return json.dumps(plan,ensure_ascii=False,indent=2).encode(),'application/json'
     if kind=='call-sheets.txt':
         lines=[plan['title'],'DRAFT CALL SHEETS — confirm crew, contacts, venue, safety plan and permissions before issue.']
         for e in plan['schedule']['events']:
             lines+=['',e['start']+' — '+e['end'],e['scene_id']+': '+e['summary'],'Location: '+e['location'],'Cast: '+', '.join(e['cast']),'Setup/move: '+str(e['setup_move_minutes'])+' minutes before scene','Meal before: '+str(e['meal_before']),'Emergency contact / nearest hospital / parking / weather / crew call: TO CONFIRM']
+            sets=[s for s in plan.get('operations',{}).get('sets',[]) if e['scene_id'] in s.get('scene_ids',[])]
+            for s in sets:lines+=['Set: '+s['name'],'Build/strike: '+s['build_and_strike'],'Props/continuity: '+s['props_continuity'],'Power/access/safety: '+s['power_access_safety']]
+            for kit in plan.get('operations',{}).get('equipment',[]):
+                if e['scene_id'] in kit.get('scene_ids',[]):lines+=['Equipment: '+str(kit['quantity'])+' × '+kit['item']+' — '+kit['purpose']]
+        local=plan.get('local_logistics',{})
+        for key in ('hotels','meals','transport','medical'):
+            lines+=['',key.upper()+' — RESEARCH LEADS, NOT CONFIRMED ARRANGEMENTS']
+            for place in local.get(key,[]):lines+=[place['title']+' — '+place.get('address',place.get('snippet',''))+' — '+place['url']]
         return '\n'.join(lines).encode(),'text/plain; charset=utf-8'
     raise ValueError('Unknown export')
 
@@ -102,7 +115,7 @@ class GoogleCalendar:
 
     def sync(self, plan, calendar='primary'):
         # Preview is supplied by the application; this is only called by its explicit sync action.
-        events=plan['schedule']['events']
+        events=calendar_events(plan)
         if not events:return {'created':[],'existing':[],'conflicts':[]}
         if plan['schedule']['unscheduled']:raise ValueError('Resolve unscheduled scenes before syncing')
         path='calendars/'+quote(calendar,safe='')+'/events'

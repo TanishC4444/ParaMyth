@@ -41,11 +41,37 @@ class MediaWorkspaceTests(unittest.TestCase):
         model={'id':'music-model','duration':{'min':30,'max':120}}
         with patch.object(media,'Muse') as muse:
             muse.return_value.ask.return_value={'mode':'score','seconds':500,'prompt':'Soft piano','model':'music-model'}
-            settings=media.music_settings(self.root,{'prompt':'Quiet and slow'},[model])
+            settings=media.music_settings(self.root,{},[model])
         self.assertEqual(settings['seconds'],120)
         self.assertIn('Ksenia',settings['cue']['prompt'])
         self.assertNotIn('bronze',settings['cue']['prompt'])
-        self.assertIn('Quiet and slow',json.dumps(muse.return_value.ask.call_args.args))
+        self.assertIn('Ksenia',json.dumps(muse.return_value.ask.call_args.args))
+
+    def test_music_preserves_full_author_prompt_and_explicit_settings(self):
+        prompt='Soft solo piano. '+('Keep a slow even pulse. '*30)+'No drums, strings or brass.'
+        with patch.object(media,'Muse') as muse:
+            settings=media.music_settings(self.root,{'prompt':prompt,'automatic':True,'mode':'score','seconds':45,'use_story':False},[{'id':'model','duration':{'min':30,'max':120}}])
+        muse.assert_not_called()
+        self.assertEqual(settings['prompt'],prompt)
+        self.assertEqual(settings['seconds'],45)
+        self.assertEqual(settings['mode'],'score')
+        self.assertIn(prompt,settings['cue']['prompt'])
+        self.assertNotIn('Ksenia',settings['cue']['prompt'])
+
+    def test_legacy_transport_preserves_instrumental_intent_and_full_prompt(self):
+        prompt='Solo piano. '+('Gentle sustained notes. '*30)+'No percussion or brass.'
+        def remote(path,data=None,project_id=None):
+            if data:
+                self.assertEqual(data['mode'],'song')
+                self.assertIn('[Instrumental]',data['lyrics'])
+                snapshot=next((self.root/'.media-inputs').glob('*/story.txt')).read_text(encoding='utf-8')
+                self.assertIn(prompt,snapshot)
+                return {'job_id':'remote-job'}
+            return {'status':'complete','result':{'job':{'id':'music_result','status':'completed'},'cue':{}}}
+        with patch.dict(os.environ,{'VULTR_INFERENCE_API_KEY':''}),patch.object(media,'music_models',return_value=[{'id':'model'}]),patch.object(media,'service_json',side_effect=remote):
+            value=media.create_music(self.root,{'prompt':prompt,'mode':'score','seconds':30,'use_story':False},lambda _:None)
+        self.assertEqual(value['cue']['mode'],'score')
+        self.assertEqual(value['settings']['prompt'],prompt)
 
     def test_ambience_is_real_audio_and_keeps_selected_source(self):
         result=media.create_music(self.root,{'mode':'ambience','automatic':False,'seconds':5},lambda _:None)

@@ -42,21 +42,24 @@ Return this exact shape (empty arrays where not applicable):
 "budget_items":[{"category":"crew|equipment|locations|transport|art|insurance|permits|post|other",
 "description":"...","quantity":1,"unit":"day|item|person|hour",
 "low_rate":0,"high_rate":0,"basis":"unverified model estimate or unknown"}],
-"search_queries":[{"purpose":"location|legal|logistics","query":"..."}],
+"search_queries":[{"purpose":"location|legal|logistics|budget","query":"..."}],
 "assumptions":["..."],"missing_info":["..."]}.
 Scene minutes are estimated shooting time, NOT screen runtime. Use 15–600 minutes.
 At most 12 budget rows. Rates must use the requested currency and are estimates, not quotes.
 Use 0 and state unknown when a responsible estimate cannot be made.
 At most 3 concise targeted queries, only when a real filming region was provided.
 For locations seek film commissions, location libraries or appropriate actual venues.
+Reserve one query for regional crew/equipment/location hire rates in the requested currency.
 For legal research seek government/film commission requirements in the specified jurisdiction.
 Never put private cast data, entire story text, secrets or identifying image data in queries.
 Dependencies must refer only to other scene IDs and must not form cycles.'''
 RESEARCH_PROMPT = '''Create practical recommendations from this scene breakdown and search evidence.
 Make this useful for someone with no production experience: identify the first five
-actions in priority order, who should do each, and the concrete deliverable. Tie
+actions in priority order, who should do each, and the concrete deliverable.
+Keep each next_steps, crew_equipment and risks entry a plain string, including the
+owner, action and deliverable in that string. Do not put objects in these lists. Tie
 location matches, crew, equipment and logistics to specific scenes, props and shots.
-Give lower-cost alternatives when appropriate. Avoid generic advice without an action.
+Give lower-cost alternatives when appropriate. If the high estimate exceeds the cap, name the exact gap, identify which scope/crew/equipment/location choices can change, and describe their tradeoffs. Do not make the plan appear affordable by lowering rates without evidence. If unknown travel or set costs prevent a feasibility conclusion, say so. Avoid generic advice without an action.
 Return {"summary":"...","locations":[{"name":"...","match":"...","source_ids":["R1"],"unknowns":["..."]}],
 "legal_logistics":[{"task":"...","owner":"producer|location manager|legal counsel|safety coordinator",
 "source_ids":[],"status":"needs verification"}],"crew_equipment":["..."],
@@ -80,9 +83,9 @@ def number(value, low, high, label):
     return result
 
 
-def strings(values, cap=50):
+def strings(values, cap=50, label="text list"):
     if not isinstance(values, list) or len(values) > cap or any(not isinstance(x,str) or len(x)>3000 for x in values):
-        raise ValueError('Expected a bounded list of text values')
+        raise ValueError(label+': expected an array of at most '+str(cap)+' strings, each under 3000 characters; do not use objects or a single string')
     return values
 
 
@@ -91,6 +94,9 @@ def normalize_config(raw):
     cfg = {}
     cfg['region'] = str(raw.get('region','')).strip()[:300]
     cfg['auto_region'] = bool(raw.get('auto_region',False))
+    cfg['auto_settings'] = bool(raw.get('auto_settings',False))
+    cfg['locked_settings'] = raw.get('locked_settings',[])
+    if not isinstance(cfg['locked_settings'],list) or any(x not in ('region','start_date','timezone','currency','day_hours','setup_minutes','move_minutes','contingency','budget_cap','search_limit','skip_weekends','crew_size') for x in cfg['locked_settings']):raise ValueError('Unknown locked production setting')
     cfg['brief'] = str(raw.get('brief',''))[:6000]
     cfg['currency'] = str(raw.get('currency','USD')).upper()
     if not re.fullmatch('[A-Z]{3}', cfg['currency']): raise ValueError('Use a three-letter currency code')
@@ -98,9 +104,15 @@ def normalize_config(raw):
     cfg['timezone'] = str(raw.get('timezone','America/Chicago'))
     try: ZoneInfo(cfg['timezone'])
     except ZoneInfoNotFoundError: raise ValueError('Unknown time zone; install the production extra for time-zone data') from None
-    for key, default, lo, hi in [('day_hours',10,4,16),('setup_minutes',30,0,180),('move_minutes',45,0,240),('contingency',15,0,50),('budget_cap',0,0,100000000),('search_limit',2,0,3)]:
+    for key, default, lo, hi in [('day_hours',10,4,16),('setup_minutes',30,0,180),('move_minutes',45,0,240),('contingency',15,0,50),('budget_cap',0,0,100000000),('search_limit',8,0,12),('crew_size',0,0,200)]:
         cfg[key] = float(number(raw.get(key,default),lo,hi,key))
     cfg['search_limit'] = int(cfg['search_limit'])
+    cfg['crew_size']=int(cfg['crew_size'])
+    for name in ('departure_airport','arrival_airport'):
+        cfg[name]=str(raw.get(name,'')).strip().upper()
+        if cfg[name] and not re.fullmatch('[A-Z]{3}',cfg[name]):raise ValueError('Use a three-letter airport code')
+    cfg['detailed']=bool(raw.get('detailed',False))
+    if cfg['auto_settings'] and 'start_date' not in cfg['locked_settings'] and date.fromisoformat(cfg['start_date'])<date.today()+timedelta(days=14):cfg['start_date']=(date.today()+timedelta(days=21)).isoformat()
     cfg['skip_weekends'] = bool(raw.get('skip_weekends',True))
     cfg['focus'] = raw.get('focus', list(FOCI))
     if not isinstance(cfg['focus'],list) or any(x not in FOCI for x in cfg['focus']): raise ValueError('Invalid planning focus')
@@ -122,13 +134,14 @@ def validate_breakdown(value):
     if not isinstance(scenes,list) or not 1 <= len(scenes) <= 16: raise ValueError('Breakdown needs 1–16 scenes')
     ids = set()
     for s in scenes:
+        if not isinstance(s,dict):raise ValueError('Each scene must be an object')
         for key in ('id','title','location','description'):
             if not isinstance(s.get(key),str) or not 0 < len(s[key]) <= 3000: raise ValueError('Invalid scene ' + key)
         if not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}',s['id']) or s['id'] in ids: raise ValueError('Invalid or duplicate scene ID')
         ids.add(s['id'])
         s['minutes'] = int(number(s.get('minutes'),15,600,'scene shooting minutes'))
         if s.get('light') not in ('day','night','either'): raise ValueError('Invalid scene lighting')
-        for key in ('cast','dependencies','props','risks'): strings(s.get(key,[]))
+        for key in ('cast','dependencies','props','risks'): strings(s.get(key,[]),label='scene '+s['id']+'.'+key)
     for s in scenes:
         if any(x not in ids or x==s['id'] for x in s.get('dependencies',[])): raise ValueError('Unknown scene dependency')
     done = set()
@@ -136,9 +149,9 @@ def validate_breakdown(value):
         ready = {s['id'] for s in scenes if set(s.get('dependencies',[])) <= done}
         if ready <= done: raise ValueError('Scene dependencies contain a cycle')
         done |= ready
-    for key in ('assumptions','missing_info','visual_criteria'): strings(value.get(key,[]))
+    for key in ('assumptions','missing_info','visual_criteria'): strings(value.get(key,[]),label=key)
     rows = value.get('budget_items',[])
-    if not isinstance(rows,list) or len(rows)>30: raise ValueError('Too many budget rows')
+    if not isinstance(rows,list) or len(rows)>80: raise ValueError('Too many budget rows')
     for row in rows:
         if not isinstance(row,dict): raise ValueError('Invalid budget row')
         for key in ('description','category','unit','basis'):
@@ -150,15 +163,34 @@ def validate_breakdown(value):
     queries = value.get('search_queries',[])
     if not isinstance(queries,list) or len(queries)>3: raise ValueError('Too many research queries')
     for q in queries:
-        if not isinstance(q,dict) or q.get('purpose') not in ('location','legal','logistics') or not isinstance(q.get('query'),str): raise ValueError('Invalid research query')
+        if not isinstance(q,dict) or q.get('purpose') not in ('location','legal','logistics','budget') or not isinstance(q.get('query'),str): raise ValueError('Invalid research query')
     return value
+
+
+def ask_validated(model, instruction, data, validator, images=(), progress=lambda message:None):
+    """Repair only the failed model stage, preserving validated upstream work."""
+    prompt=instruction
+    for attempt in range(3):
+        try:
+            value=model.ask(prompt,data,images)
+            return validator(value)
+        except ProviderError as exc:
+            # ProviderError inherits ValueError; inspect it before general validation.
+            if not ('JSON' in str(exc) and ('valid' in str(exc) or 'parse' in str(exc))):raise
+            detail=str(exc)
+        except ValueError as exc:
+            detail=str(exc)
+        if attempt==2:
+            raise ProviderError('Production response could not be read after 3 attempts. '+detail) from None
+        progress('Correcting the production response format ('+str(attempt+2)+' of 3)')
+        prompt=instruction+'\nThe previous response failed validation: '+detail+'. Return the exact requested JSON shape. Text lists must contain strings, never objects; combine owner, action and deliverable into a single string. Keep supplied facts and source IDs unchanged.'
 
 
 class Muse:
     def __init__(self):
-        self.key = os.getenv('VULTR_INFERENCE_API_KEY','')
+        self.key = os.getenv('VULTR_PRODUCTION_API_KEY') or os.getenv('VULTR_INFERENCE_API_KEY','')
         from .creative_stream import configuration
-        self.provider,self.model=configuration()
+        self.provider,self.model=('Vultr Serverless Inference',MODEL) if self.key else configuration()
         self.calls = []
 
     def ask(self, instruction, data, images=()):
@@ -192,7 +224,7 @@ class Muse:
             if not isinstance(value,dict): raise ValueError()
             return value
         except (KeyError,IndexError,TypeError,ValueError):
-            raise ProviderError('Muse returned incomplete or invalid JSON; no extra inference retry was charged by this app') from None
+            raise ProviderError('Production model returned incomplete or invalid JSON') from None
 
 
 def schedule(scenes, cfg):
@@ -257,22 +289,28 @@ def validate_recommendations(value, evidence):
         if not isinstance(rows,list) or len(rows)>cap: raise ValueError('Invalid '+name)
         for row in rows:
             if not isinstance(row,dict): raise ValueError('Invalid recommendation')
-            refs=strings(row.get('source_ids',[]))
+            refs=strings(row.get('source_ids',[]),label=name+'.source_ids')
             if not set(refs)<=ids: raise ValueError('Recommendation references unknown research')
             row['verification']='search lead; verify with authority/owner' if refs else 'unverified planning suggestion'
-    for name in ('crew_equipment','risks','next_steps'): strings(value.setdefault(name,[]))
+    for name in ('crew_equipment','risks','next_steps'): strings(value.setdefault(name,[]),label=name)
     return value
 
 
-def prepare_direction(sources, config, model=None):
+def prepare_direction(sources, config, model=None, *, folder=None, search=None, progress=lambda message:None):
+    config=normalize_config(config)
     model=model or Muse()
-    result=model.ask('Propose a practical adaptation of this writing. Fill unspecified production choices without asking questions. Preserve explicit constraints. Choose a real filming city/region when none is supplied, as an editable proposal, never as the user location. Give concrete affordable scene staging, an achievable crew approach, and 2-3 useful visual prompts and one soundtrack prompt. Do not invent availability or researched facts. Return JSON: {"brief":"production direction, scope and practical approach in 120-200 words","region":"city, region, country","reason":"why this region fits","assumptions":["..."],"image_prompts":[{"title":"...","prompt":"..."}],"sound_prompt":"..."}.',{'sources':[{'file':s['file'],'text':s['text'][:12000]} for s in sources[:6]],'constraints':config})
+    from .production_intelligence import develop_direction
+    return develop_direction(sources,config,model,folder=folder,search=search,progress=progress)
+
+
+def validate_direction(result,config):
+    if not isinstance(result,dict):raise ValueError("Production direction must be an object")
     for key in ('brief','region','reason','sound_prompt'):
-        if not isinstance(result.get(key),str) or not result[key].strip() or len(result[key])>6000:raise ProviderError('Production direction was incomplete. Try preparing it again.')
+        if not isinstance(result.get(key),str) or not result[key].strip() or len(result[key])>6000:raise ValueError('Production direction needs a short nonempty '+key+' string')
     result['region']=config.get('region') or result['region'][:300]
-    strings(result.get('assumptions',[]),20)
+    strings(result.get('assumptions',[]),20,'assumptions')
     rows=result.get('image_prompts',[])
-    if not isinstance(rows,list) or len(rows)>3 or any(not isinstance(r,dict) or not isinstance(r.get('title'),str) or not isinstance(r.get('prompt'),str) or len(r['prompt'])>4000 for r in rows):raise ProviderError('Visual direction was incomplete. Try preparing it again.')
+    if not isinstance(rows,list) or len(rows)>3 or any(not isinstance(r,dict) or not isinstance(r.get('title'),str) or not isinstance(r.get('prompt'),str) or len(r['prompt'])>4000 for r in rows):raise ValueError('image_prompts needs at most 3 objects with title and prompt strings')
     return result
 
 
@@ -284,37 +322,57 @@ def create_plan(folder, raw, images=(), progress=lambda message:None, *, sources
     allowance=max(300,60000//len(sources))
     material=[{'file':s['file'],'text':s['text'][:allowance]} for s in sources][:40]
     model=Muse();starter=None
-    if cfg['auto_region'] and not cfg['region']:
+    search=Search(folder/'production',daily_limit=os.getenv('PARAMYTH_SEARCH_DAILY_LIMIT','30'),plan_limit=cfg['search_limit'])
+    if cfg['auto_settings'] or cfg['auto_region'] and not cfg['region']:
         progress('Choosing a production approach and a proposed filming region')
-        starter=prepare_direction(material,cfg,model)
-        cfg['region']=starter['region'];cfg['brief']='\n'.join(filter(None,[cfg['brief'],starter['brief']]))[:6000]
+        starter=prepare_direction(material,cfg,model,folder=folder,search=search,progress=progress)
+        cfg=normalize_config({**cfg,**(starter.get('suggested_config',{}) if cfg['auto_settings'] else {}),'region':cfg['region'] or starter['region']})
+        cfg['brief']='\n'.join(filter(None,[cfg['brief'],starter['brief']]))[:6000]
     progress('Breaking down the story and visual references')
-    breakdown=validate_breakdown(model.ask(BREAKDOWN_PROMPT,{'constraints':cfg,'story_sources':material,'source_excerpts_may_be_truncated':any(len(s['text'])>allowance for s in sources)},images))
+    breakdown=ask_validated(model,BREAKDOWN_PROMPT,{'constraints':cfg,'story_sources':material,'source_excerpts_may_be_truncated':any(len(s['text'])>allowance for s in sources)},validate_breakdown,images,progress)
     progress('Building schedule and checking budget arithmetic')
     timing=schedule(breakdown['scenes'],cfg)
+    operations={}
+    if cfg['detailed']:
+        from .production_operations import develop_operations,reconcile_resources
+        operations=develop_operations(model,breakdown,cfg,timing,progress)
+        reconcile_resources(breakdown,operations,cfg,timing)
     for row in breakdown.get('budget_items',[]):
         if row['unit']=='day' and row['quantity']==1 and timing['shoot_days']>1:
             row['quantity']=timing['shoot_days']
             row['basis']+='; provisional quantity expanded to all scheduled shoot days — verify scope'
-    costs=budget(breakdown.get('budget_items',[]),cfg)
-    research=[];evidence=[];warnings=[]
-    search=Search(folder/'production',daily_limit=os.getenv('PARAMYTH_SEARCH_DAILY_LIMIT','10'),plan_limit=cfg['search_limit'])
+    research=list((starter or {}).get('research',[]));evidence=list((starter or {}).get('evidence',[]));warnings=list((starter or {}).get('warnings',[]))
     if cfg['region']:
-        queries=breakdown.get('search_queries',[]) or [{'purpose':'location','query':'film commission location library '+ ' '.join(breakdown.get('visual_criteria',[])[:2])},{'purpose':'logistics','query':'film commission production resources crew equipment rental'}]
-        for query in queries[:cfg['search_limit']]:
+        queries=breakdown.get('search_queries',[]) or [{'purpose':'location','query':'film commission location library '+ ' '.join(breakdown.get('visual_criteria',[])[:2])}]
+        price_query={'purpose':'budget','query':cfg['region']+' film crew equipment location rental daily rates '+cfg['currency']}
+        # Reserve regional pricing ahead of optional logistics. Discovery used
+        # the same allowance, so never silently exceed the user's search limit.
+        queries=([price_query]+[q for q in queries if q['purpose']!='budget']) if research else ([queries[0],price_query]+queries[1:])
+        for query in queries[:min(2,max(0,cfg['search_limit']-len(research)))]:
             progress('Researching '+query['purpose']+' with cached SerpAPI searches')
             try:
-                result=search.search(query['query']+' '+cfg['region'],query['purpose']);research.append(result)
+                result=search.search(query['query'] if cfg['region'].casefold() in query['query'].casefold() else query['query']+' '+cfg['region'],query['purpose']);research.append(result)
                 for item in result['results']:
                     if any(e['url']==item['url'] for e in evidence): continue
                     evidence.append({**item,'id':'R'+str(len(evidence)+1),'retrieved_at':result['retrieved_at'],'evidence_level':result['evidence_level']})
             except ProviderError as exc: warnings.append(str(exc))
     else: warnings.append('No filming region supplied: location and jurisdiction-specific web research skipped.')
+    logistics={}
+    if cfg['detailed'] and cfg['region']:
+        from .production_operations import research_logistics
+        logistics=research_logistics(search,cfg,timing,evidence,research,warnings,breakdown,operations,progress)
+    from .production_intelligence import apply_price_evidence
+    pricing=[]
+    if evidence:
+        try:pricing=apply_price_evidence(model,breakdown,cfg,evidence,progress)
+        except ProviderError as exc:warnings.append('Published prices could not be matched reliably. Keeping labelled planning estimates. '+str(exc))
+    costs=budget(breakdown.get('budget_items',[]),cfg)
+    if costs['over_cap']:warnings.append('This estimate exceeds your budget cap. Reduce scope or use the lower-cost location approach before arranging a shoot.')
     progress('Muse Glimmer is preparing location, legal and logistical recommendations')
-    advice=validate_recommendations(model.ask(RESEARCH_PROMPT,{'breakdown':breakdown,'constraints':cfg,'schedule':timing,'budget':costs,'evidence':evidence,'research_date_utc':datetime.now(timezone.utc).isoformat()}),evidence)
+    advice=ask_validated(model,RESEARCH_PROMPT,{'breakdown':breakdown,'constraints':cfg,'schedule':timing,'budget':costs,'operations':operations,'local_logistics':logistics,'evidence':evidence,'research_date_utc':datetime.now(timezone.utc).isoformat()},lambda value:validate_recommendations(value,evidence),progress=progress)
     value={'schema_version':1,'id':hashlib.sha256(json.dumps([cfg,breakdown,timing],sort_keys=True).encode()).hexdigest()[:24],
            'title':breakdown.get('title','Production plan'),'created_at':datetime.now(timezone.utc).isoformat(),'provider':getattr(model,'provider','Vultr Serverless Inference'),'model':getattr(model,'model',MODEL),'model_calls':model.calls,'source_files':[s['file'] for s in sources],
-           'image_count':len(images),'config':cfg,'starter':starter,'breakdown':breakdown,'schedule':timing,'budget':costs,'recommendations':advice,'evidence':evidence,'research':research,'warnings':warnings,
+           'image_count':len(images),'config':cfg,'starter':starter,'breakdown':breakdown,'schedule':timing,'budget':costs,'pricing_research':pricing,'operations':operations,'local_logistics':logistics,'recommendations':advice,'evidence':evidence,'research':research,'warnings':warnings,
            'status':'draft — availability, estimates, permits and legal requirements require verification'}
     save(folder/'production'/'plans'/(value['id']+'.json'),value)
     return value
