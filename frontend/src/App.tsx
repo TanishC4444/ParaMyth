@@ -1,6 +1,7 @@
 import { lazy, type ReactElement, Suspense, useEffect, useState } from "react"
 
 import { StudioProvider, useStudio } from "./store"
+import AccountGate, { useAccess } from './AccountGate'
 
 import type { View } from "./types"
 
@@ -66,6 +67,7 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
 ]
 
 function Shell() {
+  const access = useAccess()
   const {
     view,
     go,
@@ -208,8 +210,8 @@ function Shell() {
             >
               <Icon name="settings" />
             </button>
-            <a className="text-action" href="/studio/teams.html">Sign in</a>
-            <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>
+            <a className="text-action" href="/studio/teams.html">{access.accounts_required ? "Account" : "Sign in"}</a>
+            {!access.accounts_required && <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>}
           </div>
         </header>
         {error && (
@@ -268,8 +270,8 @@ function PageCache({ pages, view }: { pages: Partial<Record<View, ReactElement>>
 
 export default function App() {
   return (
-    <StudioProvider>
+    <AccountGate><StudioProvider>
       <Shell />
-    </StudioProvider>
+    </StudioProvider></AccountGate>
   )
 }

@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    env_file: .env
+    environment:
+      PARAMYTH_ACCOUNT_WORKSPACES: '1'
+      PARAMYTH_PUBLIC_ORIGIN: https://${PARAMYTH_DOMAIN:?Set PARAMYTH_DOMAIN}
+      PARAMYTH_WORKSPACE: /data
+    volumes:
+      - workspaces:/data
+    networks:
+      private:
+        ipv4_address: 172.30.0.3
+    restart: unless-stopped
+    stop_grace_period: 2m
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      PARAMYTH_DOMAIN: ${PARAMYTH_DOMAIN:?Set PARAMYTH_DOMAIN}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      private:
+        ipv4_address: 172.30.0.2
+    restart: unless-stopped
+networks:
+  private:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+volumes:
+  workspaces:
+  caddy_data:
+  caddy_config:

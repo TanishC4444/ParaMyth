@@ -34,6 +34,17 @@ class CalendarSyncTests(unittest.TestCase):
             self.assertEqual(len(client.sync(self.plan)['conflicts']), 1)
         self.assertEqual(call.call_count, 1)
 
+    def test_native_account_calendar_includes_preparation_tasks(self):
+        event = self.plan['schedule']['events'][0]
+        self.plan['operations'] = {'tasks': [{**event, 'scene_id': 'prep-clearance',
+            'summary': 'Confirm location clearance', 'start': '2026-10-30T09:00:00-05:00',
+            'end': '2026-10-30T10:00:00-05:00', 'cast': [], 'deliverable': 'Written location clearance'}]}
+        client = GoogleCalendar()
+        with patch.object(client, 'request', side_effect=[{'items': []}, {'id': 'shoot'}, {'id': 'prep'}]) as call:
+            result = client.sync(self.plan)
+        self.assertEqual([row['scene_id'] for row in result['created']], ['s1', 'prep-clearance'])
+        self.assertEqual(call.call_count, 3)
+
     def test_partial_sync_keeps_created_ids_and_unscheduled_plans_are_refused(self):
         self.plan['schedule'] = schedule([scene('a'), scene('b', dependencies=['a'])], self.plan['config'])
         client = GoogleCalendar()

@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import random
 import re
@@ -94,8 +95,19 @@ def ambience(folder, mode='ambience', direction='', seconds=60):
     return ident, cue
 
 
+def require_key():
+    value = os.getenv('VULTR_MUSIC_API_KEY') or vultr.key()
+    if not value:
+        raise ProviderError('Set VULTR_MUSIC_API_KEY or VULTR_INFERENCE_API_KEY in the server environment')
+    return value
+
+
+def music_headers():
+    return {'Authorization': 'Bearer ' + require_key(), 'Content-Type': 'application/json'}
+
+
 def models():
-    return request_json(vultr.BASE + '/music/models', headers=vultr.headers(), timeout=60)['data']
+    return request_json(vultr.BASE + '/music/models', headers=music_headers(), timeout=60)['data']
 
 
 def create(folder, mode, model, seconds, direction='', lyrics=''):
@@ -117,7 +129,7 @@ def create(folder, mode, model, seconds, direction='', lyrics=''):
     if not limits.get('min', 1) <= seconds <= limits.get('max', 360):
         raise ValueError('Duration outside the selected model limits')
     job = request_json(vultr.BASE + '/music', {'model': model, 'prompt': prompt[:spec.get('prompt_max_length', 6000)],
-                       'duration': seconds, 'lyrics': lyrics, 'response_format': 'mp3'}, headers=vultr.headers(), timeout=60)
+                       'duration': seconds, 'lyrics': lyrics, 'response_format': 'mp3'}, headers=music_headers(), timeout=60)
     if not JOB_ID.fullmatch(str(job.get('id', ''))):
         raise ProviderError('Vultr returned an invalid music job')
     save(Path(folder) / 'soundtracks' / (job['id'] + '.json'), {'id': job['id'], 'cue': cue, 'job': job, 'model': model})
@@ -131,14 +143,14 @@ def job_id(ident):
 
 
 def status(ident):
-    return request_json(vultr.BASE + '/music/' + job_id(ident), headers=vultr.headers(), timeout=60)
+    return request_json(vultr.BASE + '/music/' + job_id(ident), headers=music_headers(), timeout=60)
 
 
 def audio(ident, action='content'):
     """Open the provider's audio response for streaming. The caller closes it."""
     if action not in ('stream', 'content'):
         raise ValueError('Choose stream or content')
-    request = Request(vultr.BASE + '/music/' + job_id(ident) + '/' + action, headers=vultr.headers())
+    request = Request(vultr.BASE + '/music/' + job_id(ident) + '/' + action, headers=music_headers())
     try:
         return build_opener(NoRedirect()).open(request, timeout=60)
     except HTTPError as exc:
@@ -150,7 +162,7 @@ def audio(ident, action='content'):
 
 
 def cancel(ident):
-    request = Request(vultr.BASE + '/music/' + job_id(ident), method='DELETE', headers=vultr.headers())
+    request = Request(vultr.BASE + '/music/' + job_id(ident), method='DELETE', headers=music_headers())
     try:
         with build_opener(NoRedirect()).open(request, timeout=30) as response:
             response.read()

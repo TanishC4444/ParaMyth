@@ -98,7 +98,7 @@ def session(response:Response,runtime=RT):
 def workspace(request:Request,runtime=RT):
     items=[project(runtime,x['id']) for x in runtime.project_list()]
     items=[p for p in items if p is not None]
-    current=request.cookies.get('pm_pipeline_project')
+    current=getattr(runtime,'selected',None) or request.cookies.get('pm_pipeline_project')
     if current not in {p['id'] for p in items}:current=items[0]['id'] if items else ''
     meta=read(runtime.root/'runs'/'paramyth-workspace.json',{})
     return {'projects':items,'current':current,'ideas':meta.get('ideas',[]),'pins':meta.get('pins',[]),'drafts':{p['id']:read(runtime.folder(p['id'])/'workspace-drafts.json',{}) for p in items}}
@@ -340,7 +340,7 @@ def search(data:dict=Body(...)):
     mode=data.get('mode','lexical')
     if mode not in ('lexical','hybrid'):raise ValueError('Choose keyword or semantic search')
     if mode=='hybrid':
-        from rag.embeddings import api_key
+        from ..rag.embeddings import api_key
         try:api_key()
         except RuntimeError:raise HTTPException(503,'Semantic search needs a Gemini embedding connection. Add it in Connections, or choose Story keywords.') from None
     limit=data.get('limit',8)
@@ -355,7 +355,7 @@ def search(data:dict=Body(...)):
     try:result=retrieve(request,source_limit=20 if mode=="hybrid" else limit,group_ids=anchors)
     except RuntimeError:raise HTTPException(503,'The literary search service is unavailable. Check the Gemini key in Connections and try again.') from None
     if mode=='hybrid':
-        from rag.rerank import rerank
+        from ..rag.rerank import rerank
         try:
             result['sources']=rerank(q,result['sources'],limit)
             result['ranking']='Gemini relevance review'
@@ -367,7 +367,7 @@ def search(data:dict=Body(...)):
 
 @router.get('/retrieval-connection')
 def retrieval_connection():
-    from rag.embeddings import api_key
+    from ..rag.embeddings import api_key
     try:api_key();configured=True
     except RuntimeError:configured=False
     return {'semantic':configured,'keyword':True}

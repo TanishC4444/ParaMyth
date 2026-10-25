@@ -9,7 +9,7 @@ import {
   useState,
   useCallback,
 } from "react"
-import { api, projectPath, studioJobs, type Job } from "./api"
+import { api as requestApi, currentAccountIdentity, projectPath, studioJobs, type Job } from "./api"
 import { uid, now, modeOf } from "./data"
 import { errorText } from "./ui"
 import type {
@@ -78,9 +78,9 @@ const empty = (): Store => ({
   pins: [],
 })
 type WorkspaceDrafts = Record<string, Record<string, any>>
-const backupKey = (id: string) => `paramyth-pending-drafts:${id}`
-function pendingBackup(id: string): Record<string, any> {
-  try { return JSON.parse(localStorage.getItem(backupKey(id)) || "{}") } catch { return {} }
+const backupKey = (id: string, account: string) => `paramyth-pending-drafts:${account}:${id}`
+function pendingBackup(id: string, account: string): Record<string, any> {
+  try { return JSON.parse(localStorage.getItem(backupKey(id, account)) || "{}") } catch { return {} }
 }
 
 type Studio = {
@@ -135,6 +135,12 @@ export function useDraftState<T>(key: string, initial: T | (() => T)): [T, Dispa
   return [value, setValue]
 }
 export function StudioProvider({ children }: { children: ReactNode }) {
+  const account = useRef(currentAccountIdentity()).current
+  const active = useRef(true)
+  async function api<T = any>(path: string, body?: unknown, method?: string): Promise<T> {
+    if (!active.current || account !== currentAccountIdentity()) throw Error('Your account changed. Reload this page before continuing.')
+    return requestApi<T>(path, body, method)
+  }
   const [store, setRaw] = useState<Store>(empty),
     ref = useRef(store),
     [view, setView] = useState<View>(routeView),
@@ -155,6 +161,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     queue = useRef(Promise.resolve()),
     selection = useRef(""),
     notesDirty = useRef(false)
+  useEffect(() => {
+    active.current = true
+    return () => { active.current = false; clearTimeout(timer.current) }
+  }, [])
   const set = (s: Store) => {
     ref.current = s
     setRaw(s)
@@ -220,7 +230,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
             for (const [key, value] of Object.entries(snapshot)) {
               if (dirtyDrafts.current[id]?.[key] === value) delete dirtyDrafts.current[id][key]
             }
-            try { localStorage.setItem(backupKey(id), JSON.stringify(dirtyDrafts.current[id])) } catch {}
+            try { localStorage.setItem(backupKey(id, account), JSON.stringify(dirtyDrafts.current[id])) } catch {}
           }
           setError("")
         } catch (e) {
@@ -243,7 +253,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       }>("/api/ui/workspace")
       const restored: WorkspaceDrafts = {}
       for (const p of value.projects) {
-        const pending = { ...pendingBackup(p.id), ...dirtyDrafts.current[p.id] }
+        const pending = { ...pendingBackup(p.id, account), ...dirtyDrafts.current[p.id] }
         dirtyDrafts.current[p.id] = pending
         restored[p.id] = { ...value.drafts?.[p.id], ...draftsRef.current[p.id], ...pending }
       }
@@ -316,7 +326,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     draftsRef.current = next
     setDrafts(next)
     dirtyDrafts.current[id] = { ...dirtyDrafts.current[id], [key]: value }
-    try { localStorage.setItem(backupKey(id), JSON.stringify(dirtyDrafts.current[id])) } catch {}
+    try { localStorage.setItem(backupKey(id, account), JSON.stringify(dirtyDrafts.current[id])) } catch {}
     setSaving(true)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => void flush().catch(() => {}), 700)

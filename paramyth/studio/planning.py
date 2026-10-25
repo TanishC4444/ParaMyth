@@ -11,8 +11,8 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Body, Request
 from fastapi.responses import RedirectResponse, Response
 
-from ..production import budget, create_plan, normalize_config, schedule, validate_breakdown
-from ..production_exports import export
+from ..pipeline.production import budget, create_plan, normalize_config, schedule, validate_breakdown
+from ..pipeline.production_exports import export
 from ..storage import load, save
 from .deps import LOCAL, RUNTIME, WRITE, folder
 
@@ -28,7 +28,8 @@ def read_plan(current, ident):
 
 
 def callback_url(request):
-    return str(request.base_url).rstrip('/') + '/google/callback'
+    from .accounts import origin
+    return origin(request) + '/google/callback'
 
 
 @router.get('/api/config')
@@ -68,6 +69,11 @@ def recalculate(request: Request, data: dict = Body(...), runtime=RUNTIME):
     validate_breakdown(breakdown)
     value.update(config=cfg, schedule=schedule(breakdown['scenes'], cfg), budget=budget(breakdown['budget_items'], cfg),
                  id=hashlib.sha256(json.dumps([data['id'], cfg, breakdown], sort_keys=True).encode()).hexdigest()[:24])
+    if value.get('operations', {}).get('tasks'):
+        from ..pipeline.production_operations import schedule_tasks
+        schedule_tasks(value['operations'], cfg, value['schedule'])
+    if value.get('local_logistics'):
+        value['local_logistics']['stale'] = True
     value['warnings'] = value.get('warnings', []) + ['Schedule and budget edited locally; research recommendations were not regenerated.']
     save(current / 'production' / 'plans' / (value['id'] + '.json'), value)
     return value

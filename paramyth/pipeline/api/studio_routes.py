@@ -45,7 +45,11 @@ def write(request:Request,runtime:StudioRuntime=Depends(get_runtime)):
 RUNTIME=Depends(get_runtime)
 
 
-def folder(request,runtime):return runtime.folder(request.query_params.get('project_id') or request.cookies.get('pm_pipeline_project'))
+def folder(request,runtime):
+    if request.scope.get('app') is not None and getattr(request.app.state,'account_workspaces',False):
+        from ...studio.deps import folder as account_folder
+        return account_folder(request,runtime)
+    return runtime.folder(request.query_params.get('project_id') or request.cookies.get('pm_pipeline_project'))
 
 
 def page(path,runtime,legacy=False):

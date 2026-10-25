@@ -8,7 +8,10 @@ def main():
     parser = argparse.ArgumentParser(description='Run the ParaMyth studio on this machine')
     parser.add_argument('--workspace', type=Path, default=Path.cwd(), help='Folder holding runs/ and outputs/ (default: current directory)')
     parser.add_argument('--port', type=int, default=8770)
+    parser.add_argument('--host', default='127.0.0.1')
     args = parser.parse_args()
+    if args.host not in ('127.0.0.1', 'localhost', '::1') and not os.getenv('PARAMYTH_PUBLIC_ORIGIN'):
+        parser.error('Set PARAMYTH_PUBLIC_ORIGIN before binding a public interface')
     try:
         import uvicorn
     except ImportError:
@@ -19,7 +22,7 @@ def main():
     os.environ.setdefault('PARAMYTH_WORKSPACE', str(args.workspace.resolve()))
     print(f'ParaMyth studio: http://127.0.0.1:{args.port}/', flush=True)
     # Loopback only: every route also refuses non-local hosts and clients.
-    uvicorn.run(create_app(args.workspace), host='127.0.0.1', port=args.port, proxy_headers=False)
+    uvicorn.run(create_app(args.workspace), host=args.host, port=args.port, proxy_headers=False)
 
 
 if __name__ == '__main__':

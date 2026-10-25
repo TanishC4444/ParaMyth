@@ -12,8 +12,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 
-class ProviderError(ValueError):
-    pass
+from .providers import ProviderError, request_json
 
 
 def search_key():
@@ -36,23 +35,10 @@ def safe_url(value):
         return ''
 
 
-def request_json(url, payload=None, headers=None, timeout=60):
-    """Never surface a request URL (SerpAPI puts credentials in its query)."""
-    data = json.dumps(payload).encode() if payload is not None else None
-    request = Request(url, data=data, headers=headers or {})
-    try:
-        with urlopen(request, timeout=timeout) as response:
-            return json.load(response)
-    except HTTPError as exc:
-        raise ProviderError(f'Provider HTTP {exc.code}') from None
-    except (URLError, TimeoutError, OSError, ValueError):
-        raise ProviderError('Provider request failed or returned invalid JSON') from None
-
-
 class Search:
     def __init__(self, folder, keys=None, daily_limit=10, plan_limit=2):
-        self.keys = list(dict.fromkeys(keys if keys is not None else filter(None, [search_key(), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')])))
-        self.keys = [k.strip() for k in self.keys if k.strip()]
+        configured = keys if keys is not None else [search_key(), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')]
+        self.keys = list(dict.fromkeys(k.strip() for k in configured if isinstance(k, str) and k.strip()))
         self.daily_limit = min(30, max(0, int(daily_limit)))
         self.plan_limit = min(12, max(0, int(plan_limit)))
         self.used = 0
@@ -84,13 +70,21 @@ class Search:
             c.execute('INSERT INTO attempts VALUES (?,?)', (now, fingerprint))
         return True
 
+    def __call__(self, query, purpose='location', **options):
+        return self.search(query, purpose, **options)
+
     def search(self, query, purpose='location', *, engine='google', parameters=None):
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError('Search query must be nonempty text')
+        if not isinstance(purpose, str) or not purpose.strip() or len(purpose) > 60:
+            raise ValueError('Search purpose must be text between 1 and 60 characters')
+        purpose = purpose.strip().lower()
         if engine not in ('google','google_maps','google_hotels','google_flights'):raise ValueError('Unsupported research service')
         parameters=parameters or {}
         allowed={'check_in_date','check_out_date','adults','currency','departure_id','arrival_id','outbound_date','return_date','type','ll','sort_by'}
         if not isinstance(parameters,dict) or not set(parameters)<=allowed:raise ValueError('Unsupported research parameter')
         query = ' '.join(str(query).split())[:240]
-        ident = hashlib.sha256(json.dumps([engine,query.casefold(),parameters],sort_keys=True).encode()).hexdigest()
+        ident = hashlib.sha256(json.dumps([engine,query.casefold(),purpose,parameters],sort_keys=True).encode()).hexdigest()
         now = time.time()
         with self.connect() as c:
             row = c.execute('SELECT body FROM cache WHERE id=? AND expires>?', (ident, now)).fetchone()
@@ -112,6 +106,7 @@ class Search:
                         c.execute('INSERT OR REPLACE INTO cooldown VALUES (?,?)', (fingerprint, now + 3600))
                     continue
                 raise
+            if not isinstance(body, dict):raise ProviderError('Search provider returned invalid results')
             if body.get('error'):
                 error = str(body['error']).lower()
                 if any(x in error for x in ('run out', 'limit', 'invalid api key', 'no searches')):
@@ -134,7 +129,9 @@ def normalize_results(engine,body,parameters,query):
     """Persist public leads and prices only, never raw credential-bearing URLs."""
     results=[]
     if engine=='google':
-        for item in body.get('organic_results',[])[:5]:
+        organic=body.get('organic_results',[])
+        if not isinstance(organic,list) or any(not isinstance(item,dict) for item in organic):raise ProviderError('Search provider returned invalid results')
+        for item in organic[:5]:
             url=safe_url(item.get('link',''))
             if url:results.append({'title':str(item.get('title',''))[:300],'url':url,'snippet':str(item.get('snippet',''))[:1200]})
     elif engine=='google_maps':

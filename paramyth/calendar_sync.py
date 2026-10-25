@@ -43,7 +43,8 @@ class GoogleCalendar:
 
     def sync(self, plan, calendar='primary'):
         # Preview is supplied by the application; this is only called by its explicit sync action.
-        events=plan['schedule']['events']
+        from .pipeline.production_exports import calendar_events
+        events=calendar_events(plan)
         if not events:return {'created':[],'existing':[],'conflicts':[]}
         if plan['schedule']['unscheduled']:raise ValueError('Resolve unscheduled scenes before syncing')
         path='calendars/'+quote(calendar,safe='')+'/events'
