@@ -1,7 +1,6 @@
 # Landing assets
 
-- Cormorant Garamond (regular and italic variable fonts): Christian Thalmann / Catharsis Fonts, via google/fonts. SIL Open Font License; see cormorantgaramond-OFL.txt.
-- Manrope variable font: Mikhail Sharanda, via google/fonts. SIL Open Font License; see manrope-OFL.txt.
-- Fonts are subset to Latin and punctuation, and compressed to WOFF2. Original font family names are retained; CSS aliases scope them to the landing page.
-- Earth color texture: https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg (NASA Blue Marble surface imagery, distributed with the Three.js examples). Local 2048px surface texture; this is a visual introduction, not a satellite map service.
-- The book and orbit use the existing credited public-domain paintings in ../art/manifest.json.
+- Barlow Condensed ExtraBold: Jeremy Tribby / Google Fonts. SIL Open Font License; see barlow-OFL.txt. Latin subset, WOFF2.
+- Manrope variable font: Mikhail Sharanda / Google Fonts. SIL Open Font License; see manrope-OFL.txt. Latin subset, WOFF2.
+- Earth surface (4096 x 2048), topology and water maps: Three Globe example assets, https://github.com/vasturiano/three-globe/tree/master/example/img . Earth imagery derives from NASA Blue Marble. The surface, bump and specular maps are served locally.
+- The book and orbit use the existing credited paintings in ../art/manifest.json.

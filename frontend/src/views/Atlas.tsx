@@ -45,7 +45,7 @@ const AtlasMap = lazy(() => import("./AtlasMap"))
 
 const LIST_LIMIT = 80
 
-export default function Atlas({ landing = false }: { landing?: boolean }) {
+export default function Atlas({ landing = false, reduceMotion = false, onReady }: { landing?: boolean; reduceMotion?: boolean; onReady?: () => void }) {
   const { store, setStore, project, ideate, notify, atlasQuery } = useStudio()
 
   const [data, setData] = useState<{
@@ -73,7 +73,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
 
   const [focus, setFocus] = useState<{ id: string; at: number } | null>(null)
 
-  const [legend, setLegend] = useState(() => window.innerWidth > 760)
+  const [legend, setLegend] = useState(false)
 
   const [mode, setMode] = useState<"globe" | "map">("globe")
 
@@ -159,7 +159,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
 
   const reveal = () => {
     if (window.innerWidth <= 1100)
-      side.current?.scrollIntoView({ behavior: "instant", block: "start" })
+      side.current?.scrollIntoView({ behavior: reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })
   }
 
   const select = async (id: string, fly = false) => {
@@ -300,20 +300,20 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
       <PageTitle
         eyebrow={
           landing
-            ? `${all.length || "…"} TALES · ${data?.index.regions.length || "…"} TRADITIONS · ENDLESS BEGINNINGS`
+            ? "EXPLORE THE WORLD"
             : "BEGIN WITH A TALE"
         }
-        title="A world of stories"
-        text="Turn the globe. Open a tale. See where it takes you."
+        title="Story atlas"
+        text="Select a place. Find a story."
       >
         <div className="atlas-mode" aria-label="Atlas display">
           <button
             aria-pressed={mode === "globe"}
-            onClick={() => setMode("globe")}
+            onClick={() => { setFocus(null); setMode("globe") }}
           >
             3D globe
           </button>
-          <button aria-pressed={mode === "map"} onClick={() => setMode("map")}>
+          <button aria-pressed={mode === "map"} onClick={() => { setFocus(null); setMode("map") }}>
             Flat map
           </button>
         </div>
@@ -325,85 +325,16 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
         )}
       </PageTitle>
 
-      <div className="atlas-concept">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void findIdeas()
-          }}
-        >
-          <input
-            aria-label="Find stories for your idea"
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            maxLength={2000}
-            placeholder="Describe your idea: a bargain, a journey, a difficult choice…"
-          />
-          <select
-            aria-label="Literary search method"
-            value={searchMode}
-            onChange={(e) => { modeChosen.current = true; setSearchMode(e.target.value) }}
-          >
-            <option value="lexical">Story keywords</option>
-            <option value="hybrid">Semantic + keywords</option>
-          </select>
-          <select aria-label="Number of story matches" value={matchCount} onChange={(e) => setMatchCount(Number(e.target.value))}>
-            <option value={6}>Up to 6 stories</option><option value={8}>Up to 8 stories</option><option value={12}>Up to 12 stories</option>
-          </select>
-          <button
-            className="primary"
-            disabled={!data || !idea.trim() || searchingIdea}
-          >
-            {searchingIdea ? "Finding stories…" : "Find inspiration"}
-          </button>
-        </form>
-        {searchError && <p role="alert">{searchError}</p>}
-        {rankingWarning && <p role="status">{rankingWarning}</p>}
-        {retrieved.length > 0 && (
-          <>
-            <p className="hint">
-              {retrieved.length} {retrieved.length === 1 ? "story match" : "related stories"} · {retrievalInfo === "hybrid" ? "Meaning + keywords" : "Story keywords"}. Choose any match to turn the globe and explore it.
-            </p>
-            <div className="atlas-match-controls">
-              <label><input type="checkbox" checked={matchingOnly} onChange={(e) => setMatchingOnly(e.target.checked)} /> Show matches on the globe</label>
-              <button className="text-action" onClick={() => { setRetrieved([]); setSearchError(""); setRankingWarning(""); setStory(null); setCluster(null) }}>Clear matches</button>
-            </div>
-            <div className="atlas-matches">
-              {retrieved.map((r: any, index: number) => (
-                <button
-                  key={r.id}
-                  aria-pressed={story?.id === r.atlas_id}
-                  disabled={!r.atlas_id}
-                  onClick={() => void select(r.atlas_id, true)}
-                >
-                  <span className="match-rank">{String(index + 1).padStart(2, "0")}</span>
-                  <b>{r.title || r.id}</b>
-                  {r.match_kind && <span className="match-kind">{r.match_kind === "direct" ? "Close match" : "Related idea"}</span>}
-                  <small>
-                    {String(
-                      r.match_reason ||
-                        r.excerpt ||
-                        r.summary ||
-                        r.analysis ||
-                        r.mechanism ||
-                        r.instruction ||
-                        "",
-                    ).slice(0, 300)}
-                  </small>
-                  {!r.atlas_id && <small>No geographic anchor recorded</small>}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-        <div className="atlas-layout">
+
+        <div className={`atlas-layout${story ? " has-story" : ""}${mode === "map" ? " is-map" : ""}`}>
           <section
             className={`atlas-frame ${mode === "globe" ? "globe-frame" : ""}`}
           >
             {data ? (
               mode === "globe" ? (
                 <AtlasGlobe
+                  reduceMotion={reduceMotion}
+                  onReady={onReady}
                   stories={visible}
                   selectedId={story?.id ?? null}
                   focus={focus}
@@ -561,7 +492,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
                 </h2>
                 <p className="hint">
                   {mode === "globe"
-                    ? "Drag to turn the globe; use + and − to zoom. Select a numbered ring to browse its tales, or a title to open a story."
+                    ? "Select a marker or a story."
                     : "Pan and zoom to explore; numbered rings gather nearby tales and show their traditions. Select a pin or a title to open its record."}
                 </p>
                 {cluster && (
@@ -601,15 +532,81 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
                 </div>
               </>
             )}
-            {data && (
-              <p className="atlas-provenance">
-                {sourceNote}. {data.index.corpus}: model-authored analysis
-                drafts; pins mark traditional settings or where a tale was told,
-                collected or composed.
-              </p>
-            )}
+            {data && <details className="atlas-provenance"><summary>About these stories</summary><p>{sourceNote}. {data.index.corpus}: model-authored analysis drafts; pins mark traditional settings or where a tale was told, collected or composed.</p></details>}
           </aside>
         </div>
+      <details className="atlas-concept atlas-idea-tools"><summary>Search by idea <span aria-hidden="true">↗</span></summary>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void findIdeas()
+          }}
+        >
+          <input
+            aria-label="Find stories for your idea"
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+            maxLength={2000}
+            placeholder="Describe your idea: a bargain, a journey, a difficult choice…"
+          />
+          <select
+            aria-label="Literary search method"
+            value={searchMode}
+            onChange={(e) => { modeChosen.current = true; setSearchMode(e.target.value) }}
+          >
+            <option value="lexical">Story keywords</option>
+            <option value="hybrid">Semantic + keywords</option>
+          </select>
+          <select aria-label="Number of story matches" value={matchCount} onChange={(e) => setMatchCount(Number(e.target.value))}>
+            <option value={6}>Up to 6 stories</option><option value={8}>Up to 8 stories</option><option value={12}>Up to 12 stories</option>
+          </select>
+          <button
+            className="primary"
+            disabled={!data || !idea.trim() || searchingIdea}
+          >
+            {searchingIdea ? "Finding stories…" : "Find inspiration"}
+          </button>
+        </form>
+        {searchError && <p role="alert">{searchError}</p>}
+        {rankingWarning && <p role="status">{rankingWarning}</p>}
+        {retrieved.length > 0 && (
+          <>
+            <p className="hint">
+              {retrieved.length} {retrieved.length === 1 ? "story match" : "related stories"} · {retrievalInfo === "hybrid" ? "Meaning + keywords" : "Story keywords"}. Choose any match to turn the globe and explore it.
+            </p>
+            <div className="atlas-match-controls">
+              <label><input type="checkbox" checked={matchingOnly} onChange={(e) => setMatchingOnly(e.target.checked)} /> Show matches on the globe</label>
+              <button className="text-action" onClick={() => { setRetrieved([]); setSearchError(""); setRankingWarning(""); setStory(null); setCluster(null) }}>Clear matches</button>
+            </div>
+            <div className="atlas-matches">
+              {retrieved.map((r: any, index: number) => (
+                <button
+                  key={r.id}
+                  aria-pressed={story?.id === r.atlas_id}
+                  disabled={!r.atlas_id}
+                  onClick={() => void select(r.atlas_id, true)}
+                >
+                  <span className="match-rank">{String(index + 1).padStart(2, "0")}</span>
+                  <b>{r.title || r.id}</b>
+                  {r.match_kind && <span className="match-kind">{r.match_kind === "direct" ? "Close match" : "Related idea"}</span>}
+                  <small>
+                    {String(
+                      r.match_reason ||
+                        r.excerpt ||
+                        r.summary ||
+                        r.analysis ||
+                        r.mechanism ||
+                        r.instruction ||
+                        "",
+                    ).slice(0, 300)}
+                  </small>
+                  {!r.atlas_id && <small>No geographic anchor recorded</small>}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </details>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { ArtCredits } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
@@ -11,22 +11,23 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
   const atlas = useRef<HTMLElement>(null);
   const intro = useRef<IntroActions>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [worldReady, setWorldReady] = useState(false);
+  const revealWorld = useCallback(() => setWorldReady(true), []);
   return <div className="landing-shell cinematic-landing">
-    <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); document.getElementById("landing-main")?.focus(); }}>Skip to content</a>
+    <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); intro.current?.enter(); }}>Skip to content</a>
     <header className="landing-header">
       <nav aria-label="Landing navigation">
         <button className="dock-atlas" onClick={() => intro.current?.enter()}><Icon name="atlas" size={16} /><span>Story atlas</span></button>
-        <a href="#/projects">Your stories</a><a href="/studio/teams.html">Sign in</a>
         <button className="dock-studio" onClick={() => go("overview")}>Open studio <Icon name="arrow" size={14} /></button>
       </nav>
     </header>
     <main id="landing-main" className="landing-main" tabIndex={-1}>
-      <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} />
+      <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} worldReady={worldReady} />
       <section ref={atlas} tabIndex={-1} className="landing-atlas-section cinematic-atlas" aria-label="Explore the story atlas">
-        <div className="cinema-preferences"><button onClick={() => intro.current?.replay()}>Revisit the introduction</button><button aria-pressed={reduceMotion} onClick={() => setReduceMotion(!reduceMotion)}>Reduce motion</button></div>
-        <Suspense fallback={<div className="atlas-loading" role="status">Charting a world of stories…</div>}><Atlas landing /></Suspense>
+        <Suspense fallback={<div className="atlas-loading" role="status">Charting a world of stories…</div>}><Atlas landing reduceMotion={reduceMotion} onReady={revealWorld} /></Suspense>
+        <div className="cinema-preferences"><button onClick={() => intro.current?.replay()}>Replay intro</button><button aria-pressed={reduceMotion} onClick={() => setReduceMotion(!reduceMotion)}>Reduce motion</button></div>
       </section>
     </main>
-    <footer className="landing-footer"><div><a className="footer-brand" href="#/">ParaMyth</a><p>A place to find your next beginning.</p><small>Your stories, images and sound live together in your studio.</small></div><ArtCredits /><a className="footer-studio" href="#/overview">Continue to your studio <Icon name="arrow" size={16} /></a></footer>
+    <footer className="landing-footer"><div><a className="footer-brand" href="#/">ParaMyth</a></div><ArtCredits /></footer>
   </div>;
 }
