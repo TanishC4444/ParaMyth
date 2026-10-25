@@ -18,7 +18,7 @@ function loader(hash = '#/') {
     if (full.endsWith('.json')) return JSON.parse(readFileSync(full,'utf8'));
     if (cache.has(full)) return cache.get(full).exports;
     const module = {exports:{}};cache.set(full,module);
-    let source = readFileSync(full,'utf8').replaceAll('import.meta.env.BASE_URL', '"/"');
+    let source = readFileSync(full,'utf8').replaceAll('import.meta.env', '({BASE_URL:"/",VITE_API_BASE:""})');
     // The server-render checks never call API methods; this only supplies the hosting flag.
     const code = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
     vm.runInNewContext(code,{module,exports:module.exports,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash,hostname:'paramyth.tech'},document:{querySelector:()=>null},console,URL,AbortSignal});
