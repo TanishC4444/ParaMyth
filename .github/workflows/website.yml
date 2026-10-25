@@ -29,9 +29,6 @@ jobs:
           corepack pnpm test:cinematic
       - name: Build frontend
         working-directory: frontend
-        env:
-          # GitHub Pages has no studio server; the build shows setup steps instead.
-          VITE_STATIC_SITE: "1"
         run: corepack pnpm build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

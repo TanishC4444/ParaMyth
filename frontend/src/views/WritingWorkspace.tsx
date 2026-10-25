@@ -3,6 +3,7 @@ import { api, projectPath, studioJobs, type Job } from "../api";
 import { useDraftState, useStudio } from "../store";
 import { uid, now } from "../data";
 import type { Scene } from "../types";
+import { errorText } from "../ui";
 import Creative from "./Creative";
 
 type Written = { id: string; status: string; request: { chapter?: number; scene_id?: string }; result?: { title?: string; text?: string }; preview?: Job["preview"]; error?: string };
@@ -56,7 +57,7 @@ export default function WritingWorkspace() {
         setRecords(saved.results.filter(r => !!r.request.chapter));
         const running = jobs.find(j => pending(j) && !!j.preview?.chapter);
         if (running) { setHandle(running.id); setLive(running); }
-      } catch (e) { if (active) setError(String(e)); }
+      } catch (e) { if (active) setError(errorText(e)); }
     };
     void load(); window.addEventListener('studio-refresh',load);
     return () => { active = false; window.removeEventListener('studio-refresh',load); };
@@ -97,7 +98,7 @@ export default function WritingWorkspace() {
       });
       if (generationProject.current === id) { setHandle(job.job_id); if(operation!=='review')setVersions(v => ({...v,[scene.id]:''})); setLive({ id:job.job_id,kind:'creative',project_id:id,status:'queued',message:'Preparing your chapter…',created_at:new Date().toISOString(),preview:{record_id:'',stage:operation==='review'?'Review':operation==='revise'?'Revise':'Draft',chapter,scene_id:scene.id,text:''} }); }
       window.dispatchEvent(new Event('studio-refresh'));
-    } catch (e) { if (generationProject.current === id) setError(String(e)); }
+    } catch (e) { if (generationProject.current === id) setError(errorText(e)); }
     finally { if (generationProject.current === id) setSubmitting(false); }
   };
   const save = async (advance: boolean, forceNew = false) => {
@@ -119,7 +120,7 @@ export default function WritingWorkspace() {
       if (advance) { setChapter(nextChapter); setSceneIds(v => ({...v,[nextChapter]:next.id})); }
       window.dispatchEvent(new Event('studio-refresh'));
       notify(advance ? 'Saved. Your next chapter or scene is ready.' : 'Chapter saved to your manuscript.');
-    } catch (e) { setError(String(e)); }
+    } catch (e) { setError(errorText(e)); }
     finally { setSaving(false); }
   };
 

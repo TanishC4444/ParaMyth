@@ -1,6 +1,7 @@
 import { lazy, type ReactElement, Suspense, useEffect, useState } from "react"
 
 import { StudioProvider, useStudio } from "./store"
+import AccountGate, { useAccess } from './AccountGate'
 
 import type { View } from "./types"
 
@@ -38,6 +39,8 @@ const Library = lazy(() => import("./views/Library"))
 
 const Connections = lazy(() => import("./views/Connections"))
 
+const News = lazy(() => import("./views/News"))
+
 const Landing = lazy(() => import("./views/Landing"))
 
 const TITLES: Partial<Record<View, string>> = {
@@ -48,6 +51,7 @@ const TITLES: Partial<Record<View, string>> = {
   runs: "Pipelines & runs",
   retrieval: "Literary retrieval",
   library: "File library",
+  news: "Industry news",
   connections: "Connections",
   notfound: "Page not found",
 }
@@ -68,6 +72,7 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
     group: "Develop",
     items: [
       ["retrieval", "retrieval", "Literary retrieval"],
+      ["news", "news", "Industry news"],
     ],
   },
 
@@ -81,6 +86,7 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
 ]
 
 function Shell() {
+  const access = useAccess()
   const {
     view,
     go,
@@ -129,6 +135,7 @@ function Shell() {
     music: <Music />,
     production: <Production />,
     library: <Library />,
+    news: <News />,
     connections: <Connections />,
   }
 
@@ -136,7 +143,7 @@ function Shell() {
     <>
     {visitedLanding && <div hidden={!isLanding} className="workspace-view">
       <AppErrorBoundary resetKey={view}>
-        <Suspense fallback={<div className="night-page"><PageLoading label="Opening a world of stories…" /></div>}>
+        <Suspense fallback={<div className="landing-loading" role="status" style={{ background: "#111d31", color: "#d1dfcf", minHeight: "100svh", fontFamily: "sans-serif", fontSize: 12 }}>Loading ParaMyth…</div>}>
           <Landing focusAtlas={view === "atlas"} active={isLanding} />
         </Suspense>
       </AppErrorBoundary>
@@ -191,7 +198,7 @@ function Shell() {
         </nav>
         <div className="sidebar-bottom">
           <div className="current-project">
-            <small>CURRENT PROJECT</small>
+            <small>Current project</small>
             <b>{project.title}</b>
             <span>{project.brief.medium}</span>
           </div>
@@ -224,7 +231,7 @@ function Shell() {
             />
           </a>
           <span className={saving ? "local-label saving" : "local-label"}>
-            {saving ? "SAVING YOUR CHANGES…" : "LIVE STUDIO · SAVED TO YOUR WORKSPACE"}
+            {saving ? "Saving…" : "All changes saved"}
           </span>
           <div className="header-actions">
             <button
@@ -234,8 +241,8 @@ function Shell() {
             >
               <Icon name="settings" />
             </button>
-            <a className="text-action" href="/studio/teams.html">Sign in</a>
-            <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>
+            <a className="text-action" href="/studio/teams.html">{access.accounts_required ? "Account" : "Sign in"}</a>
+            {!access.accounts_required && <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>}
           </div>
         </header>
         {error && (
@@ -250,7 +257,7 @@ function Shell() {
           <PageLoading label="Opening your saved workspace…" light />
         ) : (
           <>
-            {!["workflow", "projects", "overview", "connections", "retrieval"].includes(
+            {!["workflow", "projects", "overview", "connections", "retrieval", "news"].includes(
               view,
             ) && <Journey />}
             {!project.id &&
@@ -296,8 +303,8 @@ function PageCache({ pages, view }: { pages: Partial<Record<View, ReactElement>>
 
 export default function App() {
   return (
-    <StudioProvider>
+    <AccountGate><StudioProvider>
       <Shell />
-    </StudioProvider>
+    </StudioProvider></AccountGate>
   )
 }

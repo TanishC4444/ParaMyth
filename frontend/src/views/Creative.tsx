@@ -7,7 +7,7 @@ import { useStudio, useDraftState } from "../store";
 import type { AtlasSource, CreativeMode } from "../types";
 import { ago, Icon, PageTitle, Segmented } from "../ui";
 import IdeaEditor, { type InlineSuggestion } from "../IdeaEditor";
-import { Artwork } from "../art";
+import { BrandSpot } from "../brandArt";
 import { useMaterials } from "../materials";
 
 const MODES: CreativeMode[] = ["Ideas", "Draft", "Review", "Revise"];
@@ -184,7 +184,7 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
 
   const shown = records.find((r) => r.id === selectedResult) || records[0];
   return <div className="page simple-workspace">
-    <PageTitle eyebrow="" title={ideasOnly ? "Shape your idea" : "Creative workspace"} text="Start with an idea. We’ll fill in the gaps, and you can edit every choice." />
+    <PageTitle title={ideasOnly ? "Shape your idea" : "Creative workspace"} text="Start with an idea. We’ll fill in the gaps, and you can edit every choice." />
     {!project.id && ready && <div className="panel"><p>Create a project to keep your ideas and results together.</p><button className="primary" onClick={() => go("projects")}>Go to projects</button></div>}
     {error && <div className="panel" role="alert"><p>{error}</p><button onClick={() => setRevision((n) => n + 1)}>Try loading again</button> <button onClick={() => go("connections")}>Check connections</button></div>}
     {latestFailure && !submitting && <div className="panel" role="alert"><p>Latest writing request {latestFailure.status} · {ago(latestFailure.created_at)}</p><p>{latestFailure.message || "The request did not finish. Try again when the connection is ready."}</p>{latestFailure.preview?.text && <details><summary>Saved partial writing</summary><pre>{latestFailure.preview.text}</pre></details>}</div>}
@@ -205,7 +205,7 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
           {source && <div className="atlas-seed"><div><b>{source.title}</b><p>{source.tradition} · {source.place}<br />{label(source.mechanism)}: {source.instruction}</p><button className="text-action" onClick={() => setSource(undefined)}>Remove source</button></div></div>}
         </details>
         <div className="composer-actions">
-          <button className="primary" disabled={!ready || !project.id || working || (needsText && !input.trim())} onClick={() => { setSelectedResult(""); void run(); }}><Icon name="sparkle" size={15} />{working ? "Working…" : mode === "Ideas" ? "Develop my idea" : `${mode} my writing`}</button>
+          <button className="primary" disabled={!ready || !project.id || working || (needsText && !input.trim())} onClick={() => { setSelectedResult(""); void run(); }}><Icon name="pen" size={15} />{working ? "Working…" : mode === "Ideas" ? "Develop my idea" : `${mode} my writing`}</button>
           <button className="text-action" onClick={() => go("atlas")}>{source ? "View inspiration" : "Find inspiration"}</button>
         </div>
         {source && <p className="hint">Inspired by {source.title}</p>}
@@ -232,7 +232,7 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
             <details><summary>Generation details</summary><p className="hint">{r.model} · {r.status} · {r.steps.length} AI calls</p>{r.steps.map((step, index) => <details key={index}><summary>{index + 1}. {step.stage}</summary><pre>{readable(step.output)}</pre></details>)}</details>
           </article>;
         })}
-        {!loading && !records.length && !working && <div className="empty illustrated-empty"><Artwork name="enchanted" /><div className="empty-copy"><h3>A little idea is enough.</h3><p>Your developed idea will appear here, ready to shape into a story.</p></div></div>}
+        {!loading && !records.length && !working && <div className="empty illustrated-empty"><BrandSpot kind="book" /><div className="empty-copy"><h3>A little idea is enough.</h3><p>Your developed idea will appear here, ready to shape into a story.</p></div></div>}
       </section>
     </div>
     <details className="workspace-notes"><summary>Notes & ideas</summary><IdeaBoard /></details>
@@ -268,7 +268,7 @@ function IdeaBoard() {
   const ideas = store.ideas;
   const set = (next: typeof ideas) => setStore((s) => ({ ...s, ideas: next }));
   const add = () => { set([...ideas, { id: uid(), label: "NEW IDEA", title: "Untitled idea", body: "", color: "paper-note" }]); notify("Idea added"); };
-  return <section className="section"><div className="section-head"><div><span className="eyebrow">CREATIVE SPACE</span><h2>Idea board</h2></div><button className="text-action" onClick={add}><Icon name="plus" size={15} />Add note</button></div>
+  return <section className="section"><div className="section-head"><h2>Idea board</h2><button className="text-action" onClick={add}><Icon name="plus" size={15} />Add note</button></div>
     <div className="idea-board">{ideas.map((n) => <div className={`idea-note ${n.color}`} key={n.id}>
       <input value={n.label} aria-label="Note label" onChange={(e) => set(ideas.map((x) => x.id === n.id ? { ...x, label: e.target.value } : x))} />
       <textarea className="idea-title" value={n.title} aria-label="Note title" onChange={(e) => set(ideas.map((x) => x.id === n.id ? { ...x, title: e.target.value } : x))} />

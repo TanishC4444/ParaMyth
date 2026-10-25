@@ -2,9 +2,11 @@ import { useEffect, useState } from "react"
 
 import { api } from "../api"
 
-import { PageTitle } from "../ui"
+import { errorText, PageTitle, Status } from "../ui"
+import { useAccess } from '../AccountGate'
 
 export default function Connections() {
+  const access = useAccess()
   const [data, setData] = useState<any>(null),
     [error, setError] = useState(""),
     [semantic, setSemantic] = useState(false),
@@ -30,7 +32,6 @@ export default function Connections() {
   return (
     <div className="page">
       <PageTitle
-        eyebrow="YOUR CONNECTED WORKSPACE"
         title="Connections"
         text="See which services are ready, manage your account, and explore every backend tool."
       />
@@ -41,26 +42,24 @@ export default function Connections() {
       )}
       <section className="panel">
         <h2>Your account and team</h2>
-        <p>Create your account to manage studio membership and invitations.</p>
+        <p>Manage your account, studio membership and invitations.</p>
         <div className="account-links">
-          <a className="primary" href="/studio/teams.html?mode=signup">
+          {!access.accounts_required && <a className="primary" href="/studio/teams.html?mode=signup">
             Create an account
-          </a>
+          </a>}
           <a className="secondary" href="/studio/teams.html">
-            Sign in / Manage team
+            {access.accounts_required ? "Manage account & team" : "Sign in / Manage team"}
           </a>
         </div>
       </section>
       <section className="panel">
-        <span className="eyebrow">LITERARY RETRIEVAL</span>
         <h2>
           {semantic ? "Semantic search connected" : "Enable semantic search"}
         </h2>
         <p>
-          Story keyword search works with your corpus now. Add a Gemini
-          embedding key to also search by meaning.
+          {access.shared_keys ? 'Search services are configured by the studio owner.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
         </p>
-        <form
+        {access.shared_keys ? <p>Shared service keys stay on the server and are never sent to your browser.</p> : <form
           onSubmit={async (e) => {
             e.preventDefault()
             try {
@@ -69,7 +68,7 @@ export default function Connections() {
               setSemantic(true)
               setError("")
             } catch (e) {
-              setError(String(e))
+              setError(errorText(e))
             }
           }}
         >
@@ -85,31 +84,29 @@ export default function Connections() {
           <button className="secondary" disabled={!key.trim()}>
             Connect semantic search
           </button>
-        </form>
-        <p className="hint">
+        </form>}
+        {!access.shared_keys && <p className="hint">
           Kept only in the current server session. Never included in project
           files.
-        </p>
+        </p>}
       </section>
       <div className="connections-grid">
-        {Object.entries(data?.configured || {}).map(([key, ready]) => (
+        {Object.entries(data?.configured || {}).filter(([key]) => access.github_admin || key !== "github_server_token").map(([key, ready]) => (
           <section className="panel" key={key}>
-            <span className="eyebrow">
-              {ready ? "CONNECTED" : "SETUP NEEDED"}
-            </span>
+            <Status>{ready ? "Connected" : "Setup needed"}</Status>
             <h3>{labels[key] || key}</h3>
             <p>
               {ready
                 ? "Available through your studio service."
-                : "Add the connection to enable this tool."}
+                : access.shared_keys ? "The studio owner needs to configure this service." : "Add the connection to enable this tool."}
             </p>
-            <a href="/connections" target="_blank" rel="noreferrer">
+            {!access.shared_keys && <a href="/connections" target="_blank" rel="noreferrer">
               Manage connection
-            </a>
+            </a>}
           </section>
         ))}
       </div>
-      <section className="panel">
+      {access.github_admin && <section className="panel">
         <h2>Explore the full studio</h2>
         <p>
           The main workspace gives you a guided path. These advanced views
@@ -136,7 +133,7 @@ export default function Connections() {
         <div className="capability-list">
           {data?.features.map((f: string) => <span key={f}>{f}</span>)}
         </div>
-      </section>
+      </section>}
     </div>
   )
 }

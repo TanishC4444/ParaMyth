@@ -7,12 +7,12 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const path = resolve(__dirname, '../src/atlas.ts');
 const corpus = JSON.parse(readFileSync(resolve(__dirname, '../public/atlas/stories.json'), 'utf8'));
-function atlas(fetch) {
+function atlas(fetch, hostname = 'localhost') {
   // Supply Vite's base URL while executing the actual atlas module in isolation.
-  const source = readFileSync(path, 'utf8').replaceAll('import.meta.env.BASE_URL', '"/"').replaceAll('import.meta.env.VITE_STATIC_SITE', 'undefined');
+  const source = readFileSync(path, 'utf8').replaceAll('import.meta.env.BASE_URL', '"/"');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
   const exports = {};
-  vm.runInNewContext(code, { exports, require: createRequire(path), fetch, AbortSignal, localStorage: { getItem: () => null } });
+  vm.runInNewContext(code, { exports, require: createRequire(path), fetch, AbortSignal, localStorage: { getItem: () => null }, location: { hostname } });
   return exports;
 }
 const response = (body) => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => body });
@@ -44,3 +44,9 @@ test('story details work offline and a failed asset request can be retried', asy
   assert.ok(story.summary.includes('gingerbread'));
 });
 
+test('the public website does not ask its own origin for the studio API', async () => {
+  const requests = [];
+  const module = atlas(async (url) => { requests.push(url); throw Error('offline'); }, 'paramyth.tech');
+  assert.equal(await module.loadAtlas(), module.bundledAtlas);
+  assert.deepEqual(requests, []);
+});

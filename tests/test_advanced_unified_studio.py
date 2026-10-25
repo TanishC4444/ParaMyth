@@ -144,15 +144,15 @@ class UnifiedStudioTests(unittest.TestCase):
 
 
 class CreativeLoopTests(unittest.TestCase):
-    def test_bounded_idea_review_revision_loop_preserves_evidence(self):
+    def test_bounded_draft_review_revision_loop_preserves_evidence(self):
         import os
         with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'VULTR_INFERENCE_API_KEY':'test-key'}):
             root=Path(folder)
             values=[{'title':'Idea','text':'An initial premise'},{'pass':False,'summary':'Needs stakes','issues':[{'fix':'Add a consequence'}]},{'title':'Better idea','text':'An improved premise'}]
             responses=[{'choices':[{'message':{'content':json.dumps(v)},'finish_reason':'stop'}],'usage':{}} for v in values]
             with patch('paramyth.pipeline.creative_studio.request_json',side_effect=responses) as request:
-                record=creative_studio.run(root,{'operation':'loop','loop_mode':'ideas','brief':'A meaningful choice','use_story':False,'rounds':1})
-            self.assertEqual(request.call_count,3);self.assertEqual([s['stage'] for s in record['steps']],['Ideas','Review','Revise'])
+                record=creative_studio.run(root,{'operation':'loop','loop_mode':'prose','brief':'A meaningful choice','use_story':False,'rounds':1})
+            self.assertEqual(request.call_count,3);self.assertEqual([s['stage'] for s in record['steps']],['Draft','Review','Revise'])
             self.assertFalse(record['review_matches_result']);self.assertEqual(record['result']['text'],'An improved premise')
             self.assertTrue((root/'creative'/(record['id']+'.txt')).is_file())
 

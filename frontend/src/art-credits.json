@@ -14,7 +14,7 @@
   {
     "file": "ruins.webp",
     "title": "Ruins of an Ancient City",
-    "creator": "John Martin (British, 1789–1854)",
+    "creator": "John Martin (British, 1789\u20131854)",
     "license": "CC0-1.0",
     "source_page_url": "https://clevelandart.org/art/1981.13",
     "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -38,7 +38,7 @@
   {
     "file": "music.webp",
     "title": "Attributes of Music",
-    "creator": "François Bonvin (French, 1817–1887)",
+    "creator": "Fran\u00e7ois Bonvin (French, 1817\u20131887)",
     "license": "CC0-1.0",
     "source_page_url": "https://clevelandart.org/art/1980.233",
     "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -110,7 +110,7 @@
   {
     "file": "castle.webp",
     "title": "Castle on a River",
-    "creator": "Salomon van Ruysdael (Dutch, 1602–1670)",
+    "creator": "Salomon van Ruysdael (Dutch, 1602\u20131670)",
     "license": "CC0-1.0",
     "source_page_url": "https://clevelandart.org/art/1973.2",
     "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -122,7 +122,7 @@
   {
     "file": "forest.webp",
     "title": "In the Forest",
-    "creator": "Célestin François Nanteuil (French, 1813–1873)",
+    "creator": "C\u00e9lestin Fran\u00e7ois Nanteuil (French, 1813\u20131873)",
     "license": "CC0-1.0",
     "source_page_url": "https://clevelandart.org/art/1977.125",
     "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -142,5 +142,113 @@
     "attribution_text": "",
     "width": 819,
     "height": 1024
+  },
+  {
+    "file": "krishna.webp",
+    "title": "Krishna and the Gopis Gather for Rasamandala",
+    "creator": "India, Rajasthan",
+    "license": "CC0-1.0",
+    "source_page_url": "https://www.clevelandart.org/art/1960.45",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 591,
+    "height": 900
+  },
+  {
+    "file": "dragon.webp",
+    "title": "Bahram Gur Slays a Dragon",
+    "creator": "Iran, Tabriz",
+    "license": "CC0-1.0",
+    "source_page_url": "https://www.clevelandart.org/art/1943.658.b",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 685,
+    "height": 900
+  },
+  {
+    "file": "phoenix.webp",
+    "title": "Phoenix and Tree Peony",
+    "creator": "China",
+    "license": "CC0-1.0",
+    "source_page_url": "https://www.clevelandart.org/art/1992.95",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 1200,
+    "height": 873
+  },
+  {
+    "file": "edo-rain.webp",
+    "title": "Sudden Shower over Shin-\u014chashi Bridge and Atake, from One Hundred Famous Views of Edo",
+    "creator": "Utagawa Hiroshige (Japanese, 1797\u20131858)",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/1921.318",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 605,
+    "height": 900
+  },
+  {
+    "file": "edo-moon.webp",
+    "title": "The Moon-Viewing Promontory, from One Hundred Views of Famous Places in Edo",
+    "creator": "Utagawa Hiroshige (Japanese, 1797\u20131858)",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/1985.320",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 613,
+    "height": 900
+  },
+  {
+    "file": "ragamala-one.webp",
+    "title": "Kausa Ragaputra of Malkos, from a Ragamala",
+    "creator": "Artist unknown",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/2001.111",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 760,
+    "height": 893
+  },
+  {
+    "file": "ragamala-two.webp",
+    "title": "Surmananda Ragaputra of Hindol, from a Ragamala",
+    "creator": "Artist unknown",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/2002.116",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 730,
+    "height": 900
+  },
+  {
+    "file": "royal-court.webp",
+    "title": "Royal Reception in a Landscape, left folio from the double frontispiece of a Shahnama (Book of Kings) of Firdausi (Persian, about 940\u20131019 or 1025)",
+    "creator": "Artist unknown",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/1956.10",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 622,
+    "height": 900
+  },
+  {
+    "file": "bahram-azada.webp",
+    "title": "Bahram Gur and Azada, from a Shahnama (Book of Kings) of Firdausi (940\u20131019 or 1025)",
+    "creator": "Artist unknown",
+    "license": "CC0-1.0",
+    "source_page_url": "https://clevelandart.org/art/1915.597",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution_required": false,
+    "attribution_text": "",
+    "width": 593,
+    "height": 893
   }
 ]

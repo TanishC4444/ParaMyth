@@ -9,11 +9,13 @@ from ..paths import workspace_root
 
 ROOT = workspace_root()
 
+# Exact origins only. A github.io origin is shared by every Pages site on that
+# account, so the hosted frontend is trusted by its own domain instead.
 DEFAULT_ORIGINS = (
     'http://localhost:5173',
     'http://localhost:8080',
     'http://127.0.0.1:8080',
-    'https://tanishc4444.github.io',
+    'https://paramyth.tech',
 )
 
 

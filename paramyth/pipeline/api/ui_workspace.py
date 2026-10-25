@@ -16,7 +16,7 @@ from .atlas import load_stories
 
 router=APIRouter(prefix='/api/ui',tags=['ParaMyth workspace'],dependencies=[Depends(local)])
 RT=Depends(get_runtime)
-MEDIA={'book':'Novel','novel':'Novel','short_story':'Short story','stage_play':'Stage play','screenplay':'Screenplay','audio_drama':'Audio drama','comic_script':'Comic script'}
+MEDIA={'book':'Novel','novel':'Novel','short_story':'Short story','stage_play':'Stage play','screenplay':'Screenplay','audio_drama':'Audio drama','comic_script':'Comic script','documentary':'Documentary','television':'Television script','television_script':'Television script'}
 
 def read(path,default):
     try:return load(path) if path.is_file() else default
@@ -98,7 +98,7 @@ def session(response:Response,runtime=RT):
 def workspace(request:Request,runtime=RT):
     items=[project(runtime,x['id']) for x in runtime.project_list()]
     items=[p for p in items if p is not None]
-    current=request.cookies.get('pm_pipeline_project')
+    current=getattr(runtime,'selected',None) or request.cookies.get('pm_pipeline_project')
     if current not in {p['id'] for p in items}:current=items[0]['id'] if items else ''
     meta=read(runtime.root/'runs'/'paramyth-workspace.json',{})
     return {'projects':items,'current':current,'ideas':meta.get('ideas',[]),'pins':meta.get('pins',[]),'drafts':{p['id']:read(runtime.folder(p['id'])/'workspace-drafts.json',{}) for p in items}}
@@ -118,6 +118,15 @@ def save_workspace_drafts(ident:str,data:dict=Body(...),runtime=RT):
     return {'saved':True}
 
 
+@router.post('/ideas/analyze',dependencies=[Depends(write)])
+def analyze_idea(request:Request,data:dict=Body(...),runtime=RT):
+    from ..idea_development import analyze
+    folder(request,runtime)
+    current=folder(request,runtime)
+    author=read(current/'author-workspace.json',{})
+    return analyze(data.get('text',''),data.get('structure',''),data.get('medium') or author.get('brief',{}).get('medium','Novel'))
+
+
 @router.post('/creative',dependencies=[Depends(write)],status_code=202)
 def stream_creative(request:Request,data:dict=Body(...),runtime=RT):
     from .. import creative_studio,creative_stream
@@ -132,6 +141,14 @@ def stream_creative(request:Request,data:dict=Body(...),runtime=RT):
 def creative_records(request:Request,runtime=RT):
     paths=sorted((folder(request,runtime)/'creative').glob('*.json'),key=lambda p:p.stat().st_mtime,reverse=True)[:50]
     return {'results':[load(p) for p in paths]}
+
+
+@router.get('/writing/export')
+def writing_download(request:Request,format:str='docx',scene_id:str='',runtime=RT):
+    from urllib.parse import quote
+    from ..writing_exports import export_writing
+    body,mime,filename=export_writing(folder(request,runtime),format,scene_id)
+    return Response(body,media_type=mime,headers={'Content-Disposition':"attachment; filename*=UTF-8''"+quote(filename),'Cache-Control':'no-store'})
 
 
 @router.get('/creative/jobs')
@@ -228,7 +245,7 @@ def current_production(request:Request,data:dict=Body(...),runtime=RT):
     from ..production import create_plan,normalize_config
     current=folder(request,runtime)
     selected=media_workspace.material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
-    cfg=normalize_config(data.get('config',{}))
+    cfg=normalize_config({**data.get('config',{}),'brief':data.get('prompt','')})
     available=media_workspace.catalog(current) if data.get('automatic_assets') else None
     ids=[i['id'] for i in available['images'][:3]] if available else data.get('image_ids',[])
     if not isinstance(ids,list) or len(ids)>3 or any(not isinstance(i,str) for i in ids):raise ValueError('Choose up to three project images')
@@ -257,10 +274,10 @@ def prepare_production(request:Request,data:dict=Body(...),runtime=RT):
     from ..production import prepare_direction,normalize_config
     current=folder(request,runtime)
     selected=material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
-    config=normalize_config(data.get('config',{}))
+    config=normalize_config({**data.get('config',{}),'brief':data.get('prompt','')})
     def operation(progress):
         progress('Developing production direction from your writing')
-        return {**prepare_direction(selected['sources'],config),'source_id':selected['source_id'],'source_signature':selected['signature']}
+        return {**prepare_direction(selected['sources'],config,folder=current,progress=progress),'source_id':selected['source_id'],'source_signature':selected['signature']}
     return {'job_id':runtime.submit('production-brief',current,operation,local=True),'local':True}
 
 
@@ -323,7 +340,7 @@ def search(data:dict=Body(...)):
     mode=data.get('mode','lexical')
     if mode not in ('lexical','hybrid'):raise ValueError('Choose keyword or semantic search')
     if mode=='hybrid':
-        from paramyth.pipeline.rag.embeddings import api_key
+        from ..rag.embeddings import api_key
         try:api_key()
         except RuntimeError:raise HTTPException(503,'Semantic search needs a Gemini embedding connection. Add it in Connections, or choose Story keywords.') from None
     limit=data.get('limit',8)
@@ -338,7 +355,7 @@ def search(data:dict=Body(...)):
     try:result=retrieve(request,source_limit=20 if mode=="hybrid" else limit,group_ids=anchors)
     except RuntimeError:raise HTTPException(503,'The literary search service is unavailable. Check the Gemini key in Connections and try again.') from None
     if mode=='hybrid':
-        from paramyth.pipeline.rag.rerank import rerank
+        from ..rag.rerank import rerank
         try:
             result['sources']=rerank(q,result['sources'],limit)
             result['ranking']='Gemini relevance review'
@@ -350,7 +367,7 @@ def search(data:dict=Body(...)):
 
 @router.get('/retrieval-connection')
 def retrieval_connection():
-    from paramyth.pipeline.rag.embeddings import api_key
+    from ..rag.embeddings import api_key
     try:api_key();configured=True
     except RuntimeError:configured=False
     return {'semantic':configured,'keyword':True}

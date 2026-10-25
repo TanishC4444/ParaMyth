@@ -47,19 +47,23 @@ def plan(folder, mode='ambience', direction='', *, sources=None):
         raise ValueError('Choose ambience, score or song')
     sources = context(folder) if sources is None else sources
     # Allocate room to every artifact rather than dropping characters behind prose.
-    allowance = max(200, 4800 // len(sources))
-    excerpts = '\n'.join(x['file'] + ': ' + x['text'][:allowance] for x in sources)[:4800]
-    text = ' '.join(x['text'] for x in sources).lower() + ' ' + direction.lower()
+    allowance = max(200, 1600 // max(1,len(sources)))
+    excerpts = '\n'.join(x['file'] + ': ' + x['text'][:allowance] for x in sources)[:1600]
+    text = direction.lower() if direction.strip() else ' '.join(x['text'] for x in sources).lower()
     layers = [name for name, pattern in (
-        ('water', r'harbou?r|ocean|sea\b|wave|river|ship|rain|storm'),
+        ('water', r'water|harbou?r|ocean|sea\b|wave|river|ship|rain|storm'),
         ('wind', r'wind|storm|mountain|forest|desert|cold'),
         ('rumble', r'horror|fear|dread|dark|danger|battle|thunder|tension'),
         ('fire', r'fire|flame|hearth|camp|burn')) if re.search(pattern, text)] or ['wind']
+    if mode=='ambience' and direction.strip():
+        for layer,words in [('wind','wind'),('water','water|rain|waves?|ocean'),('fire','fire|flames?'),('rumble','rumble|thunder')]:
+            if re.search(r'\b(?:no|without|avoid|exclude)\s+(?:\w+\s+){0,2}(?:'+words+r')\b',direction,re.I):layers=[x for x in layers if x!=layer]
+        if not layers or not re.search(r'wind|water|rain|wave|ocean|sea|river|fire|flame|rumble|thunder|storm|forest',direction,re.I):raise ValueError('Simple nature sounds support wind, water, fire and rumble. Choose instrumental music for instruments.')
     instruction = {'ambience': 'Environmental soundscape. No melody, singing, speech or musical instruments.',
-                   'score': 'Instrumental dramatic underscore. No vocals or spoken narration.',
+                   'score': 'Instrumental music. No vocals or spoken narration.',
                    'song': 'A song inspired by this story and its characters.'}[mode]
     return {'mode': mode, 'layers': layers, 'sources': [x['file'] for x in sources],
-            'prompt': (instruction + '\nAuthor direction: ' + direction[:400] + '\nStory, characters and world:\n' + excerpts)[:5900]}
+            'prompt': ('Author direction (takes priority):\n' + direction + '\n' + instruction + '\nOptional story context, use only where consistent with the author direction:\n' + excerpts)[:5900], 'author_direction': direction}
 
 
 def wav_stream(cue, seconds=60, rate=16000):
@@ -91,7 +95,7 @@ def wav_stream(cue, seconds=60, rate=16000):
 
 class Vultr:
     def __init__(self):
-        self.key = os.environ.get('VULTR_INFERENCE_API_KEY')
+        self.key = os.environ.get('VULTR_MUSIC_API_KEY') or os.environ.get('VULTR_INFERENCE_API_KEY')
         if not self.key:
             raise ValueError('Set VULTR_INFERENCE_API_KEY in the server environment for Vultr generation.')
 
@@ -116,16 +120,33 @@ class Vultr:
         spec = next((m for m in models if m['id'] == model), None)
         if spec is None: raise ValueError('Select an available Vultr music model.')
         if cue['mode'] == 'ambience': raise ValueError('Use local ambience for environmental soundtracks.')
+        if cue['mode']=='score' and (model=='minimax-music3' or spec.get('instrumental') is False):
+            raise ValueError('MiniMax Music 3 is a vocal-song model and cannot reliably make an instrumental score. Choose Song with vocals, Simple nature sounds, or connect an instrumental-capable provider.')
         if cue['mode'] == 'score':
             # Section tags satisfy the model's lyrics field without supplying sung words.
             lyrics = '[Instrumental]\n[Intro]\n[Instrumental]\n[Bridge]\n[Instrumental]\n[Outro]'
-            cue = dict(cue, prompt='Cinematic orchestral film score. Instrumental throughout; no singing, choir, speech or vocals. Develop an emotional theme from sparse strings through dramatic percussion and brass into a restrained resolution.\n' + cue['prompt'])
+            cue = dict(cue, prompt=cue['prompt']+'\nInstrumental throughout; no singing, choir, speech or vocals. Follow the requested instruments, genre, tempo and exclusions. Do not add orchestration unless requested.')
         if spec.get('lyrics') == 'required' and not lyrics.strip():
             raise ValueError('This model requires lyrics. Supply lyrics or choose local ambience.')
         limits = spec.get('duration', {})
         if not limits.get('min', 1) <= seconds <= limits.get('max', 360):
             raise ValueError('Duration outside selected model limits.')
-        return self.json('/music', {'model': model, 'prompt': cue['prompt'][:spec.get('prompt_max_length', 6000)], 'duration': seconds, 'lyrics': lyrics, 'response_format': 'mp3'})
+        limit=spec.get('prompt_max_length',6000)
+        if len(cue.get('author_direction',''))+80>limit:raise ValueError('This music model accepts a shorter prompt. Shorten your description before generating.')
+        payload=music_payload(cue,model,seconds,lyrics)
+        if len(payload['prompt'])>limit:raise ValueError('Shorten the music description to fit the selected model. Your prompt will not be cut off.')
+        return self.json('/music',payload)
+
+
+def music_payload(cue,model,seconds,lyrics):
+    """Keep story prose out of a musical caption and repeat the same take."""
+    import hashlib
+    direction=cue.get('author_direction') or cue['prompt']
+    vocal='No singing, choir, speech or vocals.' if cue['mode']=='score' else 'Follow the author direction.'
+    caption='Global Metadata\nBasic Attributes: '+direction.strip()+'\nVocal Details\nVocal Style: '+vocal+'\nArrangement\nInstrument Lifecycle Description (Primary/Secondary Layering):\nPrimary: Follow the instruments and exclusions in Basic Attributes. Do not add a conflicting genre.'
+    payload={'model':model,'prompt':caption,'duration':seconds,'lyrics':lyrics,'response_format':'mp3'}
+    payload['seed']=int.from_bytes(hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).digest()[:4],'big')
+    return payload
 
 
 PAGE = '''<!doctype html><meta charset="utf-8"><title>ParaMyth soundtracks</title>

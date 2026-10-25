@@ -27,7 +27,7 @@ class PlanningTests(StudioTestCase):
         self.headers = {'X-ParaMyth-Token': self.token}
 
     def make_plan(self):
-        with patch.dict(os.environ, KEY), patch('paramyth.production.request_json', side_effect=[reply(BREAKDOWN), reply(ADVICE)]):
+        with patch.dict(os.environ, KEY), patch('paramyth.pipeline.production.request_json', side_effect=[reply(BREAKDOWN), reply(ADVICE)]):
             started = self.client.post('/api/generate', params=self.query, json={'config': {'start_date': '2026-11-02'}, 'images': []}, headers=self.headers)
             self.assertEqual(started.status_code, 202, started.text)
             job = wait(self.runtime, started.json()['job_id'])

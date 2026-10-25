@@ -1,12 +1,20 @@
 /** All product actions use the same-origin live server. No fixture fallback. */
+// Static exports stay offline; a live hosted server marks its own HTML.
+export const studioHost = () => ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname) || document.querySelector('meta[name="paramyth-studio"]')?.getAttribute("content") === "live"
+const offline = "Studio tools run on your own computer. Start the studio there to use them."
 let csrf: Promise<string> | undefined
+let accountIdentity = 'local'
+export const currentAccountIdentity = () => accountIdentity
+export function setAccountIdentity(id: string) { if (accountIdentity !== id) { accountIdentity = id; csrf = undefined } }
 async function token() {
+  if (!studioHost()) throw Error(offline)
   if (!csrf)
     csrf = fetch("/api/ui/session", {
       credentials: "same-origin",
       cache: "no-store",
     })
       .then(async (r) => {
+        if (r.status === 401) window.dispatchEvent(new Event('paramyth-sign-in-required'))
         if (!r.ok) throw Error("Start the live studio server to continue.")
         return (await r.json()).csrf as string
       })
@@ -21,11 +29,15 @@ export async function api<T = any>(
   body?: unknown,
   method?: string,
 ): Promise<T> {
+  if (!studioHost()) throw Error(offline)
+  const identity = accountIdentity
   const verb = method || (body === undefined ? "GET" : "POST")
   const headers: Record<string, string> = { Accept: "application/json" }
+  if (identity !== 'local') headers['X-ParaMyth-Account'] = identity
   if (body !== undefined) headers["Content-Type"] = "application/json"
   if (!["GET", "HEAD"].includes(verb))
     headers["X-ParaMyth-Token"] = await token()
+  if (identity !== accountIdentity) throw Error('Your account changed. Reload this page before continuing.')
   const r = await fetch(path, {
     method: verb,
     signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : path.startsWith("/api/studio/jobs") || path.startsWith("/api/ui/creative/jobs") || path.startsWith("/api/ui/jobs") ? AbortSignal.timeout(10000) : undefined,
@@ -37,6 +49,7 @@ export async function api<T = any>(
   const json = (r.headers.get("content-type") || "").includes("json")
   const value = json ? await r.json() : null
   if (!r.ok || !json) {
+    if (r.status === 401) { csrf = undefined; window.dispatchEvent(new Event('paramyth-sign-in-required')) }
     if (r.status === 403) csrf = undefined
     const detail = value?.detail || value?.error
     throw Error(

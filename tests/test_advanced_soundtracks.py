@@ -36,6 +36,11 @@ class SoundtracksTests(unittest.TestCase):
         self.assertEqual(len(audio), 160044)
         self.assertTrue(any(audio[10000:20000]))
 
+    def test_nature_sound_direction_overrides_story_and_honors_exclusions(self):
+        cue=plan(self.root,'ambience','Rain only, no wind or fire.')
+        self.assertEqual(cue['layers'],['water'])
+        with self.assertRaisesRegex(ValueError,'instrumental music'):plan(self.root,'ambience','Solo piano')
+
     def test_missing_context_and_invalid_mode(self):
         with tempfile.TemporaryDirectory() as empty:
             with self.assertRaises(ValueError): context(empty)
@@ -59,11 +64,18 @@ class SoundtracksTests(unittest.TestCase):
             result = provider.create(plan(self.root, 'song'), spec['id'], 30, 'Rain over the harbor')
             self.assertEqual(result['id'], 'music_abc')
             self.assertEqual(request.call_args.args[1]['lyrics'], 'Rain over the harbor')
+        with patch.object(provider,'json',return_value={'data':[spec]}):
+            with self.assertRaisesRegex(ValueError,'vocal-song'):provider.create(plan(self.root,'score'),spec['id'],60)
+        spec={**spec,'id':'instrumental-model','lyrics':'optional'}
         with patch.object(provider, 'json', side_effect=[{'data':[spec]}, {'id':'music_score'}]) as request:
-            provider.create(plan(self.root, 'score'), spec['id'], 60)
+            provider.create(plan(self.root, 'score', 'Soft solo piano. No drums or strings.'), spec['id'], 60)
             body = request.call_args.args[1]
             self.assertIn('[Instrumental]', body['lyrics'])
-            self.assertIn('no singing', body['prompt'])
+            self.assertIn('No singing', body['prompt'])
+            self.assertIn('Soft solo piano. No drums or strings.',body['prompt'])
+            self.assertNotIn('orchestral film score',body['prompt'])
+            self.assertNotIn('dramatic percussion',body['prompt'])
+        spec={**spec,'lyrics':'required'}
         for mode, lyrics, seconds in [('song','',30),('song','words',5)]:
             with patch.object(provider, 'json', return_value={'data':[spec]}):
                 with self.assertRaises(ValueError): provider.create(plan(self.root, mode), spec['id'], seconds, lyrics)

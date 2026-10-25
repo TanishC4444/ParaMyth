@@ -38,6 +38,7 @@ Authorization: Bearer <GitHub token>
 - Users bring their own token. The server uses it for that one request and does not store or log it.
 - Fine-grained token: repository access to the ParaMyth repo with **Actions: read and write** (and Metadata: read). Classic token: the `repo` scope.
 - `Bearer demo` serves bundled sample data with no GitHub calls (disable with `PARAMYTH_ALLOW_DEMO=0`).
+- `Bearer server` uses the server's `PARAMYTH_GITHUB_TOKEN`. It works only for pages served by the local server itself; requests from any other origin get 403.
 - `GET /api/v1/auth/check` returns `{login, repo, can_dispatch, demo}`. Use it as the login check.
 
 Serve the API over HTTPS anywhere other than localhost, since tokens pass through it.
@@ -176,12 +177,14 @@ The API URL defaults to `http://localhost:8000`. Change it in the connection pan
 
 ### GitHub Pages
 
-`.github/workflows/pages.yml` deploys `web/` on every push to `main` that touches `web/`. A repo admin must enable it once: **Settings → Pages → Build and deployment → Source: GitHub Actions**. The site is then at https://tanishc4444.github.io/paramyth/.
+`.github/workflows/pages.yml` deploys `web/` on every push to `main` that touches `web/`. A repo admin must enable it once: **Settings → Pages → Build and deployment → Source: GitHub Actions**. The site is then at https://paramyth.tech.
 
 The hosted page still needs a running API:
 
 - **Local API:** Chrome and Firefox allow a GitHub Pages page to call `http://localhost:8000` (Chrome may ask for local network permission). Safari blocks it, so use the local playground there.
 - **Hosted API:** deploy the API anywhere that runs Python (Render, Fly.io, a VM) and add the page origin to `PARAMYTH_CORS_ORIGINS`.
+
+Cross-origin access covers only `/api/v1` routes, and hosted pages must send their own GitHub token. List exact origins: a `github.io` origin is shared by every Pages site on that account.
 
 ## Configuration
 
@@ -190,7 +193,7 @@ The hosted page still needs a running API:
 | `PARAMYTH_REPO` | `TanishC4444/ParaMyth` | Repo whose workflows are dispatched and read |
 | `PARAMYTH_REF` | `main` | Branch to dispatch on |
 | `PARAMYTH_ALLOW_DEMO` | `1` | Accept the `demo` token |
-| `PARAMYTH_CORS_ORIGINS` | localhost:5173, localhost:8080, 127.0.0.1:8080, tanishc4444.github.io | Comma-separated allowed browser origins |
+| `PARAMYTH_CORS_ORIGINS` | localhost:5173, localhost:8080, 127.0.0.1:8080, paramyth.tech | Comma-separated allowed browser origins for `/api/v1` |
 | `PARAMYTH_CACHE_DIR` | `runs/api-cache` | Downloaded artifact zips, keyed by artifact ID |
 | `PARAMYTH_POLL_SECONDS` | `15` | GitHub polling interval for event streams |
 

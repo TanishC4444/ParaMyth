@@ -16,7 +16,7 @@ import time
 from collections.abc import Iterator
 from typing import Annotated, Any
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.exceptions import RequestValidationError
@@ -63,8 +63,19 @@ _settings = get_settings()
 # localhost in Chromium browsers. Starlette versions without the option don't
 # block those preflights, so it is only passed when supported.
 _private_network = {'allow_private_network': True} if 'allow_private_network' in inspect.signature(CORSMiddleware.__init__).parameters else {}
+
+
+class PublicAPICORS(CORSMiddleware):
+    # Only the token-authenticated /api/v1 routes are offered cross-origin. Local
+    # studio pages and routes are same-origin, so other sites cannot read them.
+    async def __call__(self, scope, receive, send):
+        if scope['type'] == 'http' and not (scope['path'] == PREFIX or scope['path'].startswith(PREFIX + '/')):
+            return await self.app(scope, receive, send)
+        return await super().__call__(scope, receive, send)
+
+
 app.add_middleware(
-    CORSMiddleware,
+    PublicAPICORS,
     allow_origins=list(_settings.cors_origins),
     allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allow_headers=['Authorization', 'Content-Type'],
@@ -107,12 +118,30 @@ def settings() -> Settings:
     return _settings
 
 
-def make_backend(authorization: str | None, config: Settings) -> Backend:
+LOCAL_HOSTS = {'127.0.0.1', 'localhost', '::1', 'testserver'}
+LOCAL_CLIENTS = {'127.0.0.1', '::1', 'testclient'}
+
+
+def same_origin_local(request: Request | None) -> bool:
+    # Browsers send Origin on every cross-origin request, so a foreign page cannot
+    # pass this check even when CORS allows it to call the API.
+    if request is None or request.url.hostname not in LOCAL_HOSTS:
+        return False
+    if not request.client or request.client.host not in LOCAL_CLIENTS:
+        return False
+    origin = request.headers.get('Origin')
+    return origin is None or origin == str(request.base_url).rstrip('/')
+
+
+def make_backend(authorization: str | None, config: Settings, request: Request | None = None) -> Backend:
     scheme, _, token = (authorization or '').partition(' ')
     token = token.strip()
     if scheme.lower() != 'bearer' or not token:
         raise HTTPException(401, 'Send your GitHub token as "Authorization: Bearer <token>"', headers={'WWW-Authenticate': 'Bearer'})
     if token == 'server':
+        # The server's own token is only for pages this local server serves.
+        if not same_origin_local(request):
+            raise HTTPException(403, 'The server GitHub token is only available to pages served by this local studio')
         token = os.getenv('PARAMYTH_GITHUB_TOKEN', '')
         if not token: raise HTTPException(401, 'Configure GitHub in Connections first')
     if token == 'demo':
@@ -125,8 +154,8 @@ def make_backend(authorization: str | None, config: Settings) -> Backend:
 AuthHeader = Annotated[str | None, Header(description='Bearer <GitHub token>, or Bearer demo')]
 
 
-def backend(authorization: AuthHeader = None, config: Settings = Depends(settings)) -> Iterator[Backend]:
-    instance = make_backend(authorization, config)
+def backend(request: Request, authorization: AuthHeader = None, config: Settings = Depends(settings)) -> Iterator[Backend]:
+    instance = make_backend(authorization, config, request)
     try:
         yield instance
     finally:
@@ -228,10 +257,10 @@ def cancel_run(run_id: int, api: BackendDep) -> dict[str, bool]:
 
 @app.get(f'{PREFIX}/runs/{{run_id}}/events', tags=['runs'], response_class=StreamingResponse,
          responses={200: {'content': {'text/event-stream': {}}, 'description': 'Server-sent events: "run" carries a RunDetail; "end" closes the stream.'}})
-async def run_events(run_id: int, authorization: AuthHeader = None, config: Settings = Depends(settings)):
+async def run_events(run_id: int, request: Request, authorization: AuthHeader = None, config: Settings = Depends(settings)):
     """Stream run updates. Browsers must read this with fetch() (EventSource cannot send the token)."""
     # The stream owns its backend, so the client stays open for the stream's whole life.
-    api = make_backend(authorization, config)
+    api = make_backend(authorization, config, request)
     try:
         first = await asyncio.to_thread(api.get_run, run_id)  # errors return before the stream opens
     except Exception:
@@ -305,6 +334,7 @@ async def missing_local(_, exc):
 from fastapi.staticfiles import StaticFiles
 from .config import ROOT
 app.mount('/studio',StaticFiles(directory=ROOT/'web',html=True),name='accounts-ui')
+frontend_root=ROOT/('frontend' if (ROOT/'frontend'/'dist'/'index.html').is_file() else 'frontend-pipeline')/'dist'
 for asset in ('assets','art','brand','atlas'):
-    directory=ROOT/'frontend-pipeline'/'dist'/asset
+    directory=frontend_root/asset
     app.mount('/'+asset,StaticFiles(directory=directory,check_dir=False),name='frontend-pipeline-'+asset)

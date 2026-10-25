@@ -1,4 +1,4 @@
-export type View = "workflow" | "landing" | "overview" | "projects" | "project" | "atlas" | "runs" | "creative" | "retrieval" | "images" | "music" | "production" | "library" | "connections" | "notfound";
+export type View = "workflow" | "landing" | "overview" | "projects" | "project" | "atlas" | "runs" | "creative" | "retrieval" | "images" | "music" | "production" | "library" | "news" | "connections" | "notfound";
 export type ProjectTab = "brief" | "manuscript" | "canon" | "pipeline";
 
 export const MEDIA = ["Novel", "Short story", "Stage play", "Screenplay", "Audio drama", "Comic script"] as const;

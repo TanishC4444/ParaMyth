@@ -1,22 +1,25 @@
-/* Night atlas theme: the public landing, the static studio page and their shared parts. */
-.night-page,.cinematic-landing{
-  --night:#081216;--abyss:#0b191e;--ink:#10252b;--deep:#163a3d;--verdigris:#5f9c88;--sage:#a6c1a1;--mist:#c8d5c4;
-  --bone:#f5eedb;--parchment:#e8dbb9;--gilt:#d4aa5c;--gilt-hi:#f1d48e;--gilt-lo:#8a682d;--vermilion:#d65b40;
-  --rule:rgba(212,170,92,.24);--rule-soft:rgba(212,170,92,.12);--glass:rgba(13,30,35,.72);
-  --display:"Fraunces",Georgia,"Times New Roman",serif;--sans:"Instrument Sans",Manrope,system-ui,sans-serif;
+/* Theme for the site's own utility pages (static studio, 404, errors), matched to the landing's palette and faces. */
+@font-face{font-family:ParaMyth Editorial;src:url('/landing/editorial.ttf') format('truetype');font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:ParaMyth Editorial;src:url('/landing/editorial-italic.ttf') format('truetype');font-style:italic;font-weight:500;font-display:swap}
+@font-face{font-family:ParaMyth Sans;src:url('/landing/manrope.woff2') format('woff2');font-weight:200 800;font-display:swap}
+.night-page{
+  --night:#112635;--abyss:#0f2230;--ink:#102331;--deep:#162f43;--verdigris:#87cbb2;--sage:#9dafaa;--mist:#d5ded5;
+  --bone:#f5e8ce;--parchment:#e8dbb9;--gilt:#ebc78b;--gilt-hi:#f4cf91;--gilt-lo:#cba366;--vermilion:#d65b40;
+  --rule:rgba(165,188,170,.3);--rule-soft:rgba(165,188,170,.16);--glass:rgba(16,35,49,.92);
+  --display:"ParaMyth Editorial",Georgia,"Times New Roman",serif;--sans:"ParaMyth Sans",Manrope,system-ui,sans-serif;
   --ease-out:cubic-bezier(.16,1,.3,1);
-  font-family:var(--sans);color:var(--bone);background:var(--night);
+  font-family:var(--sans);color:var(--mist);color-scheme:dark;
+  min-height:100vh;position:relative;isolation:isolate;overflow-x:clip;
+  background:#112635 url('/landing/atlas-engraving.svg') center/100vw 100svh fixed no-repeat;
 }
-.night-page{min-height:100vh;position:relative;isolation:isolate;overflow-x:clip}
-.night-page:before,.cinematic-landing:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:1;mix-blend-mode:normal;background-size:auto;
-  background:radial-gradient(1200px 700px at 85% -10%,rgba(95,156,136,.16),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(212,170,92,.10),transparent 60%),var(--night)}
+body:has(.night-page){background:#112635}
 
 /* Wordmark */
 .pm-wordmark{display:inline-flex;align-items:center;gap:11px;color:var(--gilt-hi);text-decoration:none;line-height:1}
 .pm-emblem{width:34px;height:34px;stroke:currentColor;stroke-width:1.1;flex:none;transition:transform .9s var(--ease-out)}
 .pm-emblem .pm-emblem-star{fill:rgba(241,212,142,.14)}
 .pm-wordmark:hover .pm-emblem{transform:rotate(45deg)}
-.pm-wordmark-name{font:400 27px/1 var(--display);letter-spacing:-.02em;color:var(--bone);font-variation-settings:"opsz" 72}
+.pm-wordmark-name{font:600 27px/1 var(--display);letter-spacing:-.02em;color:var(--bone);}
 .pm-wordmark-name em{font-style:italic;color:var(--gilt-hi)}
 
 /* Top bar */
@@ -47,7 +50,7 @@ header.pm-bar{height:auto;background:transparent;border-bottom:0}
 /* Studio setup steps */
 .pm-steps{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--rule)}
 .pm-steps li{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid var(--rule)}
-.pm-step-index{font:italic 300 30px/1 var(--display);color:var(--gilt)}
+.pm-step-index{font:italic 500 30px/1 var(--display);color:var(--gilt)}
 .pm-steps b{display:block;font-weight:600;font-size:13px;letter-spacing:.02em;color:var(--bone);margin-bottom:7px}
 .pm-steps code{display:block;font:12.5px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--sage);white-space:pre-wrap;overflow-wrap:break-word;word-break:normal}
 .pm-copy{border:1px solid var(--rule);background:transparent;color:var(--mist);font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:9px 12px;display:grid;transition:border-color .2s,color .2s}
@@ -55,18 +58,18 @@ header.pm-bar{height:auto;background:transparent;border-bottom:0}
 .pm-copy[data-copied]>span:first-child{opacity:0}.pm-copy[data-copied]>span:last-child{opacity:1}
 .pm-copy:hover{border-color:var(--gilt);color:var(--bone)}
 
-.night-page a:focus-visible,.night-page button:focus-visible,.cinematic-landing a:focus-visible,.cinematic-landing button:focus-visible,.cinematic-landing input:focus-visible,.cinematic-landing select:focus-visible{outline:2px solid var(--gilt-hi);outline-offset:4px}
+.night-page a:focus-visible,.night-page button:focus-visible{outline:2px solid var(--gilt-hi);outline-offset:4px}
 
 /* Static studio page */
 .static-studio-main{max-width:880px;margin:0 auto;padding:7vh 28px 110px;outline:none}
-.static-studio-main h1{font:300 clamp(46px,7vw,92px)/.98 var(--display);letter-spacing:-.035em;color:var(--bone);margin:0 0 28px;font-variation-settings:"opsz" 144}
-.static-studio-main h1 em{font-style:italic;color:var(--gilt-hi);font-weight:400}
+.static-studio-main h1{font:600 clamp(42px,6.4vw,84px)/1 var(--display);letter-spacing:-.035em;color:var(--bone);margin:0 0 28px;}
+.static-studio-main h1 em{font-style:italic;color:var(--gilt-hi);font-weight:500}
 .static-studio-lede{max-width:600px;font-size:16px;line-height:1.75;color:var(--mist);margin:0 0 48px}
 .static-studio-features{list-style:none;padding:0;margin:56px 0 48px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule)}
 .static-studio-features li{background:var(--night);padding:22px 22px 4px 0}
 .static-studio-features li+li{padding-left:22px}
-.static-studio-features span{font:italic 400 15px/1 var(--display);color:var(--gilt)}
-.static-studio-features b{display:block;font:400 22px/1.2 var(--display);margin:14px 0 8px;color:var(--bone)}
+.static-studio-features span{font:italic 500 15px/1 var(--display);color:var(--gilt)}
+.static-studio-features b{display:block;font:600 22px/1.2 var(--display);margin:14px 0 8px;color:var(--bone)}
 .static-studio-features p{font-size:13px;line-height:1.65;color:var(--sage);margin:0 0 18px}
 
 @media(max-width:760px){

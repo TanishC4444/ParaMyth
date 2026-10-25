@@ -10,6 +10,7 @@ const paths: Record<string, ReactNode> = {
   images: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m21 16-5-5-9 9" /></>,
   music: <><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></>,
   production: <><rect x="3" y="9" width="18" height="11" rx="1.5" /><path d="m3 9 3-5 4 5M10 4l4 5M14 4l4 5" /></>,
+  news: <><path d="M5 4h12v16H7a2 2 0 0 1-2-2z" /><path d="M17 8h2v10a2 2 0 0 1-2 2" /><path d="M8 8h6M8 12h6M8 16h4" /></>,
   library: <><path d="M4 4h6l2 3h8v13H4z" /><path d="M9 13h6M9 16h4" /></>,
   connections: <><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0z" /><path d="M12 16v5" /></>,
   atlas: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" /></>,
@@ -29,6 +30,7 @@ const paths: Record<string, ReactNode> = {
   stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
   play: <path d="m7 4 13 8-13 8z" />,
   pin: <><path d="M9 3h6l-1 6 4 4H6l4-4z" /><path d="M12 13v8" /></>,
+  pen: <><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
   sparkle: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />,
   settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-1 .2-2.2-2.6-1.5L13 7.1 11 6 9.4 7.1 6.8 5.8 4.2 7.3 4.4 9.5l-2 1v3l2 1-.2 2.2 2.6 1.5L8.5 17l2 1.1 1.7-1.2 2.6 1.3 2.6-1.5-.2-2.2z" /></>,
 };
@@ -39,8 +41,8 @@ export const Icon = ({ name, size = 19 }: { name: string; size?: number }) => (
 
 export const Status = ({ children }: { children: string }) => <span className={`status ${children.toLowerCase().replace(/\s+/g, "-")}`}><i />{children}</span>;
 
-export const PageTitle = ({ eyebrow, title, text, children }: { eyebrow: string; title: string; text: string; children?: ReactNode }) => (
-  <div className="page-title"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{text}</p></div>{children && <div className="title-actions">{children}</div>}</div>
+export const PageTitle = ({ eyebrow, title, text, children }: { eyebrow?: string; title: string; text: string; children?: ReactNode }) => (
+  <div className="page-title"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1>{title}</h1><p>{text}</p></div>{children && <div className="title-actions">{children}</div>}</div>
 );
 
 export const Chips = ({ items, onChange, placeholder }: { items: string[]; onChange: (v: string[]) => void; placeholder: string }) => (
@@ -55,6 +57,9 @@ export const Segmented = <T extends string>({ value, options, onChange, label }:
     {options.map((o) => <button type="button" role="radio" aria-checked={o === value} key={o} className={o === value ? "selected" : ""} onClick={() => onChange(o)}>{o}</button>)}
   </div>
 );
+
+/** Message text for people: drops the "Error:" prefix that String(error) adds. */
+export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const fmtDate = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
 export const fmtTime = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));

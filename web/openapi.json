@@ -171,24 +171,6 @@
         ],
         "summary": "Me",
         "operationId": "me_api_v1_accounts_me_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -199,54 +181,54 @@
             }
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       }
@@ -258,70 +240,59 @@
         ],
         "summary": "Logout",
         "operationId": "logout_api_v1_accounts_logout_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "204": {
             "description": "Successful Response"
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       }
@@ -333,87 +304,69 @@
         ],
         "summary": "Change Password",
         "operationId": "change_password_api_v1_accounts_password_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PasswordInput"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "204": {
             "description": "Successful Response"
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       }
@@ -425,24 +378,6 @@
         ],
         "summary": "List Studios",
         "operationId": "list_studios_api_v1_studios_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -453,54 +388,54 @@
             }
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       },
@@ -510,33 +445,15 @@
         ],
         "summary": "Create Studio",
         "operationId": "create_studio_api_v1_studios_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/StudioInput"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -548,54 +465,54 @@
             }
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       }
@@ -616,22 +533,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Studio Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -724,22 +625,6 @@
               "format": "uuid",
               "title": "Studio Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -830,22 +715,6 @@
               "type": "string",
               "format": "uuid",
               "title": "User Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -946,22 +815,6 @@
               "format": "uuid",
               "title": "User Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -1037,22 +890,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Studio Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1142,22 +979,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Studio Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1250,22 +1071,6 @@
               "format": "uuid",
               "title": "Invitation Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -1332,33 +1137,15 @@
         ],
         "summary": "Accept Invitation",
         "operationId": "accept_invitation_api_v1_invitations_accept_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AcceptInvitation"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1370,54 +1157,54 @@
             }
           },
           "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
           "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
           "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
+            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Unprocessable Content"
+            }
           },
           "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            },
-            "description": "Bad Gateway"
+            }
           }
         }
       }
@@ -1438,22 +1225,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Studio Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1533,22 +1304,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Studio Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1651,22 +1406,6 @@
               "format": "uuid",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -1755,22 +1494,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1873,22 +1596,6 @@
               "format": "uuid",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -1989,22 +1696,6 @@
               "type": "integer",
               "title": "Version"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -2096,22 +1787,6 @@
               "format": "uuid",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -2200,22 +1875,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -8091,6 +7750,87 @@
         }
       }
     },
+    "/api/ui/ideas/analyze": {
+      "post": {
+        "tags": [
+          "ParaMyth workspace"
+        ],
+        "summary": "Analyze Idea",
+        "operationId": "analyze_idea_api_ui_ideas_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ui/creative": {
       "get": {
         "tags": [
@@ -8235,6 +7975,97 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/ui/writing/export": {
+      "get": {
+        "tags": [
+          "ParaMyth workspace"
+        ],
+        "summary": "Writing Download",
+        "operationId": "writing_download_api_ui_writing_export_get",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "docx",
+              "title": "Format"
+            }
+          },
+          {
+            "name": "scene_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Bad Gateway"
           }
         }
       }
@@ -9021,6 +8852,87 @@
         }
       }
     },
+    "/api/ui/production/prepare": {
+      "post": {
+        "tags": [
+          "ParaMyth workspace"
+        ],
+        "summary": "Prepare Production",
+        "operationId": "prepare_production_api_ui_production_prepare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ui/notes": {
       "put": {
         "tags": [
@@ -9675,87 +9587,6 @@
           }
         }
       }
-    },
-    "/api/ui/production/prepare": {
-      "post": {
-        "tags": [
-          "ParaMyth workspace"
-        ],
-        "summary": "Prepare Production",
-        "operationId": "prepare_production_api_ui_production_prepare_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object",
-                "title": "Data"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Content",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Bad Gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -10334,7 +10165,7 @@
           "password": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 12,
+            "minLength": 1,
             "title": "Password"
           }
         },
@@ -10629,7 +10460,7 @@
           "new_password": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 12,
+            "minLength": 1,
             "title": "New Password"
           }
         },
@@ -10730,7 +10561,7 @@
           },
           "version": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Version"
           }
         },
@@ -11187,7 +11018,7 @@
           "password": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 12,
+            "minLength": 1,
             "title": "Password"
           },
           "display_name": {

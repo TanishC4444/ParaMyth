@@ -17,8 +17,10 @@ export default function Workflow() {
   const [pane,setPane]=useDraftState('workflow.writing','creative');
   const active=jobs.filter(j=>['running','queued'].includes(j.status));
   useEffect(()=>{if(pane==='brief')setTab('brief');else if(pane==='manuscript')setTab('manuscript');},[pane]);
+  // A link straight to #/images, #/music or #/production opens that tool, even when another tab was saved last.
+  useEffect(()=>{if(['images','music','production'].includes(initial||'')){setSection('media');setTool(initial!);}},[]);
   return <div className="page project-workflow two-tab-workflow">
-    <header className="workflow-heading"><div><span className="eyebrow">PROJECT WORKFLOW</span><h1>{project.title}</h1><p>Your story and everything you make from it, saved together.</p></div><button onClick={()=>go('projects')}>Change project</button></header>
+    <header className="workflow-heading"><div><h1>{project.title}</h1><p>Your story and everything you make from it, saved together.</p></div><button className="secondary" onClick={()=>go('projects')}>Change project</button></header>
     <nav className="workflow-primary-tabs" aria-label="Project workflow tabs"><button aria-pressed={section==='writing'} onClick={()=>setSection('writing')}>Writing</button><button aria-pressed={section==='media'} onClick={()=>setSection('media')}>Visuals, sound & production</button>{active.length>0&&<span role="status">{active.length} running</span>}</nav>
     <section hidden={section!=='writing'} aria-label="Writing workspace">
       <nav className="workflow-tabs writing-subtabs" aria-label="Writing views">{[['creative','Write chapters'],['brief','Project brief'],['manuscript','Manuscript & versions']].map(([id,label])=><button key={id} aria-pressed={pane===id} onClick={()=>setPane(id)}>{label}</button>)}</nav>

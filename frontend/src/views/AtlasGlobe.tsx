@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { geoEquirectangular, geoPath } from "d3-geo";
-import type { FeatureCollection } from "geojson";
-import { feature, mesh } from "topojson-client";
-import worldUrl from "world-atlas/countries-50m.json?url";
 import { ink } from "../atlas";
 import type { AtlasPin } from "../types";
 
+export type GlobeTransition = { zoomToMap: () => { lat: number; lng: number } | null; pullOut: (center?: { lat: number; lng: number } | null) => void };
+
 type Props = {
+  transitionRef?: RefObject<GlobeTransition | null>;
+  reduceMotion?: boolean;
+  onReady?: () => void;
   stories: AtlasPin[];
   selectedId: string | null;
   focus: { id: string; at: number } | null;
@@ -18,7 +19,6 @@ type Props = {
   onFallback: () => void;
 };
 type Marker = { x: number; y: number; stories: AtlasPin[] };
-type Topology = Parameters<typeof mesh>[0];
 type MapLabel = { text: string; lat: number; lng: number; kind: "continent" | "water" | "place" };
 const LETTERING: MapLabel[] = [
   { text: "AFRICA", lat: 1, lng: 20, kind: "continent" },
@@ -49,39 +49,12 @@ const position = (lat: number, lng: number) => {
 };
 
 async function makeTexture(signal: AbortSignal) {
-  const [response, water] = await Promise.all([
-    fetch(worldUrl, { signal }),
-    fetch(`${import.meta.env.BASE_URL}atlas/hydrography.json`, { signal })
-      .then((r) => r.ok ? r.json() as Promise<{ rivers: FeatureCollection; lakes: FeatureCollection }> : null).catch(() => null),
-  ]);
-  if (!response.ok) throw new Error("World geometry unavailable");
-  const topology = await response.json() as Topology;
-  const canvas = document.createElement("canvas");
-  canvas.width = 4096; canvas.height = 2048;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas unavailable");
-  ctx.fillStyle = "#8bc7f2"; ctx.fillRect(0, 0, 4096, 2048);
-  const path = geoPath(geoEquirectangular().scale(4096 / (2 * Math.PI)).translate([2048, 1024]), ctx);
-  const land = feature(topology, topology.objects.land);
-  // A light coastal shelf and soft country tints keep detailed geography readable.
-  ctx.beginPath(); path(land); ctx.strokeStyle = "#afd9ec"; ctx.lineWidth = 7; ctx.stroke();
-  ctx.fillStyle = "#c4dca7"; ctx.fill();
-  const countryFeatures = feature(topology, topology.objects.countries) as FeatureCollection;
-  const colors = ["#cce3b5", "#b9dfb7", "#ede0b8", "#bde1cf", "#edcfb8", "#cce4bf", "#dfdfb7"];
-  for (const country of countryFeatures.features) {
-    ctx.beginPath(); path(country); ctx.fillStyle = Number(country.id) === 10 ? "#eef4f4" : colors[Number(country.id) % colors.length]; ctx.fill();
-  }
-  const countries = topology.objects.countries as NonNullable<Parameters<typeof mesh>[1]>;
-  ctx.beginPath(); path(mesh(topology, countries, (a, b) => a !== b));
-  ctx.strokeStyle = "#91ac91"; ctx.lineWidth = 1; ctx.stroke();
-  if (water) {
-    ctx.beginPath(); path(water.rivers); ctx.strokeStyle = "#8bbfdb"; ctx.lineWidth = .9; ctx.stroke();
-    ctx.beginPath(); path(water.lakes); ctx.fillStyle = "#8bc7f2"; ctx.fill();
-  }
-  ctx.beginPath(); path(land); ctx.strokeStyle = "#71a4ae"; ctx.lineWidth = .8; ctx.stroke();
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
+  const loader = new THREE.TextureLoader();
+  const results = await Promise.allSettled(["earth-surface.webp", "earth-topology.webp", "earth-water.webp"].map(name => loader.loadAsync(`${import.meta.env.BASE_URL}landing/${name}`)));
+  const textures = results.map(r => r.status === "fulfilled" ? r.value : null);
+  if (signal.aborted || !textures[0]) { textures.forEach(t => t?.dispose()); throw new Error("Globe surface unavailable"); }
+  textures[0].colorSpace = THREE.SRGBColorSpace;
+  return textures;
 }
 
 function ring(stories: AtlasPin[]) {
@@ -98,7 +71,8 @@ export default function AtlasGlobe(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   latest.current = props;
-  const api = useRef<{ redraw: () => void; focus: (s: AtlasPin) => void; rotate: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void } | null>(null);
+  const api = useRef<{ redraw: () => void; focus: (s: AtlasPin) => void; rotate: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void; zoomToMap: GlobeTransition["zoomToMap"]; pullOut: GlobeTransition["pullOut"] } | null>(null);
+  useImperativeHandle(props.transitionRef, () => ({ zoomToMap: () => api.current?.zoomToMap() ?? null, pullOut: (center) => api.current?.pullOut(center) }), []);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [labels, setLabels] = useState<(MapLabel & { x: number; y: number })[]>([]);
   const [ready, setReady] = useState(false);
@@ -111,9 +85,12 @@ export default function AtlasGlobe(props: Props) {
     catch { setFailed(true); latest.current.onView(latest.current.stories.map((s) => s.id)); return; }
     const abort = new AbortController();
     let disposed = false, frame = 0, lastView = "";
+    let targetPosition: THREE.Vector3 | null = null;
+    let mapReturnDistance: number | null = null;
+    let restoringFromMap = false;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
-    const homeDistance = () => Math.max(3.5, 1.12 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
+    const homeDistance = () => Math.max(3.2, 1.04 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
     const home = () => camera.position.copy(position(25, 25).multiplyScalar(homeDistance()));
     home(); camera.lookAt(0, 0, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -124,22 +101,47 @@ export default function AtlasGlobe(props: Props) {
     container.appendChild(renderer.domElement);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
-    // Let wheel gestures scroll the landing page. Explicit buttons also work on touch screens.
-    controls.enableZoom = false;
-    controls.enableDamping = false;
+    // Pinch and wheel zoom use the same globe camera as the explicit controls.
+    controls.enableZoom = true; controls.zoomSpeed = .55;
+    controls.minDistance = 1.55; controls.maxDistance = 8;
+    controls.enableDamping = !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    controls.dampingFactor = .075;
     controls.rotateSpeed = .65;
     controls.minPolarAngle = .12; controls.maxPolarAngle = Math.PI - .12;
     const geometry = new THREE.SphereGeometry(1, 128, 96);
-    const material = new THREE.MeshPhongMaterial({ color: "#ffffff", shininess: 5 });
+    const material = new THREE.MeshPhongMaterial({ color: "#ffffff", shininess: 32, specular: 0x376b78, bumpScale: .014 });
     scene.add(new THREE.Mesh(geometry, material));
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const light = new THREE.DirectionalLight(0xfffaf2, 1.6);
+    const atmosphereMaterial = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, side: THREE.BackSide,
+      vertexShader: `varying vec3 vNormal; varying vec3 vPosition; void main(){vec4 p=modelViewMatrix*vec4(position,1.);vNormal=normalize(normalMatrix*normal);vPosition=p.xyz;gl_Position=projectionMatrix*p;}`,
+      fragmentShader: `varying vec3 vNormal; varying vec3 vPosition; void main(){float rim=pow(1.-abs(dot(normalize(vNormal),normalize(-vPosition))),3.);gl_FragColor=vec4(.38,.75,.74,rim*.4);}`,
+    });
+    const atmosphere = new THREE.Mesh(geometry, atmosphereMaterial); atmosphere.scale.setScalar(1.015); scene.add(atmosphere);
+    scene.add(new THREE.AmbientLight(0x9ab8d2, .85));
+    const light = new THREE.DirectionalLight(0xffefd9, 2.4);
     light.position.set(-3, 4, 5); camera.add(light); scene.add(camera);
 
-    const draw = () => {
+    let lastFrame = 0;
+    const draw = (time: number) => {
+      const dt = Math.min(64, lastFrame ? time - lastFrame : 16.67); lastFrame = time;
       frame = 0;
       if (disposed) return;
       const width = container.clientWidth, height = container.clientHeight;
+      if (targetPosition) {
+        const reduced = latest.current.reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const t = reduced ? 1 : 1 - Math.exp(-dt / 150);
+        const current = new THREE.Spherical().setFromVector3(camera.position);
+        const target = new THREE.Spherical().setFromVector3(targetPosition);
+        const angle = Math.atan2(Math.sin(target.theta - current.theta), Math.cos(target.theta - current.theta));
+        current.theta += angle * t;
+        current.phi += (target.phi - current.phi) * t;
+        current.radius += (target.radius - current.radius) * t;
+        camera.position.setFromSpherical(current);
+        if (camera.position.distanceTo(targetPosition) < .001) { camera.position.copy(targetPosition); targetPosition = null; if (restoringFromMap) { mapReturnDistance = null; restoringFromMap = false; } }
+        else redraw();
+      }
+      controls.enableDamping = !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      controls.update();
       camera.updateMatrixWorld();
       renderer.render(scene, camera);
       const points: Marker[] = [];
@@ -173,18 +175,35 @@ export default function AtlasGlobe(props: Props) {
     };
     const redraw = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
     const rotate = (x: number, y: number) => {
-      const s = new THREE.Spherical().setFromVector3(camera.position);
+      const s = new THREE.Spherical().setFromVector3(targetPosition || camera.position);
       s.theta += x; s.phi = THREE.MathUtils.clamp(s.phi + y, .12, Math.PI - .12);
-      camera.position.setFromSpherical(s); controls.update(); redraw();
+      targetPosition = new THREE.Vector3().setFromSpherical(s); redraw();
     };
     const zoom = (factor: number) => {
-      camera.position.setLength(THREE.MathUtils.clamp(camera.position.length() * factor, 1.55, Math.max(5, homeDistance())));
-      controls.update(); redraw();
+      targetPosition = (targetPosition || camera.position).clone().setLength(THREE.MathUtils.clamp((targetPosition || camera.position).length() * factor, 1.55, Math.max(5, homeDistance())));
+      redraw();
     };
     api.current = {
       redraw, rotate, zoom,
-      reset: () => { home(); controls.update(); redraw(); },
-      focus: (story) => { camera.position.copy(position(story.lat, story.lng).multiplyScalar(Math.max(2.6, homeDistance() * .75))); controls.update(); redraw(); },
+      zoomToMap: () => {
+        restoringFromMap = false;
+        if (mapReturnDistance === null) mapReturnDistance = camera.position.length();
+        const normal = camera.position.clone().normalize();
+        const center = { lat: THREE.MathUtils.radToDeg(Math.asin(normal.y)), lng: THREE.MathUtils.radToDeg(Math.atan2(-normal.z, normal.x)) };
+        targetPosition = normal.multiplyScalar(1.72);
+        redraw();
+        return center;
+      },
+      pullOut: (center) => {
+        if (mapReturnDistance === null && !center) return;
+        restoringFromMap = true;
+        const distance = mapReturnDistance ?? homeDistance();
+        if (center) camera.position.copy(position(center.lat, center.lng).multiplyScalar(1.72));
+        targetPosition = camera.position.clone().setLength(distance);
+        redraw();
+      },
+      reset: () => { targetPosition = position(25, 25).multiplyScalar(homeDistance()); redraw(); },
+      focus: (story) => { targetPosition = position(story.lat, story.lng).multiplyScalar(Math.max(2.6, homeDistance() * .75)); redraw(); },
     };
     const keydown = (event: KeyboardEvent) => {
       const moves: Record<string, [number, number]> = { ArrowLeft: [-.16, 0], ArrowRight: [.16, 0], ArrowUp: [0, -.16], ArrowDown: [0, .16] };
@@ -197,29 +216,37 @@ export default function AtlasGlobe(props: Props) {
     renderer.domElement.addEventListener("keydown", keydown);
     renderer.domElement.addEventListener("webglcontextlost", lost);
     controls.addEventListener("change", redraw);
+    controls.addEventListener("start", () => { targetPosition = null; });
+    let viewportInitialized = false;
     const resize = new ResizeObserver(() => {
       const w = container.clientWidth, h = container.clientHeight;
       if (!w || !h) return;
+      targetPosition = null;
       const previousDistance = homeDistance();
       camera.aspect = w / h;
-      camera.position.multiplyScalar(homeDistance() / previousDistance);
+      // Lazy-loaded styles can briefly produce a very narrow host. Keep the
+      // camera range wide enough to fit it before OrbitControls clamps distance.
+      controls.maxDistance = Math.max(8, homeDistance());
+      if (viewportInitialized) camera.position.multiplyScalar(homeDistance() / previousDistance);
+      else { camera.position.setLength(homeDistance()); viewportInitialized = true; }
       camera.updateProjectionMatrix(); controls.update(); renderer.setSize(w, h); redraw();
     });
     resize.observe(container);
-    makeTexture(abort.signal).then((texture) => {
-      if (disposed) { texture.dispose(); return; }
-      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      material.map = texture; material.needsUpdate = true; setReady(true); redraw();
+    makeTexture(abort.signal).then((textures) => {
+      if (disposed) { textures.forEach(t => t?.dispose()); return; }
+      textures.forEach(t => { if (t) t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
+      material.map = textures[0]; material.bumpMap = textures[1]; material.specularMap = textures[2]; material.needsUpdate = true; setReady(true); redraw();
     }).catch(() => { if (!disposed) setFailed(true); });
     return () => {
       disposed = true; abort.abort(); cancelAnimationFrame(frame); resize.disconnect();
       renderer.domElement.removeEventListener("keydown", keydown);
       renderer.domElement.removeEventListener("webglcontextlost", lost);
-      controls.dispose(); geometry.dispose(); material.map?.dispose(); material.dispose(); renderer.dispose();
+      controls.dispose(); geometry.dispose(); material.map?.dispose(); material.bumpMap?.dispose(); material.specularMap?.dispose(); material.dispose(); atmosphereMaterial.dispose(); renderer.dispose();
       renderer.domElement.remove(); api.current = null;
     };
   }, []);
 
+  useEffect(() => { if (ready || failed) props.onReady?.(); }, [ready, failed, props.onReady]);
   useEffect(() => { if (failed) props.onView(props.stories.map((s) => s.id)); else api.current?.redraw(); }, [props.stories, props.selectedId, failed]);
   useEffect(() => {
     const story = props.stories.find((s) => s.id === props.focus?.id);
@@ -228,7 +255,7 @@ export default function AtlasGlobe(props: Props) {
 
   return <div className="atlas-globe">
     <div className="globe-stage" ref={host} />
-    {!ready && !failed && <div className="globe-status" role="status">Charting a world of stories…</div>}
+    {!ready && !failed && <div className="globe-status" role="status">Loading globe…</div>}
     {failed ? <div className="globe-status"><b>The 3D globe is unavailable.</b><p>You can still search and open every story.</p><button className="secondary" onClick={props.onFallback}>Open the flat map</button></div> : <>
       {ready && <div className="globe-labels" aria-hidden="true">{labels.map((label) => <span key={`${label.text}-${label.lng}`} className={label.kind} style={{ left: label.x, top: label.y }}>{label.text}</span>)}</div>}
       {ready && <div className="globe-pins">{markers.map((m) => {
@@ -249,7 +276,7 @@ export default function AtlasGlobe(props: Props) {
         <button aria-label="Rotate east" onClick={() => api.current?.rotate(.3, 0)}>→</button>
         <button aria-label="Reset globe" onClick={() => api.current?.reset()}>⌂</button>
       </div>
-      <div className="globe-caption"><span>DRAG TO DISCOVER</span><small>Natural Earth · A world of stories</small></div>
+      <div className="globe-caption"><small>Earth imagery: NASA / Three Globe</small></div>
     </>}
   </div>;
 }

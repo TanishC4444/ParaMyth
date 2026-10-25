@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from urllib.request import Request, urlopen
 from .storage import load, save
-from .soundtracks import context, plan as sound_plan, Vultr, wav_stream
+from .soundtracks import context, plan as sound_plan, Vultr, wav_stream, music_payload
 from .production import Muse
 from . import image_studio
 
@@ -110,18 +110,31 @@ def catalog(folder, source='latest'):
 
 def music_settings(folder, data, models, *, selected=None):
     selected=selected or material(folder,data.get('source','latest'),str(data.get('prompt','')),data.get('use_story',True))
-    auto=data.get('automatic',True)
-    if auto:
-        value=Muse().ask('Design one soundtrack for the supplied writing and author prompt. Choose score, song (only when singing is requested), or ambience. Return JSON with mode, seconds (integer, 5–360), prompt (a specific musical or environmental direction under 700 characters), lyrics (only for a song), model (choose from supplied available models). Choose all missing settings. Do not include unrelated story details.',{'story_sources':selected['sources'],'models':models})
-    else:value={k:data.get(k) for k in ('mode','seconds','model','lyrics')};value['prompt']=data.get('prompt','')
+    author=data.get('prompt','')
+    if not isinstance(author,str) or len(author)>4000:raise ValueError('Keep the soundtrack description under 4000 characters')
+    # A written prompt is a binding direction, not material for an automatic rewrite.
+    if author.strip() or data.get('automatic') is False:
+        value={k:data.get(k) for k in ('mode','seconds','model','lyrics')}
+        value['mode']=value['mode'] or 'score';value['prompt']=author
+    else:
+        value=Muse().ask('Design one soundtrack for the supplied writing. Return JSON with mode (score, song only if requested, or ambience), seconds (integer 5-360), prompt (specific musical direction under 700 characters), lyrics (only for a song), model (choose from supplied available models). Honor requested mode and duration. Choose only missing settings. Describe instruments, mood, tempo and exclusions, not plot summaries.',{'story_sources':selected['sources'],'models':models,'requested_mode':data.get('mode'),'requested_seconds':data.get('seconds')})
+        if data.get('mode'):value['mode']=data['mode']
+        if data.get('seconds'):value['seconds']=data['seconds']
     mode=value.get('mode','score')
     if mode not in ('score','song','ambience'):raise ValueError('Choose a soundtrack type')
+    if mode=='song' and not str(value.get('lyrics') or '').strip():
+        lyrics=Muse().ask('Write original song lyrics matching the author direction. Return JSON with one lyrics string. Honor explicit language, theme and exclusions; no explanatory prose.',{'author_direction':value.get('prompt',''),'story_context':selected['sources']})
+        if not isinstance(lyrics.get('lyrics'),str) or not lyrics['lyrics'].strip():raise ValueError('Lyrics could not be prepared. Add your own words or try again.')
+        value['lyrics']=lyrics['lyrics']
     spec=next((m for m in models if m['id']==value.get('model')),models[0] if models else None)
-    if mode!='ambience' and not spec:raise ValueError('Connect a music provider or choose Ambient soundscape in Sound settings')
+    if mode!='ambience' and not spec:raise ValueError('Connect a music provider in Connections or choose Simple nature sounds')
+    if mode=='score' and (spec['id']=='minimax-music3' or spec.get('instrumental') is False):raise ValueError('The connected music model makes songs with vocals, not reliable instrumental scores. Choose Song with vocals or Simple nature sounds.')
+    if spec and len(author)+500>spec.get('prompt_max_length',6000):raise ValueError('Shorten the description to fit this music model; your text will not be silently cut off')
     limits=(spec or {}).get('duration',{}) if mode!='ambience' else {}
     seconds=max(int(limits.get('min',5)),min(int(limits.get('max',360)),int(value.get('seconds') or 60)))
-    cue=sound_plan(folder,mode,str(value.get('prompt',''))[:700],sources=selected['sources'])
-    return {'mode':mode,'seconds':seconds,'model':spec['id'] if spec else '', 'lyrics':str(value.get('lyrics') or '')[:12000], 'prompt':str(value.get('prompt') or '')[:700], 'cue':cue,'source':selected}
+    if author.strip() and data.get('seconds') is not None and seconds!=data['seconds']:raise ValueError('Choose a duration supported by this music model')
+    cue=sound_plan(folder,mode,str(value.get('prompt','')),sources=selected['sources'])
+    return {'mode':mode,'seconds':seconds,'model':spec['id'] if spec else '', 'lyrics':str(value.get('lyrics') or '')[:12000], 'prompt':str(value.get('prompt') or ''), 'cue':cue,'source':selected}
 
 
 def service_json(path, data=None, project_id=None):
@@ -140,32 +153,43 @@ def service_json(path, data=None, project_id=None):
 
 
 def music_models():
-    if os.getenv('VULTR_INFERENCE_API_KEY'):return Vultr().json('/music/models')['data']
+    if os.getenv('VULTR_MUSIC_API_KEY') or os.getenv('VULTR_INFERENCE_API_KEY'):return Vultr().json('/music/models')['data']
     if os.getenv('PARAMYTH_SERVICE_ORIGIN'):return service_json('/api/studio/music/models').get('data',[])
     return []
 
 
 def create_music(folder, data, progress, *, selected=None):
-    folder=Path(folder);progress('Choosing sound and settings')
+    folder=Path(folder);progress('Preparing your soundtrack direction')
     models=music_models() if data.get('automatic',True) or data.get('mode')!='ambience' else []
-    settings=music_settings(folder,data,models,selected=selected);cue=settings['cue'];seconds=settings['seconds']
+    selected=selected or material(folder,data.get('source','latest'),str(data.get('prompt','')),data.get('use_story',True))
+    cache_key=hashlib.sha256(json.dumps({'request':data,'source':selected['signature'],'models':models},sort_keys=True).encode()).hexdigest()
+    cache_path=folder/'.music-directions'/(cache_key+'.json')
+    settings=load(cache_path) if cache_path.is_file() else music_settings(folder,data,models,selected=selected)
+    if not cache_path.is_file():save(cache_path,settings)
+    cue=settings['cue'];seconds=settings['seconds']
     if settings['mode']=='ambience':
         ident='local_'+secrets.token_hex(12);target=folder/'soundtracks'/(ident+'.wav');target.parent.mkdir(parents=True,exist_ok=True)
         progress('Rendering your soundscape')
         with target.open('wb') as out:
             for block in wav_stream(cue,seconds):out.write(block)
         value={'cue':cue,'provider':'local procedural','job':{'id':ident,'status':'completed'},'file':target.name}
-    elif os.getenv('VULTR_INFERENCE_API_KEY'):
+    elif os.getenv('VULTR_MUSIC_API_KEY') or os.getenv('VULTR_INFERENCE_API_KEY'):
         progress('Sending your soundtrack to the music provider')
         job=Vultr().create(cue,settings['model'],seconds,settings['lyrics']);ident=job['id']
-        value={'cue':cue,'provider':'Vultr Serverless Inference','job':job}
+        value={'cue':cue,'provider':'Vultr Serverless Inference','job':job,'submission':music_payload(cue,settings['model'],seconds,settings['lyrics']),'seed_applied':True}
     else:
         # The older connected studio reads files instead of accepting a cue.
         # Give it an immutable input snapshot, never the unrelated original run.
         snapshot=folder/'.media-inputs'/secrets.token_hex(12)
-        save(snapshot/'story.txt','\n\n'.join(s['text'] for s in settings['source']['sources']))
+        save(snapshot/'story.txt',settings['cue']['prompt'])
         pid=hashlib.sha256(str(snapshot.resolve()).encode()).hexdigest()[:16]
-        remote=service_json('/api/studio/music',{k:settings[k] for k in ('mode','seconds','model','lyrics')} | {'direction':settings['prompt']},pid)
+        # Legacy studios prepend an orchestral template for score. Their song
+        # transport sends the same provider payload without that template;
+        # instrumental section tags contain no words to sing. The full author
+        # direction is also in the snapshot, bypassing legacy direction limits.
+        transport={k:settings[k] for k in ('mode','seconds','model','lyrics')}
+        if settings['mode']=='score':transport.update(mode='song',lyrics='[Instrumental]\n[Intro]\n[Instrumental]\n[Outro]')
+        remote=service_json('/api/studio/music',transport | {'direction':settings['prompt'] if settings['mode']!='score' else 'Instrumental music only, no singing or vocals. Follow the complete author direction in the supplied source; do not add instruments or genre not requested. '+settings['prompt']},pid)
         save(snapshot/'submission.json',remote)
         progress('The connected music provider is preparing your soundtrack')
         deadline=time.monotonic()+180
@@ -176,6 +200,8 @@ def create_music(folder, data, progress, *, selected=None):
             time.sleep(1)
         else:raise ValueError('The music request is still pending in the connected studio. Do not submit it again yet.')
         value=job['result'];ident=value['job']['id'];value['cue']=cue
+        value['seed_applied']=False
+        value['consistency_note']='This older connected studio does not accept repeatable takes. Restart it with the updated music service.'
     value.update(settings={k:settings[k] for k in ('mode','seconds','model','lyrics','prompt')},source_id=settings['source']['source_id'],source_title=settings['source']['title'],source_signature=settings['source']['signature'],writing_signature=settings['source']['writing_signature'])
     save(folder/'soundtracks'/(ident+'.json'),value)
     return value

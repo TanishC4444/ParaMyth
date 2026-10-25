@@ -37,20 +37,26 @@ type Props = {
   focus: { id: string; at: number } | null;
   onSelect: (id: string) => void;
   onView: (ids: string[]) => void;
+  onReady?: () => void;
+  reduceMotion?: boolean;
+  view?: { lat: number; lng: number; at: number };
+  onCenter?: (center: { lat: number; lng: number }) => void;
 };
 
-export default function AtlasMap({ stories, selectedId, focus, onSelect, onView }: Props) {
+export default function AtlasMap({ stories, selectedId, focus, onSelect, onView, onReady, reduceMotion = false, view, onCenter }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const cluster = useRef<L.MarkerClusterGroup | null>(null);
   const markers = useRef(new Map<string, { marker: L.Marker; pin: AtlasPin }>());
-  const latest = useRef({ stories, onSelect, onView, selectedId });
-  latest.current = { stories, onSelect, onView, selectedId };
+  const latest = useRef({ stories, onSelect, onView, selectedId, onReady, reduceMotion, onCenter });
+  latest.current = { stories, onSelect, onView, selectedId, onReady, reduceMotion, onCenter };
 
   const reportView = () => {
     const m = map.current;
     if (!m) return;
     const b = m.getBounds();
+    const center = m.getCenter();
+    latest.current.onCenter?.({ lat: center.lat, lng: center.lng });
     latest.current.onView(latest.current.stories.filter((s) => b.contains([s.lat, s.lng])).map((s) => s.id));
   };
 
@@ -60,7 +66,7 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView 
       // This view can unmount immediately when switching back to the globe.
       // Leaflet's CSS zoom timeout can otherwise fire against its removed panes.
       zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false,
-      maxBounds: [[-62, -200], [84, 200]], maxBoundsViscosity: 0.9, attributionControl: false,
+      maxBounds: [[-85, -200], [85, 200]], maxBoundsViscosity: 0.9, attributionControl: false,
     });
     map.current = m;
     m.createPane("land").style.zIndex = "200";
@@ -82,7 +88,8 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView 
       L.geoJSON(land, { pane: "land", interactive: false, style: { className: "atlas-coast-halo" } }).addTo(m);
       L.geoJSON(land, { pane: "land", interactive: false, style: { className: "atlas-land" } }).addTo(m);
       L.geoJSON(mesh(topo, objects.countries, (a, b) => a !== b), { pane: "ink", interactive: false, style: { className: "atlas-border" } }).addTo(m);
-    });
+      latest.current.onReady?.();
+    }).catch(() => { latest.current.onReady?.(); });
     // Hill shading multiplied over the parchment land; the map still reads as a map when tiles are unreachable.
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", {
       pane: "relief", maxNativeZoom: 13, className: "atlas-relief", crossOrigin: true,
@@ -110,7 +117,9 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView 
     m.on("moveend", reportView);
     m.on("zoomend", () => el.current?.setAttribute("data-zoom", String(Math.floor(m.getZoom()))));
     el.current!.setAttribute("data-zoom", String(m.getZoom()));
-    return () => { m.remove(); map.current = null; cluster.current = null; markers.current.clear(); };
+    const resize = new ResizeObserver(() => { m.invalidateSize({ animate: false }); reportView(); });
+    resize.observe(el.current!);
+    return () => { resize.disconnect(); m.remove(); map.current = null; cluster.current = null; markers.current.clear(); };
   }, []);
 
   useEffect(() => {
@@ -129,6 +138,13 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView 
     reportView();
   }, [stories]);
 
+  useEffect(() => {
+    if (!view || !map.current) return;
+    map.current.stop();
+    map.current.setView([view.lat, view.lng], 4, { animate: false });
+    reportView();
+  }, [view]);
+
   const shown = useRef<string | null>(null);
   useEffect(() => {
     for (const id of [shown.current, selectedId]) {
@@ -140,7 +156,7 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView 
 
   useEffect(() => {
     const hit = focus && markers.current.get(focus.id);
-    if (hit && cluster.current) cluster.current.zoomToShowLayer(hit.marker, () => map.current?.panTo(hit.marker.getLatLng(), { animate: true }));
+    if (hit && cluster.current) cluster.current.zoomToShowLayer(hit.marker, () => map.current?.panTo(hit.marker.getLatLng(), { animate: !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches }));
   }, [focus]);
 
   return <div ref={el} className="atlas-map" role="application" aria-label="Story atlas map" />;

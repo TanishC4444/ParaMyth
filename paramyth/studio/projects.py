@@ -10,7 +10,9 @@ from .deps import LOCAL, PROJECT_COOKIE, RUNTIME, WRITE, folder
 router = APIRouter(tags=['studio projects'])
 
 
-def selected(ident):
+def selected(ident, runtime=None):
+    if runtime and hasattr(runtime, 'select'):
+        runtime.select(ident)
     response = Response(json.dumps({'id': ident}), media_type='application/json')
     response.set_cookie(PROJECT_COOKIE, ident, httponly=True, samesite='strict')
     return response
@@ -23,13 +25,13 @@ def projects(request: Request, runtime=RUNTIME):
 
 @router.post('/api/studio/projects', dependencies=WRITE)
 def new_project(data: dict = Body(...), runtime=RUNTIME):
-    return selected(runtime.create_project(data.get('title', ''), data.get('text', ''), data.get('brief')))
+    return selected(runtime.create_project(data.get('title', ''), data.get('text', ''), data.get('brief')), runtime)
 
 
 @router.post('/api/studio/project/select', dependencies=WRITE)
 def select_project(data: dict = Body(...), runtime=RUNTIME):
     runtime.folder(data.get('id'))
-    return selected(data['id'])
+    return selected(data['id'], runtime)
 
 
 @router.get('/api/studio/jobs', dependencies=LOCAL)

@@ -45,7 +45,11 @@ def write(request:Request,runtime:StudioRuntime=Depends(get_runtime)):
 RUNTIME=Depends(get_runtime)
 
 
-def folder(request,runtime):return runtime.folder(request.query_params.get('project_id') or request.cookies.get('pm_pipeline_project'))
+def folder(request,runtime):
+    if request.scope.get('app') is not None and getattr(request.app.state,'account_workspaces',False):
+        from ...studio.deps import folder as account_folder
+        return account_folder(request,runtime)
+    return runtime.folder(request.query_params.get('project_id') or request.cookies.get('pm_pipeline_project'))
 
 
 def page(path,runtime,legacy=False):
@@ -169,6 +173,10 @@ def recalculate(request:Request,data:dict=Body(...),runtime=RUNTIME):
     current=folder(request,runtime);value=read_plan(current,data['id']);cfg=normalize_config(data.get('config',value['config']))
     breakdown=value['breakdown'];breakdown['scenes']=data.get('scenes',breakdown['scenes']);breakdown['budget_items']=data.get('budget_items',breakdown['budget_items']);validate_breakdown(breakdown)
     value['config']=cfg;value['schedule']=schedule(breakdown['scenes'],cfg);value['budget']=budget(breakdown['budget_items'],cfg)
+    if value.get('operations',{}).get('tasks'):
+        from ..production_operations import schedule_tasks
+        schedule_tasks(value['operations'],cfg,value['schedule'])
+    if value.get('local_logistics'):value['local_logistics']['stale']=True
     value['id']=hashlib.sha256(json.dumps([data['id'],cfg,breakdown],sort_keys=True).encode()).hexdigest()[:24]
     value['warnings'].append('Schedule/budget edited locally; research recommendations were not regenerated.')
     save(current/'production'/'plans'/(value['id']+'.json'),value);return value
@@ -407,7 +415,8 @@ def job_logs(run_id:int,job_id:int,repository:str='',authorization:str|None=Head
 
 @router.get('/',response_class=HTMLResponse,include_in_schema=False,dependencies=[Depends(local)])
 def landing_page(runtime=RUNTIME):
-    target=ROOT/'frontend-pipeline'/'dist'/'index.html'
+    target=ROOT/'frontend'/'dist'/'index.html'
+    if not target.is_file():target=ROOT/'frontend-pipeline'/'dist'/'index.html'
     return FileResponse(target) if target.is_file() else page(ROOT/'paramyth/pipeline'/'studio_ui.html',runtime)
 
 
