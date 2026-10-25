@@ -262,6 +262,14 @@ Kinds are `calendar.ics`, `schedule.csv`, `budget.csv`, `tasks.csv`,
 `call-sheets.txt` and `plan.json`. Calendar events are marked tentative, and CSV
 cells that start with `=`, `+`, `-` or `@` are quoted so spreadsheets don't run them.
 
+`paramyth.calendar_sync.GoogleCalendar` adds a plan's shoot days to Google
+Calendar only when asked. Events are private and tentative, with no attendees.
+Their IDs come from the plan, so syncing again skips events already there.
+Overlapping busy events are reported instead of booked over, and a failure
+partway keeps the IDs already created. It reads `GOOGLE_CALENDAR_ACCESS_TOKEN`,
+or refreshes with `GOOGLE_CALENDAR_REFRESH_TOKEN`, `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET`. Tokens stay in memory and are never written to plans.
+
 Plans are saved under `production/plans/` as drafts. Rates are model estimates,
 not quotes, and unknown costs are left out of totals. Permits, availability and
 legal requirements always need verification. Install the `production` extra for
