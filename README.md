@@ -10,10 +10,13 @@ Early backend foundations for a file-backed storytelling workflow.
 
 ## Run checks
 
-Requires Python 3.11 or newer. No third-party dependencies, credentials, or network calls are needed for these tests.
+Requires Python 3.11 or newer. Core tests need no third-party dependencies.
+Hybrid retrieval tests require the optional `rag` dependencies and skip when those
+are absent. All tests use local fixtures or mocked providers; no credentials or
+network calls are needed.
 
 ```sh
-python -m unittest discover -s tests -v
+python -X utf8 -m unittest discover -s tests -v
 ```
 
 The backend-tests workflow checks contracts and storage on Python 3.11 and 3.12. The fixture-checks workflow checks fixture responses against the contracts.
@@ -86,8 +89,57 @@ python -m paramyth.retrieval --corpus corpus.json --out corpus.db
 Put `retrieval_index` in the story request and optionally pin the printed digest
 as `corpus_hash`. Results retain source IDs, excerpts, index version and corpus
 fingerprint. A mismatched version/hash is rejected. Retrieval is frozen in the run
-checkpoint; resuming does not silently change its sources. This is FTS5 keyword
-retrieval, not semantic/hybrid ranking or a retrieval-quality benchmark.
+checkpoint; resuming does not silently change its sources. The command above
+builds the dependency-free FTS5 keyword index.
+
+### Hybrid retrieval
+
+Install the optional dependencies and set `GEMINI_API_KEY` in your environment
+or a local `.env` in the working directory. Environment values take precedence.
+The encoder uses `gemini-embedding-001` with normalized 768-dimensional vectors
+and separate document/query task types. Ingestion sends corpus projections to
+Gemini; hybrid search sends the query. Both can incur provider charges.
+
+```sh
+python -m pip install '.[rag]'
+python -m paramyth.rag.ingest --corpus examples/rag-corpus.json --out data/literary_rag.db
+python -m paramyth.rag.search "a duty conflicts with a promise" --index data/literary_rag.db
+```
+
+The corpus can be a JSON array or an object containing `title` and `records`.
+Each record needs a unique string `id` and a `title`. Supply `text` or literary
+fields such as `summary`, `theme_keywords`, `narrative_mechanism`, and
+`references.version_notes`. The included corpus contains synthetic examples.
+Your existing keyword corpus format is accepted, but the two index formats are
+separate: use a different output path for each.
+
+Ingestion resumes completed batches, embeds changed projections only, refreshes
+metadata, and removes deleted records after every batch succeeds. A failed build
+remains unavailable to searches until ingestion completes. Use one ingestion
+process per index and avoid ingesting while a search is running.
+
+Set `"retrieval_mode": "hybrid"` and `"retrieval_index": "data/literary_rag.db"`
+in a story request to use this index in the coordinator. Optionally set
+`corpus_hash` to the digest printed by ingestion. Hybrid results keep source IDs,
+excerpts, source limits, semantic and keyword ranks, encoder version, and corpus
+hash. Existing run checkpoints retain their original retrieval packet on resume.
+Hybrid mode requires an index or an explicitly injected retrieval provider.
+
+The search command supports `--semantic-weight` from 0 to 1, `--record-type`,
+`--location`, and `--adaptation-mode` (`Balanced`, `Focused adaptation`, or
+`Combinatory`). A semantic weight of 0 searches the hybrid index with keywords
+only and makes no provider calls. Disabled records are excluded. Ties use source
+IDs for deterministic ordering. Semantic and keyword ranks are combined using
+weighted reciprocal ranks; these scores are not confidence probabilities.
+Search behavior is tested with synthetic vectors, not a retrieval-quality benchmark.
+
+`PARAMYTH_RAG_DATABASE` supplies the default index path when `--out` or `--index`
+is omitted. Relative paths resolve from the working directory. Run the full
+offline test suite after installing the optional dependencies:
+
+```sh
+python -X utf8 -m unittest discover -s tests -v
+```
 
 `state.json` owns the append-only fact history; `canon.json` is a derived readable
 projection. Fact updates explicitly supersede existing current records with matching

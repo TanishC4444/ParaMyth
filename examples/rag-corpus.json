@@ -1,0 +1,25 @@
+{
+  "title": "ParaMyth sample references",
+  "records": [
+    {
+      "id": "harbor-bell",
+      "title": "The Harbor Bell",
+      "record_type": "story",
+      "location": "Harbor",
+      "summary": "A bell keeper must decide whether to warn ships and reveal a hidden refuge.",
+      "theme_keywords": ["duty", "secrecy", "competing obligations"],
+      "narrative_mechanism": "A protective duty conflicts with a promise of secrecy.",
+      "references": {"version_notes": "Synthetic example for testing retrieval."}
+    },
+    {
+      "id": "winter-bridge",
+      "title": "The Winter Bridge",
+      "record_type": "story",
+      "location": "Mountain pass",
+      "summary": "Two estranged builders repair a bridge before the first snow cuts off their village.",
+      "theme_keywords": ["cooperation", "trust", "deadline"],
+      "narrative_mechanism": "Shared practical work makes estranged people depend on each other.",
+      "references": {"version_notes": "Synthetic example for testing retrieval."}
+    }
+  ]
+}

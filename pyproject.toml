@@ -9,5 +9,12 @@ description = "File-backed storytelling backend foundations"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+rag = ["numpy>=2,<3", "python-dotenv>=1,<2"]
+
+[project.scripts]
+paramyth-rag-ingest = "paramyth.rag.ingest:main"
+paramyth-rag-search = "paramyth.rag.search:main"
+
 [tool.setuptools.packages.find]
 include = ["paramyth*"]

@@ -1,3 +1,4 @@
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
@@ -52,7 +53,7 @@ class CanonTests(unittest.TestCase):
             self.assertEqual(result['corpus_hash'], digest)
             with self.assertRaises(ContractError):
                 retrieve(path, 'bell', expected_hash='stale')
-            with sqlite3.connect(path) as db:
+            with closing(sqlite3.connect(path)) as db, db:
                 db.execute("UPDATE metadata SET value='old' WHERE key='version'")
             with self.assertRaises(ContractError):
                 retrieve(path, 'bell')

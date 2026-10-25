@@ -18,6 +18,19 @@ def fixture_retrieval(req):
     return {'query': req['premise'], 'sources': [], 'fixture': True}
 
 
+def request_retrieval(req):
+    if not req.get('retrieval_index'):
+        contracts.require(req['retrieval_mode'] != 'hybrid', 'Hybrid retrieval requires a retrieval_index')
+        return fixture_retrieval(req)
+    provider = retrieve
+    if req['retrieval_mode'] == 'hybrid':
+        try:
+            from .rag.search import retrieve as provider
+        except ImportError as exc:
+            raise contracts.ContractError('Install paramyth[rag] to use hybrid retrieval') from exc
+    return provider(req['retrieval_index'], req['premise'], expected_hash=req.get('corpus_hash'))
+
+
 def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False,
         transport=None, retrieval=None):
     req = contracts.request(copy.deepcopy(value))
@@ -42,9 +55,7 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             save(path, state)
         executor = Executor(req, folder, transport)
         if 'retrieval' not in state:
-            state['retrieval'] = (retrieval(req) if retrieval else
-                retrieve(req['retrieval_index'], req['premise'], expected_hash=req.get('corpus_hash'))
-                if req.get('retrieval_index') else fixture_retrieval(req))
+            state['retrieval'] = retrieval(req) if retrieval else request_retrieval(req)
             save(folder / 'retrieval.json', state['retrieval'])
             save(path, state)
         if 'plan' not in state:
