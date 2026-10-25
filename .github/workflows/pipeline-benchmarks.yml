@@ -1,0 +1,29 @@
+name: Pipeline benchmarks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [single, sequence, resume]
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test provider contracts and role isolation offline
+        run: python -m unittest discover -s tests -p 'test_live.py' -v
+      - name: Run fixture scene benchmark
+        env:
+          CASE: ${{ matrix.case }}
+        run: python -m paramyth.benchmark --case "$CASE" --out runs/benchmark
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pipeline-${{ matrix.case }}-${{ matrix.python }}
+          path: runs/

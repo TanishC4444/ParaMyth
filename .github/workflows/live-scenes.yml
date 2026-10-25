@@ -1,0 +1,37 @@
+name: Live scene benchmark
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  live-scenes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PARAMYTH_API_KEY: ${{ secrets.PARAMYTH_API_KEY }}
+      PARAMYTH_BASE_URL: ${{ vars.PARAMYTH_BASE_URL }}
+      PARAMYTH_MODEL: ${{ vars.PARAMYTH_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check explicit provider configuration
+        run: |
+          python - <<'PY'
+          from paramyth.live import ChatTransport
+          ChatTransport.from_env()
+          print('Provider configuration present; beginning bounded live benchmarks.')
+          PY
+      - name: Generate and review one scene
+        run: python -m paramyth.benchmark --backend live --case single --out runs/single
+      - name: Generate a three-scene sequence
+        run: python -m paramyth.benchmark --backend live --case sequence --out runs/sequence
+      - name: Verify checkpoint continuation
+        run: python -m paramyth.benchmark --backend live --case resume --out runs/resume
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-scene-benchmarks
+          path: runs/
+          if-no-files-found: warn
+          retention-days: 30
