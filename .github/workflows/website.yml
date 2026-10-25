@@ -21,6 +21,12 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: corepack pnpm install --frozen-lockfile
+      - name: Check frontend types and behavior
+        working-directory: frontend
+        run: |
+          corepack pnpm exec tsc --noEmit
+          corepack pnpm test:atlas
+          corepack pnpm test:cinematic
       - name: Build frontend
         working-directory: frontend
         run: corepack pnpm build

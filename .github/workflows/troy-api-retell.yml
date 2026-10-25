@@ -1,6 +1,11 @@
 name: Troy API retelling / third person
 on:
   workflow_dispatch:
+    inputs:
+      source_run:
+        type: string
+        required: true
+        description: Completed run whose s04_accept artifact supplies literary retrieval
 permissions:
   contents: read
   actions: read
@@ -28,7 +33,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: s04_accept
-          run-id: 39552359292
+          run-id: ${{ inputs.source_run }}
           github-token: ${{ github.token }}
           path: inputs
       - name: Refine, outline, draft, compare revisions and verify final story

@@ -35,7 +35,7 @@ def run(folder,source,backend='worker',final_candidate=None):
     folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
     req=contracts.request(load(ROOT/'examples/troy-narrative-api.json'))
     source_path=Path(source)
-    if not source_path.exists():source_path=ROOT/'recovery/troy-39512585096/snapshot.json'
+    if not source_path.exists():source_path=ROOT/'recovery/troy-seed/snapshot.json'
     seed=load(source_path);retrieval=seed['retrieval']
     save(folder/'retrieval-provenance.json',{'mode':'replay_selected_classical_analysis','source':'run_artifact' if Path(source).exists() else 'committed_literary_cache','source_request_hash':seed.get('request_hash')})
     state_path=folder/'state.json'

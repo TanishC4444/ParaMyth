@@ -100,7 +100,7 @@ class ProductionTests(unittest.TestCase):
         with self.assertRaises(ValueError):muse.ask('test',{},[{'mime':'image/png','data':'not-base64'}])
 
     def sample_plan(self):
-        return {'id':'a'*24,'title':'Troy','created_at':'2026-10-24T12:00:00+00:00','config':self.cfg,'schedule':schedule([scene()],self.cfg)}
+        return {'id':'a'*24,'title':'Troy','created_at':'2026-10-24T19:00:00+00:00','config':self.cfg,'schedule':schedule([scene()],self.cfg)}
 
     def test_ics_escaping_folding_and_google_idempotence_conflict(self):
         plan=self.sample_plan();plan['schedule']['events'][0]['summary']='Troy, shore; '+('海'*60)+'\nEND:VEVENT'

@@ -12,7 +12,7 @@ from test_advanced_story import example
 
 class LiteraryPolicyTests(unittest.TestCase):
     def test_actual_failed_indices_are_derived_without_changing_criticism(self):
-        root=Path('tests/fixtures/practice-references-39796492449')
+        root=Path('tests/fixtures/practice-references')
         raw=json.loads((root/'review.json').read_text());catalog=json.loads((root/'passages.json').read_text())
         bound=bind_finding_targets(raw,catalog)
         self.assertEqual(bound['issues'][0]['paragraph'],4)

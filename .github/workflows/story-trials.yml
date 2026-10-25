@@ -4,8 +4,8 @@ on:
     inputs:
       source_run:
         type: string
-        default: '40103398653'
-        description: Original nonlinear full-pipeline run to recover into a fresh run
+        required: true
+        description: Nonlinear full-pipeline run to recover into a fresh run
 permissions:
   contents: read
   actions: write

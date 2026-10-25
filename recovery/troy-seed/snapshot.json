@@ -1021,7 +1021,7 @@
   },
   "refinement_recovery": {
     "source_artifact_call": "refiner-6f6542a55bcbc03613f8.json",
-    "source_run": "39472094367",
+    "source_run": null,
     "normalization": "String-list reader experience joined; labelled objects represented as name/value entries; no story content invented."
   },
   "development_assessments": {

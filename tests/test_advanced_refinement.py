@@ -127,9 +127,9 @@ class RefinementTests(unittest.TestCase):
 
     def test_actual_failed_writer_reports_all_errors_in_first_retry(self):
         from paramyth.pipeline.craft import validate_prose
-        text=(ROOT/'tests/fixtures/practice-writer-39714540410/attempt-2.txt').read_text()
+        text=(ROOT/'tests/fixtures/practice-writer/attempt-2.txt').read_text()
         # Select the original short artifact independently of filename ordering.
-        texts=[p.read_text() for p in (ROOT/'tests/fixtures/practice-writer-39714540410').glob('*.txt')]
+        texts=[p.read_text() for p in (ROOT/'tests/fixtures/practice-writer').glob('*.txt')]
         short=min(texts,key=lambda s:len(s.split()))
         with self.assertRaises(ContractError) as caught:validate_prose(short,self.req,check_length=True)
         self.assertIn('269 words',str(caught.exception));self.assertIn('no-dialogue',str(caught.exception))
@@ -170,8 +170,8 @@ class RefinementTests(unittest.TestCase):
     def test_invalid_line_edit_keeps_successful_structural_candidate(self):
         from paramyth.pipeline.experimental import dispatch
         prose=' '.join(['bronze']*350)
-        structural=(ROOT/'tests/fixtures/practice-editor-39717076545/structural.txt').read_text()
-        rejected=(ROOT/'tests/fixtures/practice-editor-39717076545/rejected-line-edit.txt').read_text()
+        structural=(ROOT/'tests/fixtures/practice-editor/structural.txt').read_text()
+        rejected=(ROOT/'tests/fixtures/practice-editor/rejected-line-edit.txt').read_text()
         card={**self.req['scene_designs'][0],'chapter':1}
         state={'request':self.req,'plan':{'scenes':[card]},'accepted':[]}
         class Fake:

@@ -1,6 +1,6 @@
 # Advanced ParaMyth pipelines
 
-Bundled sample: [FINAL_STORY.txt](../../outputs/troy-third-person/FINAL_STORY.txt), four scenes with third-person narration and a final editorial pass. The sample and historical audits are fixtures, not validation of a new live run.
+Bundled sample: [FINAL_STORY.txt](../../outputs/troy-third-person/FINAL_STORY.txt), four scenes with third-person narration and a final editorial pass. The sample is a fixture, not validation of a new live run.
 
 File-based story orchestration with literary retrieval, fresh model runners,
 reviewed memory, hosted inference, and a local workflow workspace.
@@ -125,7 +125,7 @@ The older sequential CLI is retained for comparison and local checkpoint debuggi
 python -m paramyth.pipeline.cli --request examples/harbor.json --out runs/fixture --backend fixture
 ```
 
-Its optional github backend uses the library's older separate-workflow dispatch path and requires GH_AI_TOKEN. **That CLI is not the implementation used by the current Story runners graph.** Earlier launch notes and fixture examples describe the previous path; they are not evidence for the current live run.
+Its optional github backend uses the library's separate-workflow dispatch path and requires GH_AI_TOKEN. **That CLI is not the implementation used by the current Story runners graph.** Fixture examples for that path are not evidence for the current live run.
 
 ## Scope and provenance
 
@@ -155,7 +155,7 @@ Explicit `retrieval_weights` now apply mathematical weights to normalized recipr
 
 Both native story workflows allow **360 minutes per job**. A shared deadline gives inference and its validation retries the remaining job time, with five minutes reserved for cleanup and artifact upload; the former 35-minute subprocess cap is removed. The compatibility dispatch adapter also receives a six-hour job/completion budget. Download socket timeout is ten minutes, separate from generation duration. These settings change time budgets, not model context, RAM, output length or editorial acceptance rules.
 
-The first Troy attempt (39472094367) completed refinement but GitHub cancelled its development review at 45 minutes. Recovery uses that run's `refine` artifact through `refinement_seed_run`, validates the exact request, and retains the original refinement rather than generating it again. A new run is necessary to execute the changed workflow revision. Development review now receives a catalog of actual candidate paths, preventing the observed mistake of treating normalized arrays as invented named fields from being silently accepted.
+When a run completes refinement but its development review is cancelled, recovery reuses that run's `refine` artifact through `refinement_seed_run`, validates the exact request, and keeps the saved refinement rather than generating it again. A changed workflow revision still requires a new run. Development review receives a catalog of actual candidate paths, so normalized arrays treated as invented named fields are not silently accepted.
 
 ## Faster Troy execution (gh-inference 0.6.1)
 
@@ -165,11 +165,11 @@ The expressive profile keeps Glitter drafting and Gemma literary editing/review.
 
 Code validates counts, identifiers, source bindings and context budgets. Formatting repairs receive only the invalid output, validation error and allowed IDs; a parseable review's judgments and reasons must remain unchanged. Failed content checks do not become formatting passes. Resident sessions count tokenized content, reserve requested output and template allowance, and reject overflow without truncation. Six-hour job budgets remain in place.
 
-The library's real GitHub resident-session smoke test passed two isolated constrained-JSON calls using one loaded model. Standard runners remain CPU-only; optional GPU offload requires a separately provisioned compatible host. No GPU speedup is claimed. Fixture tests do not establish literary quality or live Troy performance.
+Standard runners remain CPU-only; optional GPU offload requires a separately provisioned compatible host. No GPU speedup is claimed. Fixture tests do not establish literary quality or live Troy performance.
 
 ### Duplicate-check regression
 
-Run 39503852240 failed because the reviewer produced two world-rule assessments and omitted character depth. The previous array schema constrained IDs and count but did not enforce one assessment per distinct ID. Developmental and prose-review decoding now require a checks object with each category as a mandatory named property. The application converts these keyed assessments into stored review records. The actual failed response is preserved as a regression fixture; missing checks remain rejected. This contract change has not yet been tested in another live story run.
+A reviewer can produce two world-rule assessments and omit character depth. An array schema constrains IDs and count but does not enforce one assessment per distinct ID. Developmental and prose-review decoding now require a checks object with each category as a mandatory named property. The application converts these keyed assessments into stored review records. A failed response of this shape is kept as a regression fixture; missing checks remain rejected. Fixtures cover this contract; a live story run does not yet.
 
 ## Following a live job
 
@@ -187,7 +187,7 @@ Memory output is schema-constrained (required wrapper, supported kinds/character
 
 `execution_policy.continue_with_warnings` explicitly opts into **provisional draft continuation**. Unavailable or negative reviews remain unavailable/negative; they are not converted into passes. Scenes can be checkpointed with `quality_status=needs_review`; exports carry a provisional banner and `editorial-report.json`. Completed drafts with unresolved checks are `complete_with_warnings`. Strict requests continue to reject failed gates. This policy handles recoverable content/format failures, not every possible infrastructure outage.
 
-The checked-in recovery seed preserves the previous live outline, refinement, source-matched reviews and 1,115-word scene 1. The creative brief must match before reuse; execution settings may differ. Seeded preparation skips embedding-runtime installation, planning is reused, and scene 1 is not redrafted. `recovery/troy-39512585096/scene-01.txt` is the original unapproved scene, not a newly corrected result.
+The checked-in recovery seed preserves a live outline, refinement, source-matched reviews and 1,115-word scene 1. The creative brief must match before reuse; execution settings may differ. Seeded preparation skips embedding-runtime installation, planning is reused, and scene 1 is not redrafted. `recovery/troy-seed/scene-01.txt` is an unapproved scene, not a corrected result.
 
 The full four-scene fault fixture completed with warnings while injecting malformed memory, unsupported memory facts and reviewer outages. These tests verify recovery and accurate warning labels; they do not establish live completion or prose quality.
 
@@ -275,22 +275,21 @@ gates remain in the practice workflow. Practice ending requirements are scoped
 to discovery, not the full story's acquisition/deployment arc.
 
 Troy workflows reuse the approved scene card plus character proposals as writer
-direction (combine_direction=true), avoiding a redundant model restatement. The
-practice's observed director call used 202.2 seconds; fixture coverage exercises
-the forwarding path. Prose and memory verification remain independent gates.
+direction (combine_direction=true), avoiding a redundant model restatement. Fixture
+coverage exercises the forwarding path. Prose and memory verification remain independent gates.
 
-Practice run 39714540410 exposed two simultaneous writer faults (269 words and
-direct dialogue). Prose validation now reports every detected form/length fault
+A writer can produce several faults at once, such as a short draft that
+also uses direct dialogue. Prose validation now reports every detected form/length fault
 together so the first retry can address them all. Compact no-dialogue packets
 remove voice examples recursively, including POV profiles and scoped character
 requirements. The original brief and raw rejected attempts remain preserved.
-The failed live responses are regression fixtures; no rejected scene became canon.
+Regression fixtures cover these failures; no rejected scene becomes canon.
 
 For the short practice, hosted_prose=flash uses the existing configured Gemini
 route for sequential drafting and editing, with bounded retries and the same
 strict prose validators. CPU fallback remains available. Full-story creative roles
 keep their CPU policy. This tests whether the hosted route can produce compliant
-prose after the observed 3B failure; it is not a claim of better literary quality.
+prose where the 3B route fails validation; it is not a claim of better literary quality.
 
 Hosted optional edits no longer trigger multi-minute CPU fallback on provider
 failures. Editing retains its last form/length-validated candidate if a proposed

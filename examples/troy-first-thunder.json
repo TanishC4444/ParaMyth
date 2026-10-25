@@ -480,7 +480,7 @@
   },
   "execution_policy": {
     "continue_with_warnings": true,
-    "resume_seed": "recovery/troy-39512585096",
+    "resume_seed": "recovery/troy-seed",
     "purpose": "Finish an explicitly provisional draft while preserving unresolved verification and quality warnings."
   },
   "performance": {

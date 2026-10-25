@@ -8,6 +8,6 @@ Fixture runs use explicitly labeled synthetic prose. They test orchestration, no
 
 ## Original retelling
 
-`outputs/troy-third-person/PRE_EDITORIAL_MODEL_STORY.txt` preserves four original accepted model scenes (3,887 words), verified against the older local coordinator's per-scene files. It includes automated model editing and documented memory recovery, but excludes the later direct Codex prose revision. The 3,676-word `FINAL_STORY.txt` is that later editorial version. Neither is an untouched output of a successful unattended Actions run.
+`outputs/troy-third-person/PRE_EDITORIAL_MODEL_STORY.txt` preserves four original accepted model scenes (3,887 words), verified against the local coordinator's per-scene files. It includes automated model editing and documented memory recovery, but excludes the later direct Codex prose revision. The 3,676-word `FINAL_STORY.txt` is that later editorial version. Neither is an untouched output of a successful unattended Actions run.
 
 See [the classic expansion graph and draft visibility](CLASSIC_EXPANSION.md) for the updated multi-runner universe architecture.

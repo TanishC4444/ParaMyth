@@ -1,6 +1,6 @@
 # Creative pipeline audit
 
-The previous live run did not demonstrate adequate editorial judgment: the reviewer returned bare approvals, the editor changed very little, and scenes repeated discoveries. This update changes the contracts and information reaching each role. It does not establish that the model now writes good fiction. No live story generation was restarted for this audit.
+This update targets weak editorial judgment: bare reviewer approvals, minimal editor changes and repeated discoveries. It changes the contracts and information reaching each role. It does not establish that the model now writes good fiction. No live story generation was restarted for this audit.
 
 ## Creative input coverage
 
@@ -35,7 +35,7 @@ These are automated checkpoints, not human approvals. Fresh runners remain insid
 
 ## Actual RAG behavior
 
-The earlier live run used keyword retrieval and selected Old Sultan, Fitcher's Bird and Bluebeard. That was real retrieval, but its integration into later writing was incomplete.
+Keyword-only retrieval can select relevant tales, such as Old Sultan, Fitcher's Bird and Bluebeard, without integrating them into later writing.
 
 The current database has 605 analysis records, 603 eligible for retrieval, 605 rebuilt vectors and zero stale projections. The encoder revision and chunk pooling are pinned. Hybrid mode combines local semantic retrieval with keyword search and controlled mechanism matching across thematic, relationship and craft queries. Explicit valid reference IDs are selected separately and visibly labeled. Unknown or disabled references fail validation.
 

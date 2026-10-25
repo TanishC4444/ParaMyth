@@ -7,7 +7,7 @@ from .craft import compile_brief,compile_scene_plan
 from .canon import index
 from .flow_common import fingerprint
 
-BASELINE_RUN='39552359292'
+BASELINE_RUN='reference-retelling'
 
 def bible(req):return fingerprint({'universe_id':req.get('universe_id',req['project_id']),'world_rules':req['world_rules'],'setting':req.get('world_design',{}).get('setting','')})
 

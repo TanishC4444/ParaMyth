@@ -127,5 +127,5 @@ def load_seed(req,root):
     contracts.require(creative_request(value['request'])==creative_request(req),'Recovery seed has a different creative brief')
     contracts.plan(value['plan'],req);contracts.refinement(value['refinement'],req)
     value=copy.deepcopy(value);value['source_request_hash']=value.get('request_hash');value['request']=req;value['request_hash']=hashlib.sha256(json.dumps(req,sort_keys=True).encode()).hexdigest()
-    value['recovery']={'source_run':39512585096,'reuse_planning':True,'scene_id':'ch01-sc01','prose':(path/'scene-01.txt').read_text(),'reviews':{key:json.loads((path/filename).read_text()) for key,filename in [('story','story-review.json'),('rhetoric','rhetoric-review.json')]}}
+    value['recovery']={'source_run':seed,'reuse_planning':True,'scene_id':'ch01-sc01','prose':(path/'scene-01.txt').read_text(),'reviews':{key:json.loads((path/filename).read_text()) for key,filename in [('story','story-review.json'),('rhetoric','rhetoric-review.json')]}}
     return value

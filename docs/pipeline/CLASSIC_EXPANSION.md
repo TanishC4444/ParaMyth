@@ -2,7 +2,7 @@
 
 Generated YAML shares common nonsecret environment values and reuses exact step/config mappings through YAML anchors and aliases. Secret values stay on task steps. This reduces parser configuration size while preserving every job and dependency.
 
-The cinematic and Living universe workflows retain visible character, writing, review, repair and canon jobs in one Actions graph. Their ancestry includes Actions run 39552359292; that historical completion is not a guarantee of literary quality.
+The cinematic and Living universe workflows retain visible character, writing, review, repair and canon jobs in one Actions graph.
 
 ## Modes and planning
 
@@ -62,7 +62,7 @@ Memory/extraction matrices use at most three concurrent workers; editorial matri
 
 Time allowances are bounded per role, with short hosted-route deadlines. The provider smoke uses at most three tiny HTTP attempts total, one per configured route, with 12-second request limits. It is a capacity check, not a writing benchmark.
 
-The 584-word chapter from run 39897042290 demonstrates the allocation change without new inference: initial prose reviews 14 to 1, story reviews 3 to 1, final reviews 17 to 1, and preflight memory checks 13 to 4. All twelve extracted facts and complete historical evidence remain represented. This measures planned work reduction; live latency and literary quality must be measured independently.
+A 584-word sample chapter demonstrates the allocation change without new inference: initial prose reviews 14 to 1, story reviews 3 to 1, final reviews 17 to 1, and preflight memory checks 13 to 4. All twelve extracted facts and complete evidence remain represented. This measures planned work reduction; live latency and literary quality must be measured independently.
 
 ## Approval and readable writing
 
