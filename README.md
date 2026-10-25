@@ -177,6 +177,30 @@ context budget; hierarchical long-book auditing is not implemented.
 This run format uses schema version 2. Retain earlier run folders as historical
 checkpoints and start a fresh folder rather than silently reinterpreting older state.
 
+## Creative studio
+
+`paramyth.creative` develops ideas, drafts prose, reviews it and revises it with
+Vultr Serverless Inference (`muse-glimmer-30b`). Set `VULTR_INFERENCE_API_KEY` in
+the process environment. Each call can incur provider charges.
+
+```sh
+python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json
+python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json --stream
+```
+
+A request picks one `operation`: `ideas`, `draft`, `review`, `revise` or `loop`.
+`loop` drafts (or starts from `text`), then reviews and revises for up to `rounds`
+(1–3) and stops early when the critic passes. `words` sets the target length
+(100–3000). With `use_story` (default true) the first three story artifacts from
+the run folder are sent as context. `guidance_mode` is `suggest` (keep the idea and
+offer up to three optional improvements) or `use_idea` (develop it as written).
+
+Records are saved under `creative/` with every step, its output and token usage.
+With `--stream`, partial text is saved as it arrives, so a dropped connection
+keeps the words already received. Failed attempts are recorded as failed and are
+not retried automatically. Inferred details stay editable proposals, never
+accepted canon.
+
 ## Meta image generation
 
 The image backend prepares story-aware prompts locally and generates one PNG per
@@ -213,8 +237,8 @@ saved. A timeout may leave billing uncertain; there are no automatic retries or
 provider fallbacks. Interrupted processes may leave a generating record for
 manual inspection.
 
-This phase exposes Python functions and a CLI. Studio HTTP routes, prompt
-enhancement, and Vultr integration are separate work. Tests use synthetic PNGs
+This phase exposes Python functions and a CLI. Studio HTTP routes and prompt
+enhancement are separate work. Tests use synthetic PNGs
 and mocked provider responses; they do not establish live account access or
 image quality.
 
