@@ -201,6 +201,27 @@ keeps the words already received. Failed attempts are recorded as failed and are
 not retried automatically. Inferred details stay editable proposals, never
 accepted canon.
 
+## Soundtracks
+
+`paramyth.soundtracks` builds a sound cue from the run folder's story, characters
+and world, then either renders it locally or asks Vultr for music.
+
+```sh
+python -m paramyth.soundtracks --folder runs/harbor plan --mode ambience
+python -m paramyth.soundtracks --folder runs/harbor ambience --seconds 60 --out harbor.wav
+python -m paramyth.soundtracks --folder runs/harbor create --mode score --model minimax-music3 --seconds 60
+python -m paramyth.soundtracks --folder runs/harbor status music_<id>
+python -m paramyth.soundtracks --folder runs/harbor download music_<id> --out harbor.mp3
+```
+
+`ambience` and the local drone `score` are synthesized on your machine as 16 kHz
+mono WAV (wind, water, rumble and fire layers chosen from the story). They make
+no provider calls, and the same cue always sounds the same. `create` starts a
+Vultr score or song job and needs `VULTR_INFERENCE_API_KEY`; it can incur
+charges. Scores are forced instrumental. Songs need lyrics when the model
+requires them, and durations must fit the model's limits (5–360 seconds).
+Cues and jobs are recorded under `soundtracks/`. Downloads are capped at 64 MB.
+
 ## Meta image generation
 
 The image backend prepares story-aware prompts locally and generates one PNG per
