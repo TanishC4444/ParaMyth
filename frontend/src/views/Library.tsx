@@ -43,7 +43,6 @@ export default function Library() {
   return (
     <div className="page">
       <PageTitle
-        eyebrow="EVERYTHING YOU HAVE MADE"
         title="Project files"
         text="Actual writing, images, soundtracks, research, review evidence and exports saved by your studio."
       />

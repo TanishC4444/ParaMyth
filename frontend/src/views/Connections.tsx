@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 
 import { api } from "../api"
 
-import { PageTitle } from "../ui"
+import { errorText, PageTitle, Status } from "../ui"
 
 export default function Connections() {
   const [data, setData] = useState<any>(null),
@@ -30,7 +30,6 @@ export default function Connections() {
   return (
     <div className="page">
       <PageTitle
-        eyebrow="YOUR CONNECTED WORKSPACE"
         title="Connections"
         text="See which services are ready, manage your account, and explore every backend tool."
       />
@@ -52,7 +51,6 @@ export default function Connections() {
         </div>
       </section>
       <section className="panel">
-        <span className="eyebrow">LITERARY RETRIEVAL</span>
         <h2>
           {semantic ? "Semantic search connected" : "Enable semantic search"}
         </h2>
@@ -69,7 +67,7 @@ export default function Connections() {
               setSemantic(true)
               setError("")
             } catch (e) {
-              setError(String(e))
+              setError(errorText(e))
             }
           }}
         >
@@ -94,9 +92,7 @@ export default function Connections() {
       <div className="connections-grid">
         {Object.entries(data?.configured || {}).map(([key, ready]) => (
           <section className="panel" key={key}>
-            <span className="eyebrow">
-              {ready ? "CONNECTED" : "SETUP NEEDED"}
-            </span>
+            <Status>{ready ? "Connected" : "Setup needed"}</Status>
             <h3>{labels[key] || key}</h3>
             <p>
               {ready

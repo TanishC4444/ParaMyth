@@ -166,7 +166,7 @@ function Shell() {
         </nav>
         <div className="sidebar-bottom">
           <div className="current-project">
-            <small>CURRENT PROJECT</small>
+            <small>Current project</small>
             <b>{project.title}</b>
             <span>{project.brief.medium}</span>
           </div>
@@ -198,7 +198,7 @@ function Shell() {
             />
           </a>
           <span className={saving ? "local-label saving" : "local-label"}>
-            {saving ? "SAVING YOUR CHANGES…" : "LIVE STUDIO · SAVED TO YOUR WORKSPACE"}
+            {saving ? "Saving…" : "All changes saved"}
           </span>
           <div className="header-actions">
             <button

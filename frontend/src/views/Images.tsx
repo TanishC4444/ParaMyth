@@ -2,9 +2,9 @@ import { useEffect, useState } from "react"
 import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
-import { PageTitle } from "../ui"
+import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
-import { Artwork } from "../art"
+import { BrandSpot } from "../brandArt"
 export default function Images() {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
@@ -33,7 +33,7 @@ export default function Images() {
       else { setPrompt(j.result.prompt); setProvenance(j.result); setStatus("Your prompt is ready to review.") }
       await refresh()
     },
-    failed: setError,
+    failed: (message) => { setError(message); setStatus("") },
   })
   const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
@@ -62,7 +62,7 @@ export default function Images() {
       if(destination==='prompt'){setPrompt(record.request.prompt);setProvenance({prompt_provider:record.provider,sources:[],assumptions:record.fallback?[record.fallback.reason]:[]});return}
       if(destination==='production'){ setDraft(project.id,'production.imageId',img.id); setDraft(project.id,'production.imageIds',[img.id]); }
       setMediaDirection(img.title+': '+record.request.prompt.slice(0,650));go(destination);
-    }catch(e){setError(String(e))}
+    }catch(e){setError(errorText(e))}
   };
   const selected = models.find((x) => x.id === model),
     params = selected?.supported_parameters || {},
@@ -109,7 +109,7 @@ export default function Images() {
       setPendingJob({ id: queued.job_id, kind: generate ? "image" : "image-prompt", local: queued.local })
       await refresh()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     } finally {
       setSubmitting(false)
     }
@@ -117,7 +117,6 @@ export default function Images() {
   return (
     <div className="page">
       <PageTitle
-        eyebrow="BRING IT TO LIFE"
         title="Images"
         text="Turn a character, place or moment from your story into a visual. Review the prompt before rendering."
       />
@@ -292,9 +291,8 @@ export default function Images() {
           ))}
           {!images.length && (
             <div className="empty illustrated-empty">
-              <Artwork name="forest-path" />
+              <BrandSpot kind="image" />
               <div className="empty-copy">
-                <span className="eyebrow">A WORLD WAITING TO BE SEEN</span>
                 <h3>Give your story a visual voice.</h3>
                 <p>
                   Your generated images will appear here, saved with their

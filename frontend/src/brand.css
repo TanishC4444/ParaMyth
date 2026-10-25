@@ -1,0 +1,295 @@
+/* ParaMyth studio brand layer: the storybook palette from the logo (peach sky, teal and navy clouds,
+   gold star, cream pages). Scoped to the studio so the landing page keeps its own look. */
+.app-shell,.toast{
+  --navy:#24427f;--navy-dark:#1a3366;--ink:#1f2f52;--slate:#55607a;--muted:#6c7285;
+  --teal:#48c9c0;--aqua:#86e6e4;--mint:#48c9c0;--soft-mint:#dcf4f1;
+  --gold:#f6b829;--butter:#fff08a;--peach:#f2a06e;--apricot:#f8c46a;--rose:#e8957a;
+  --cream:#fff7ea;--paper:#fffdf8;--sand:#f8e9cf;--line:#eedcbf;--line-strong:#e2c79c;
+  --ok:#1f8f83;--warn:#c77d12;--bad:#c4553d;--night:#24427f;
+  --shadow:none;--radius:16px;
+  --display:"Young Serif",Georgia,serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+.app-shell{background:var(--cream);color:var(--ink);font-size:14px}
+.app-shell main{background:var(--cream);min-height:100vh}
+
+/* Type */
+.app-shell h1,.app-shell h2{font-family:var(--display);font-weight:400;color:var(--navy);letter-spacing:-.2px}
+.app-shell h1{font-size:34px;line-height:1.15}
+.app-shell h2{font-size:21px;line-height:1.25}
+.app-shell h3{font-weight:700;color:var(--ink);letter-spacing:0}
+.app-shell .page-title{align-items:flex-end;gap:24px;margin-bottom:28px}
+.app-shell .page-title p{font-size:15px;line-height:1.6;color:var(--muted);max-width:62ch}
+.app-shell .page-title h1{margin:0 0 8px}
+.app-shell .eyebrow{display:block;font-size:12px;font-weight:600;letter-spacing:0;color:var(--slate);text-transform:lowercase}
+.app-shell .eyebrow::first-letter{text-transform:uppercase}
+.app-shell .hint,.app-shell .quiet{font-size:13px;color:var(--muted)}
+.app-shell code{font-family:ui-monospace,Menlo,monospace}
+
+/* Sidebar */
+.app-shell .sidebar{background:var(--navy);padding:22px 16px 18px;border-right:0}
+.app-shell .sidebar nav{gap:18px}
+.app-shell .nav-group>span{font-size:12px;letter-spacing:0;text-transform:none;font-weight:600;color:#9fb3dc;padding:0 12px 4px}
+.app-shell .sidebar nav button,.app-shell .studio-team-link{position:relative;font-size:14px;color:#d5def0;padding:10px 12px;border-radius:12px;transition:background .18s var(--ease),color .18s var(--ease)}
+.app-shell .sidebar nav button:hover,.app-shell .studio-team-link:hover{background:rgba(255,255,255,.08);color:#fff}
+.app-shell .sidebar nav button.active{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;font-weight:600}
+.app-shell .sidebar nav button:before{content:"";position:absolute;left:-16px;top:9px;bottom:9px;width:4px;border-radius:0 4px 4px 0;background:var(--gold);transform:scaleY(0);transition:transform .22s var(--ease)}
+.app-shell .sidebar nav button.active:before{transform:scaleY(1)}
+.app-shell .sidebar nav em{background:var(--gold);color:var(--navy);border-radius:8px}
+.app-shell .branded-workspace .brand-logo{border-radius:14px;transition:transform .25s var(--ease)}
+.app-shell .branded-workspace:hover .brand-logo{transform:rotate(-1.5deg) scale(1.02)}
+.app-shell .workspace-switch.branded-workspace>small{font-size:12px;color:#b9c7e4}
+.app-shell .current-project{border-color:rgba(255,255,255,.16)}
+.app-shell .current-project small{font-size:12px;letter-spacing:0;color:#9fb3dc;font-weight:600}
+.app-shell .current-project b{font-size:14px}
+.app-shell .current-project span{font-size:12px}
+
+/* Header */
+.app-shell main>header{background:var(--cream);border-bottom:1px solid var(--line);height:64px}
+.app-shell .local-label{display:inline-flex;align-items:center;gap:8px;background:none;padding:0;border-radius:0;font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.app-shell .local-label:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.app-shell .local-label.saving:before{background:var(--gold);animation:pulse 1.2s ease-in-out infinite}
+.app-shell .header-actions .text-action{font-size:13px}
+.app-shell .icon-button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;transition:background .15s}
+.app-shell .icon-button:hover{background:var(--sand)}
+
+/* Buttons */
+.app-shell .primary,.app-shell .secondary{border-radius:12px;font-size:13px;font-weight:600;transition:background .15s var(--ease),border-color .15s var(--ease),transform .1s var(--ease);text-decoration:none}
+.app-shell .primary{background:var(--navy);color:#fff;padding:11px 18px;box-shadow:none}
+.app-shell .primary:hover:not(:disabled){background:var(--navy-dark)}
+.app-shell .secondary{background:var(--paper);border:1.5px solid var(--navy);color:var(--navy);padding:9px 15px}
+.app-shell .secondary:hover:not(:disabled){background:#fff0d6}
+.app-shell .primary:active:not(:disabled),.app-shell .secondary:active:not(:disabled){transform:scale(.97)}
+.app-shell .secondary:disabled{opacity:.5;cursor:not-allowed}
+.app-shell .text-action,.app-shell .link{color:var(--navy);font-size:13px;font-weight:700;text-decoration:none;text-underline-offset:4px}
+.app-shell .text-action:hover,.app-shell .link:hover{text-decoration:underline}
+.app-shell .text-action svg{transition:transform .18s var(--ease)}
+.app-shell .text-action:hover svg{transform:translateX(3px)}
+.app-shell :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* Surfaces */
+.app-shell :is(.panel,.project-list,.ledger,.review-list,.continue-card,.project-card){background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:none}
+.app-shell .panel{padding:22px}
+.app-shell .panel h2{margin-bottom:14px}
+.app-shell .section-head{align-items:center;margin-bottom:14px}
+.app-shell :is(.continue-card,.project-card){transition:border-color .2s var(--ease)}
+.app-shell :is(.continue-card,.project-card):hover{transform:none;box-shadow:none;border-color:var(--navy)}
+.app-shell .round-arrow{border-color:var(--line-strong);transition:background .2s var(--ease),color .2s var(--ease)}
+.app-shell .continue-card:hover .round-arrow{background:var(--navy);color:#fff;border-color:var(--navy)}
+.app-shell .project-row{color:var(--muted);transition:background .15s}
+.app-shell .project-row:hover,.app-shell .run-row.selected,.app-shell .file-row.selected{background:#fff3df}
+.app-shell .project-name b{font-size:14px}
+.app-shell .project-name small,.app-shell .project-card p,.app-shell .due{font-size:12px}
+.app-shell .count{background:var(--sand);color:var(--navy);border-radius:10px;width:auto;min-width:28px;padding:0 8px}
+.app-shell .capacity div{background:var(--cream);border:1px solid var(--line);border-radius:12px}
+.app-shell .capacity small{font-size:12px}
+.app-shell .progress{background:var(--sand);height:6px;border-radius:6px}
+.app-shell .progress span{background:var(--teal);border-radius:6px;transition:width .6s var(--ease)}
+.app-shell .continue-content>small{font-size:12px}
+.app-shell .meta-row{font-size:12px}
+
+/* Covers and art */
+.app-shell .illustrated-cover{background:var(--apricot)}
+.app-shell .illustrated-cover:after{display:none}
+.app-shell .illustrated-cover>.project-art{position:absolute;inset:0;width:100%;height:100%;z-index:-1;transition:transform .5s var(--ease)}
+.app-shell :is(.project-card,.continue-card,.project-row):hover .project-art{transform:scale(1.04)}
+.app-shell .illustrated-cover>span{align-self:flex-start;background:var(--paper);color:var(--navy);text-shadow:none;font-size:12px;font-weight:700;letter-spacing:0;padding:4px 10px;border-radius:8px}
+.app-shell .mini-cover.illustrated-cover{position:relative;overflow:hidden;border-radius:10px}
+.app-shell .mini-cover .project-art{position:absolute;inset:0;width:100%;height:100%}
+.app-shell .project-cover.illustrated-cover{height:150px}
+
+/* Overview */
+.app-shell .studio-welcome{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,420px);align-items:center;gap:24px;min-height:0;padding:36px 40px;border-radius:24px;background:radial-gradient(120% 140% at 70% 30%,#f9cb73 0%,#f5b06f 55%,#f09d6c 100%);overflow:hidden}
+.app-shell .studio-welcome>div{max-width:520px}
+.app-shell .studio-welcome h1{font:400 44px/1.08 var(--display);color:var(--navy);letter-spacing:-.5px;margin:0 0 12px}
+.app-shell .studio-welcome p{font-size:16px;line-height:1.6;color:#3a3550;max-width:42ch}
+.app-shell .studio-welcome .text-action{color:var(--navy)}
+.app-shell .studio-welcome-art{position:static;width:100%;height:auto;max-height:280px;mask-image:none;filter:none;opacity:1;z-index:auto}
+
+/* Brand illustration motion */
+.brand-scene,.brand-spot{display:block;overflow:visible}
+.brand-scene :is(.brand-star,.brand-twinkles path,.brand-swirls path,.brand-clouds),.brand-spot :is(.brand-star,.brand-twinkle-one,.brand-twinkle-two){transform-box:fill-box;transform-origin:center}
+.brand-scene .brand-star{animation:pm-star 7s ease-in-out infinite}
+.brand-scene .brand-twinkles path,.brand-spot :is(.brand-twinkle-one,.brand-twinkle-two){animation:pm-twinkle 2.8s ease-in-out infinite}
+.brand-spot .brand-twinkle-two{animation-delay:1.1s}
+.brand-scene .brand-swirls path{animation:pm-swirl 9s ease-in-out infinite alternate}
+.brand-scene .brand-clouds{animation:pm-bob 8s ease-in-out infinite alternate}
+.brand-spot .brand-star{animation:pm-star 7s ease-in-out infinite}
+@keyframes pm-star{0%,100%{transform:rotate(0) scale(1)}50%{transform:rotate(8deg) scale(1.05)}}
+@keyframes pm-twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
+@keyframes pm-swirl{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+@keyframes pm-bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+
+/* Forms */
+.app-shell :is(.field,.modal>label,.project-details label){font-size:13px;font-weight:600;color:var(--ink)}
+.app-shell .field small{font-size:12px}
+.app-shell :is(.field input,.field select,.field textarea,.modal input,.modal select,.modal textarea,.toolbar label,.toolbar select,.finding-form :is(input,textarea,select),.fact-form :is(input,textarea,select),.data input,.pin-row :is(input,select),.journey-direction :is(input,select),.workflow-source select,.chapter-toolbar select,.workspace-result-head select,.chips,.idea-detail-cards textarea){border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;color:var(--ink);font-size:14px;transition:border-color .15s,box-shadow .15s}
+.app-shell :is(.field input,.field select,.field textarea,.modal input,.modal select,.modal textarea,.finding-form :is(input,textarea,select),.fact-form :is(input,textarea,select)){padding:10px 12px}
+.app-shell :is(.field input,.field select,.field textarea,.modal input,.modal select,.modal textarea,.toolbar select,.finding-form :is(input,textarea,select),.fact-form :is(input,textarea,select),.journey-direction :is(input,select),.workflow-source select):focus,.app-shell .toolbar label:focus-within,.app-shell .chips:focus-within{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(72,201,192,.22)}
+.app-shell .toolbar label input:focus,.app-shell .chips input:focus{outline:0}
+.app-shell .toolbar{gap:10px}
+.app-shell .toolbar label,.app-shell .toolbar select{min-height:44px}
+.app-shell .chips span{background:var(--soft-mint);color:var(--navy);border-radius:8px;font-size:13px;animation:pm-pop .2s var(--ease)}
+.app-shell .errors{background:#fde8e1;color:#8a3420;border-radius:12px;font-size:13px}
+.app-shell .ok{color:var(--ok);font-size:13px}
+.app-shell .toggle,.app-shell .inline-suggestion{font-size:13px}
+.app-shell :is(.toggle,.inline-suggestion,.atlas-match-controls) input,.app-shell input[type=range]{accent-color:var(--navy)}
+
+/* Tabs and segmented controls */
+.app-shell :is(.segmented,.workflow-tabs){background:var(--sand);border-radius:12px;padding:4px;gap:4px}
+.app-shell .segmented button,.app-shell .workflow-tabs button{border-radius:9px;font-size:13px;color:var(--slate);transition:background .18s var(--ease),color .18s var(--ease)}
+.app-shell .segmented button:hover,.app-shell .workflow-tabs button:hover{color:var(--navy)}
+.app-shell .segmented button.selected,.app-shell .workflow-tabs button[aria-pressed=true]{background:var(--paper);color:var(--navy);font-weight:700;box-shadow:0 1px 0 var(--line-strong)}
+.app-shell .workflow-primary-tabs{border-color:var(--line)}
+.app-shell .workflow-primary-tabs button{border-radius:12px;color:var(--slate);font-size:14px;font-weight:600;transition:background .18s var(--ease),color .18s var(--ease)}
+.app-shell .workflow-primary-tabs button:hover{background:var(--sand);color:var(--navy)}
+.app-shell .workflow-primary-tabs button[aria-pressed=true]{background:var(--navy);color:#fff}
+.app-shell .workflow-tabs i{background:var(--teal)}
+.app-shell .editor-top{background:var(--paper);border-color:var(--line)}
+.app-shell .editor-top .tabs button{font-size:13px;border-radius:10px;transition:background .18s var(--ease),color .18s var(--ease)}
+.app-shell .editor-top .tabs button:hover{background:var(--sand)}
+.app-shell .editor-top .tabs button.active{background:var(--soft-mint);color:var(--navy)}
+.app-shell .editor-top small{font-size:12px}
+.app-shell .mode-buttons{border-color:var(--line-strong);border-radius:10px}
+.app-shell .mode-buttons button{background:var(--paper)}
+.app-shell .mode-buttons button.selected{background:var(--soft-mint)}
+
+/* Status and tags */
+.app-shell .status{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--slate)}
+.app-shell .kind{font-size:12px;letter-spacing:0;text-transform:none;border-radius:8px;background:var(--soft-mint)}
+.app-shell .tag-row span,.app-shell .tag-row em{font-size:12px;border-radius:8px;background:var(--sand)}
+.app-shell .tag-row span.on{background:var(--soft-mint)}
+.app-shell .finding-head span,.app-shell .chapter-label,.app-shell .data th{letter-spacing:0;text-transform:none;font-size:12px}
+.app-shell .mode-file{font-size:12px;color:var(--slate);background:var(--sand);padding:3px 8px;border-radius:6px;align-self:flex-start}
+
+/* Workspace surfaces */
+.app-shell .workspace,.app-shell .editor-screen{background:var(--cream)}
+.app-shell .doc-nav,.app-shell .comments{background:var(--paper)}
+.app-shell .doc-nav>div>button,.app-shell .doc-nav>button{font-size:13px;border-radius:10px;transition:background .15s}
+.app-shell .doc-nav>div>button:hover{background:#fff3df}
+.app-shell .doc-nav>div>button.active,.app-shell .doc-nav>button.active{background:var(--soft-mint)}
+.app-shell .paper{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:none}
+.app-shell .paper>input,.app-shell .chapter-title,.app-shell .char-name{font-family:var(--display);font-weight:400;color:var(--navy)}
+.app-shell .formatbar{background:var(--paper);border-color:var(--line)}
+.app-shell .arc label,.app-shell .cue,.app-shell .preview,.app-shell .real-output,.app-shell .finding blockquote{background:var(--cream);border-radius:10px}
+.app-shell .arc small{font-size:12px;letter-spacing:0}
+.app-shell .finding{border-color:var(--line);border-radius:12px;background:#fff}
+.app-shell .stages li.current{background:#fff3d4}
+.app-shell .timeline{border-left-color:var(--soft-mint)}
+.app-shell .canon-stats>*{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)}
+.app-shell .canon-stats b{font-family:var(--display);font-weight:400}
+.app-shell .live-status{background:#e8f6f4;border-left-color:var(--teal);border-radius:0 10px 10px 0}
+.app-shell .live-status.error,.app-shell .live-error{background:#fde8e1;border-color:var(--bad);color:#8a3420}
+.app-shell .banner.warn,.app-shell .demo-callout{background:#fff1cc}
+.app-shell .journey{background:transparent;border-color:var(--line)}
+.app-shell .journey strong{font-family:var(--display);font-weight:400;color:var(--navy);font-size:17px}
+.app-shell .journey nav button{border-radius:10px;color:var(--slate);transition:background .15s,color .15s}
+.app-shell .journey nav button:hover{background:var(--sand);color:var(--navy)}
+.app-shell .journey nav button[aria-current]{background:var(--navy);color:#fff}
+.app-shell :is(.workflow-source,.live-writing-context,.source-changed){background:var(--paper);border:1px solid var(--line);border-radius:14px}
+.app-shell .idea-board{background:var(--sand);background-image:radial-gradient(rgba(36,66,127,.1) 1px,transparent 1px);background-size:22px 22px}
+.app-shell .idea-editor{border-color:var(--line-strong);border-radius:14px}
+.app-shell .idea-editor-head,.app-shell .idea-detail-cards{background:var(--cream);border-color:var(--line)}
+.app-shell :is(.inline-proposal,.inline-proposal mark){background:#ffefb8}
+.app-shell .proposal-copy{background:#e8f6f4;border-left-color:var(--teal)}
+.app-shell .proposal-copy ins{color:#1b5d55}
+.app-shell .schedule>div{background:var(--paper);border-color:var(--line);border-radius:12px}
+.app-shell .schedule>div.night{background:var(--navy)}
+.app-shell .capability-list span{border-color:var(--line-strong);border-radius:8px}
+.app-shell .atlas-matches button{background:var(--paper);border-color:var(--line);border-radius:14px}
+.app-shell .atlas-matches button[aria-pressed=true]{background:#e8f6f4;border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.app-shell .match-rank,.app-shell .match-kind{letter-spacing:0;text-transform:none;font-size:12px}
+.app-shell .atlas-concept input{border-radius:12px;border-color:var(--line-strong)}
+
+/* Empty states */
+.app-shell .empty{background:var(--paper);border:1.5px dashed var(--line-strong);border-radius:var(--radius)}
+.app-shell .empty h3{font-family:var(--display);font-weight:400;font-size:20px;color:var(--navy)}
+.app-shell .illustrated-empty.empty{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;padding:24px;text-align:left;border-style:solid;border-width:1px;border-color:var(--line)}
+.app-shell .illustrated-empty .brand-spot{width:150px;height:auto}
+.app-shell .illustrated-empty .empty-copy{padding:0}
+.app-shell .illustrated-empty h3{font:400 22px/1.25 var(--display);margin:0 0 8px}
+.app-shell .simple-workspace .illustrated-empty{min-height:0}
+.app-shell .story-empty{display:grid;justify-items:center;gap:6px;padding:72px 24px}
+.app-shell .story-empty h2{font-size:28px}
+.app-shell .story-empty p{color:var(--muted);font-size:15px;margin-bottom:12px}
+.app-shell .live-loading{color:var(--muted)}
+
+/* Modal and toast */
+.app-shell .modal-scrim{background:rgba(26,40,74,.55);animation:pm-fade .2s ease-out}
+.app-shell .modal{background:var(--paper);border-radius:20px;box-shadow:0 24px 60px rgba(26,40,74,.25);animation:pm-pop .24s var(--ease)}
+.app-shell .modal h2{font-size:28px}
+.app-shell .modal>p{font-size:14px;line-height:1.6}
+.app-shell .modal-close{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;transition:background .15s}
+.app-shell .modal-close:hover{background:var(--sand)}
+.app-shell .modal-actions>button:first-child{border-radius:12px;padding:10px 14px}
+.app-shell .modal-actions>button:first-child:hover{background:var(--sand)}
+.toast{background:var(--navy);color:#fff;border-radius:14px;font-size:14px;box-shadow:0 12px 30px rgba(26,40,74,.25);animation:pm-toast .3s var(--ease)}
+.toast svg{color:var(--gold)}
+
+/* Page motion: each view settles in when you open it. */
+.app-shell main .workspace-view:not([hidden]){animation:pm-rise .32s var(--ease)}
+.app-shell details[open]>:not(summary){animation:pm-fade .22s ease-out}
+.app-shell summary{transition:color .15s}
+.app-shell summary:hover{color:var(--navy)}
+@keyframes pm-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pm-fade{from{opacity:0}to{opacity:1}}
+@keyframes pm-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pm-toast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+
+@media(max-width:900px){
+  .app-shell .studio-welcome{grid-template-columns:1fr;padding:28px 24px;text-align:left}
+  .app-shell .studio-welcome-art{max-width:320px;justify-self:center;order:-1}
+  .app-shell .studio-welcome h1{font-size:36px}
+}
+@media(max-width:760px){
+  .app-shell .sidebar nav button:before{left:-16px}
+  .app-shell h1,.app-shell .page-title h1{font-size:28px}
+  .app-shell .page-title p{font-size:14px}
+  .app-shell .local-label{font-size:12px;margin-left:12px}
+  .app-shell .illustrated-empty.empty{grid-template-columns:1fr;justify-items:start}
+  .app-shell .illustrated-empty .brand-spot{width:120px}
+  .app-shell .studio-welcome h1{font-size:30px}
+  .app-shell .project-card-body p{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell *,.app-shell *:before,.toast{animation:none!important;transition:none!important}
+}
+
+/* Layout fixes found in QA */
+.app-shell .review-item.run-row{display:block;padding:16px 18px;transition:background .15s}
+.app-shell .review-item.run-row:hover{background:#fff3df}
+.app-shell .review-item.run-row h3{font-size:15px;margin:6px 0 4px}
+.app-shell .review-item.run-row p{font-size:12px}
+.app-shell .runs-layout:not(:has(.run-detail)){grid-template-columns:minmax(0,1fr)}
+.app-shell .workflow-manuscript-tools .brief-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.app-shell .workflow-manuscript-tools .cast-grid{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+@media(min-width:761px){.app-shell .workflow-manuscript-tools .form-grid{grid-template-columns:1fr 1fr}}
+.app-shell .page>:is(.panel,.connections-grid,.section){margin-bottom:18px}
+.app-shell .page>.section{margin-top:0}
+.app-shell .connections-grid .panel a,.app-shell .inline-links a{color:var(--navy);font-weight:600;text-underline-offset:3px}
+.app-shell .account-links{margin-top:14px}
+
+/* Globe and flat map share one stage; these rules otherwise ship only with the landing page bundle. */
+.app-shell .atlas-scene{position:relative;height:620px;isolation:isolate}
+.app-shell .atlas-layer{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .6s var(--ease),transform .6s var(--ease);transform:scale(.985);z-index:0}
+.app-shell .atlas-layer.active{opacity:1;pointer-events:auto;transform:scale(1);z-index:1}
+.app-shell .atlas-layer[inert] *{pointer-events:none!important}
+.app-shell .atlas-layer :is(.atlas-globe,.atlas-map){height:100%!important;min-height:0!important;max-height:none!important}
+@media(max-width:700px){.app-shell .atlas-scene{height:460px}}
+.app-shell .map-layer>.atlas-map{border-radius:16px;overflow:hidden}
+.app-shell .atlas-view-loading{position:absolute;bottom:8px;left:16px;color:var(--muted);font-size:12px;z-index:5}
+@media(max-width:560px){.app-shell .local-label:not(.saving){display:none}.app-shell .local-label{white-space:nowrap}}
+.app-shell .project-cover .project-art{opacity:1;margin:0;align-self:auto}
+.app-shell .atlas-source{text-transform:none;letter-spacing:0;font-size:12px;border-radius:10px}
+/* Older rules force navy text on every action-row button; keep filled buttons readable. */
+.app-shell :is(.comment-actions,.idea-editor-head,.chapter-footer) .primary{color:#fff!important;background:var(--navy);padding:9px 15px}
+.app-shell :is(.comment-actions,.idea-editor-head,.chapter-footer) .primary:hover:not(:disabled){background:var(--navy-dark)}
+.app-shell :is(.comment-actions,.chapter-footer) button:not(.primary):not(.secondary){border-radius:8px;padding:6px 8px;font-size:13px}
+.app-shell :is(.comment-actions,.chapter-footer) button:not(.primary):not(.secondary):hover:not(:disabled){background:var(--sand)}
+.app-shell .primary:disabled{opacity:.45}
+/* Raise the 9–10px labels from the earlier stylesheet to a readable size. */
+.app-shell .comment-actions,.app-shell .comment-actions button,.app-shell .comment-actions a{font-size:13px}
+.app-shell :is(.wordcount,.legend,.chapter-footer>span,.finding-head small,.timeline small,.schedule small,.versions small,.scene-meta,.workflow-context,.inline-suggestion span,.idea-gap-note){font-size:12px}
+.app-shell :is(.finding,.timeline li,.stages li,.fact p,.thread p,.data){font-size:13px}
+.app-shell .modal .form-grid{gap:14px 12px;margin-top:16px}
+.app-shell .modal .form-grid label{display:block;font-size:13px;font-weight:600;color:var(--ink)}

@@ -11,6 +11,7 @@ import {
 } from "react"
 import { api, projectPath, studioJobs, type Job } from "./api"
 import { uid, now, modeOf } from "./data"
+import { errorText } from "./ui"
 import type {
   CreativeSeed,
   ModeId,
@@ -277,7 +278,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   }, [flush])
   useEffect(() => {
     void refresh()
-    const changed = () => setView(routeView())
+    const changed = () => {
+      // Links such as #/images open the matching workflow tab, the same as the in-app buttons.
+      const raw = location.hash.replace(/^#\/?/, "").split("/")[0] as View
+      if (["creative", "images", "music", "production", "project"].includes(raw)) go(raw)
+      else setView(routeView())
+    }
     const update = () => void refresh()
     window.addEventListener("hashchange", changed)
     window.addEventListener("studio-refresh", update)
@@ -344,7 +350,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         go("workflow")
         await refresh()
       } catch (e) {
-        notify(String(e))
+        notify(errorText(e))
       }
     })()
   }
@@ -415,7 +421,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
           await flush()
           go("workflow")
           notify("New project created from your atlas inspiration.")
-        } catch (e) { notify(String(e)) }
+        } catch (e) { notify(errorText(e)) }
         finally { startingAtlas.current = false }
       })()
     },

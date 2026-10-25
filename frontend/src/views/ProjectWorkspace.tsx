@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { download, hash, manuscriptLabel, mechanicalReview, MODES, modeOf, now, slug, uid, validateBrief, words } from "../data";
 import { useStudio, useDraftState } from "../store";
 import { FACT_KINDS, MEDIA, type Brief, type Character, type Dimension, type Fact, type FactKind, type Finding, type Project, type ProjectTab, type Scene } from "../types";
-import { ago, Chips, fmtTime, Icon, Segmented, Status } from "../ui";
+import { ago, Chips, errorText, fmtTime, Icon, Segmented, Status } from "../ui";
 
 const TABS: [ProjectTab, string][] = [["brief", "Brief"], ["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
 
@@ -31,7 +31,7 @@ function BriefTab() {
   const setChar = (id: string, patch: Partial<Character>) => set({ characters: b.characters.map((c) => c.id === id ? { ...c, ...patch } : c) });
   return <div className="page brief-page">
     <div className="brief-grid">
-      <section className="panel"><span className="eyebrow">IDENTITY</span><h2>Story</h2>
+      <section className="panel"><h2>Story</h2>
         <label className="field">Premise<textarea value={b.premise} onChange={(e) => set({ premise: e.target.value })} /></label>
         <div className="form-grid">
           <label className="field">Medium<select value={b.medium} onChange={(e) => set({ medium: e.target.value as Brief["medium"] })}>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select></label>
@@ -41,7 +41,7 @@ function BriefTab() {
         </div>
         <p className="hint">{mediumHint[b.medium]}</p>
       </section>
-      <section className="panel"><span className="eyebrow">LENGTH & EXECUTION</span><h2>Structure</h2>
+      <section className="panel"><h2>Structure</h2>
         <div className="form-grid">
           <label className="field">Chapters<input type="number" value={b.chapters} onChange={(e) => set({ chapters: Number(e.target.value) })} /></label>
           <label className="field">Scenes per chapter<input type="number" value={b.scenesPerChapter} onChange={(e) => set({ scenesPerChapter: Number(e.target.value) })} /></label>
@@ -50,15 +50,15 @@ function BriefTab() {
         </div>
         <div className="field">Scene length<Segmented label="Scene length" value={b.lengthMode} options={["Guided", "Strict"] as const} onChange={(lengthMode) => set({ lengthMode })} /></div>
         {errors.length ? <ul className="errors">{errors.map((x) => <li key={x}>{x}</li>)}</ul> : <p className="ok"><Icon name="check" size={15} />Brief looks good.</p>}
-        <button className="secondary" onClick={async () => {try{await flush();const brief=await api(`/api/ui/projects/${project.id}/request`);download(`${slug(project.title)}-brief.json`,JSON.stringify(brief,null,2),"application/json");notify("Runner brief downloaded")}catch(e){notify(String(e))}}}><Icon name="download" />Export brief JSON</button>
+        <button className="secondary" onClick={async () => {try{await flush();const brief=await api(`/api/ui/projects/${project.id}/request`);download(`${slug(project.title)}-brief.json`,JSON.stringify(brief,null,2),"application/json");notify("Runner brief downloaded")}catch(e){notify(errorText(e))}}}><Icon name="download" />Export brief JSON</button>
       </section>
-      <section className="panel"><span className="eyebrow">THEMES & CONSTRAINTS</span><h2>World</h2>
+      <section className="panel"><h2>World</h2>
         <div className="field">Themes<Chips items={b.themes} onChange={(themes) => set({ themes })} placeholder="Add theme, press Enter" /></div>
         <div className="field">Fixed world rules<Chips items={b.worldRules} onChange={(worldRules) => set({ worldRules })} placeholder="Add rule, press Enter" /></div>
         <div className="field">Must avoid<Chips items={b.mustAvoid} onChange={(mustAvoid) => set({ mustAvoid })} placeholder="Add constraint, press Enter" /></div>
       </section>
     </div>
-    <section className="section"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>Cast</h2></div><button className="text-action" onClick={() => set({ characters: [...b.characters, { id: uid(), name: "", goal: "", fear: "", voice: "", arc: { belief: "", pressure: "", choice: "", change: "" } }] })}><Icon name="plus" size={15} />Add character</button></div>
+    <section className="section"><div className="section-head"><h2>Cast</h2><button className="text-action" onClick={() => set({ characters: [...b.characters, { id: uid(), name: "", goal: "", fear: "", voice: "", arc: { belief: "", pressure: "", choice: "", change: "" } }] })}><Icon name="plus" size={15} />Add character</button></div>
       <div className="cast-grid">{b.characters.map((c) => <article className="panel character" key={c.id}>
         <input className="char-name" aria-label="Character name" placeholder="Name" value={c.name} onChange={(e) => setChar(c.id, { name: e.target.value })} />
         {(["goal", "fear", "voice"] as const).map((k) => <label className="field" key={k}>{k[0].toUpperCase() + k.slice(1)}<input value={c[k]} onChange={(e) => setChar(c.id, { [k]: e.target.value })} /></label>)}
@@ -121,7 +121,7 @@ function ManuscriptTab() {
 
   return <div className="editor-layout">
     <aside className="doc-nav">
-      <div className="nav-head"><span className="eyebrow">MANUSCRIPT</span><Status>{label}</Status></div>
+      <div className="nav-head"><b>Manuscript</b><Status>{label}</Status></div>
       {chapters.map((c) => <div key={c}><small className="chapter-label">Chapter {c}</small>
         {project.scenes.filter((s) => s.chapter === c).map((s) => <button className={s.id === scene.id ? "active" : ""} onClick={() => setSceneId(s.id)} key={s.id}><span className={`dot ${s.state.toLowerCase().replace(" ", "-")}`} />{s.title}{s.findings.some((f) => f.status === "Open" && f.severity === "Blocking") && <b className="flag">!</b>}</button>)}
       </div>)}
@@ -220,7 +220,7 @@ function CanonTab() {
         <p className="hint">These author notes are saved with your project. Quarantine facts to keep their history. Original runner canon and review evidence stay available in Project files.</p>
       </section>
       <aside>
-        <section className="panel"><span className="eyebrow">RECORD A FACT</span><h2>Add to ledger</h2>
+        <section className="panel"><h2>Add to ledger</h2>
           <form className="fact-form" onSubmit={add}>
             <select name="kind" aria-label="Kind">{FACT_KINDS.map((k) => <option key={k}>{k}</option>)}</select>
             <textarea name="text" required placeholder="What is now true, believed or claimed?" />
@@ -229,7 +229,7 @@ function CanonTab() {
             <button className="primary">Add provisional fact</button>
           </form>
         </section>
-        <section className="panel"><span className="eyebrow">NONLINEAR NARRATIVE</span><h2>Threads</h2>
+        <section className="panel"><h2>Threads</h2>
           {threads.map((t) => <div className="thread" key={t.id}><p>{t.text}</p><Segmented label="Thread stage" value={t.thread || "Setup"} options={["Setup", "Escalation", "Payoff"] as const} onChange={(thread) => setFact(t.id, { thread })} /></div>)}
           {!threads.length && <p className="quiet">Add a Thread fact to track setup, escalation and payoff.</p>}
         </section>
@@ -240,5 +240,5 @@ function CanonTab() {
 
 function PipelineTab() {
   const { project, startRun, go, jobs } = useStudio();
-  return <div className="page"><div className="mode-grid">{MODES.map(m=><article className="panel mode-card" key={m.id}><span className="eyebrow">{m.workflow}</span><h2>{m.name}</h2><p>{m.summary}</p><ol>{m.stages.map(s=><li key={s}>{s}</li>)}</ol><button className="primary" onClick={()=>startRun(project.id,m.id)}>Configure workflow</button></article>)}</div><section className="panel"><h2>Current studio jobs</h2>{jobs.map(j=><p key={j.id}>{j.kind} · {j.status} · {j.message}</p>)}{!jobs.length&&<p>No studio jobs for this story yet.</p>}<button className="secondary" onClick={()=>go('runs')}>Open GitHub history and all workflows</button></section></div>;
+  return <div className="page"><div className="mode-grid">{MODES.map(m=><article className="panel mode-card" key={m.id}><code className="mode-file">{m.workflow}</code><h2>{m.name}</h2><p>{m.summary}</p><ol>{m.stages.map(s=><li key={s}>{s}</li>)}</ol><button className="primary" onClick={()=>startRun(project.id,m.id)}>Configure workflow</button></article>)}</div><section className="panel"><h2>Current studio jobs</h2>{jobs.map(j=><p key={j.id}>{j.kind} · {j.status} · {j.message}</p>)}{!jobs.length&&<p>No studio jobs for this story yet.</p>}<button className="secondary" onClick={()=>go('runs')}>Open GitHub history and all workflows</button></section></div>;
 }

@@ -4,7 +4,7 @@ import { api } from "../api"
 
 import { useStudio } from "../store"
 
-import { PageTitle } from "../ui"
+import { errorText, PageTitle, Status } from "../ui"
 
 export default function Runs() {
   const { workflow, jobs, flush, refresh, project } = useStudio()
@@ -113,20 +113,20 @@ export default function Runs() {
       )
       await load()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     } finally {
       setBusy(false)
     }
   }
 
   const publishCurrent=async()=>{
-    setBusy(true);setError('');try{await flush();const brief=await api('/api/ui/projects/'+project.id+'/request');const name='paramyth-'+project.id;await api('/api/studio/briefs/publish',{brief,name,ref});setInputs(v=>({...v,...('request_file' in v?{request_file:name}:{})}));setStatus('Your brief was committed to examples/'+name+'.json on '+ref+'. Review the workflow inputs before starting.')}catch(e){setError(String(e))}finally{setBusy(false)}
+    setBusy(true);setError('');try{await flush();const brief=await api('/api/ui/projects/'+project.id+'/request');const name='paramyth-'+project.id;await api('/api/studio/briefs/publish',{brief,name,ref});setInputs(v=>({...v,...('request_file' in v?{request_file:name}:{})}));setStatus('Your brief was committed to examples/'+name+'.json on '+ref+'. Review the workflow inputs before starting.')}catch(e){setError(errorText(e))}finally{setBusy(false)}
   };
   const inspect = async (id: number) => {
     try {
       setDetail(await api("/api/studio/history/" + id + query))
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     }
   }
 
@@ -139,14 +139,13 @@ export default function Runs() {
       await inspect(detail.run.id)
       await load()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     }
   }
 
   return (
     <div className="page">
       <PageTitle
-        eyebrow="REAL WORK, IN THE BACKGROUND"
         title="Writing & runs"
         text="Follow your studio jobs and GitHub writing workflows. While a draft is running, explore visuals, sound or production above."
       />
@@ -323,9 +322,7 @@ export default function Runs() {
                 onClick={() => void inspect(r.id)}
               >
                 <div>
-                  <span className="eyebrow">
-                    {r.status} · {r.conclusion || "pending"}
-                  </span>
+                  <Status>{`${r.status} · ${r.conclusion || "pending"}`}</Status>
                   <h3>{r.display_title || r.name}</h3>
                   <p>
                     {r.head_branch} · #{r.run_number} ·{" "}

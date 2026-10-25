@@ -30,6 +30,7 @@ const paths: Record<string, ReactNode> = {
   stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
   play: <path d="m7 4 13 8-13 8z" />,
   pin: <><path d="M9 3h6l-1 6 4 4H6l4-4z" /><path d="M12 13v8" /></>,
+  pen: <><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
   sparkle: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />,
   settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-1 .2-2.2-2.6-1.5L13 7.1 11 6 9.4 7.1 6.8 5.8 4.2 7.3 4.4 9.5l-2 1v3l2 1-.2 2.2 2.6 1.5L8.5 17l2 1.1 1.7-1.2 2.6 1.3 2.6-1.5-.2-2.2z" /></>,
 };
@@ -40,8 +41,8 @@ export const Icon = ({ name, size = 19 }: { name: string; size?: number }) => (
 
 export const Status = ({ children }: { children: string }) => <span className={`status ${children.toLowerCase().replace(/\s+/g, "-")}`}><i />{children}</span>;
 
-export const PageTitle = ({ eyebrow, title, text, children }: { eyebrow: string; title: string; text: string; children?: ReactNode }) => (
-  <div className="page-title"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{text}</p></div>{children && <div className="title-actions">{children}</div>}</div>
+export const PageTitle = ({ eyebrow, title, text, children }: { eyebrow?: string; title: string; text: string; children?: ReactNode }) => (
+  <div className="page-title"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1>{title}</h1><p>{text}</p></div>{children && <div className="title-actions">{children}</div>}</div>
 );
 
 export const Chips = ({ items, onChange, placeholder }: { items: string[]; onChange: (v: string[]) => void; placeholder: string }) => (
@@ -56,6 +57,9 @@ export const Segmented = <T extends string>({ value, options, onChange, label }:
     {options.map((o) => <button type="button" role="radio" aria-checked={o === value} key={o} className={o === value ? "selected" : ""} onClick={() => onChange(o)}>{o}</button>)}
   </div>
 );
+
+/** Message text for people: drops the "Error:" prefix that String(error) adds. */
+export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const fmtDate = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
 export const fmtTime = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
