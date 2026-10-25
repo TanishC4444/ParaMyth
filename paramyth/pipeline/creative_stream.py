@@ -14,14 +14,35 @@ class StreamError(ProviderError):
 
 
 def parse_output(raw):
-    text=raw.strip()
-    if text.startswith('```'):
-        text='\n'.join(text.splitlines()[1:-1]).strip()
+    if not isinstance(raw,str):raise ValueError('Expected writing text')
+    text=raw.strip().lstrip('\ufeff').strip()
+    fenced=re.fullmatch(r'```(?:json)?\s*\n(.*?)\n```',text,re.DOTALL|re.IGNORECASE)
+    if fenced:text=fenced.group(1).strip()
     # Some providers emit literal newlines inside JSON strings. This preserves
     # their exact text; incomplete objects still fail and are never accepted.
     value=json.loads(text,strict=False)
     if not isinstance(value,dict):raise ValueError('Expected an object')
     return value
+
+
+def writing_result(response, stage):
+    """Validate completion and content together, inside the caller's retry loop."""
+    try:
+        choice=response['choices'][0]
+        finish=choice.get('finish_reason')
+        if finish!='stop':
+            if finish=='length':
+                raise StreamError('The writing reached the response limit before it finished.')
+            raise StreamError('The writing provider stopped before completing the response.',retryable=finish in (None,'error'))
+        result=parse_output(choice['message']['content'])
+        if stage=='Review':
+            if not isinstance(result.get('pass'),bool):raise ValueError('Missing review verdict')
+        elif not isinstance(result.get('text'),str) or not result['text'].strip():
+            raise ValueError('Missing writing')
+        return result
+    except StreamError:raise
+    except (KeyError,IndexError,TypeError,ValueError,AttributeError):
+        raise StreamError('The writing provider returned a response that could not be read.') from None
 
 
 def configuration():

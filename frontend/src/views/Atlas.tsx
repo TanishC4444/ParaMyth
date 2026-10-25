@@ -682,8 +682,8 @@ function StoryDetail({
         </button>
       </div>
       <p className="hint">
-        Ideate keeps the source and asks whose version this is; inspiration
-        carries only its engine into an original premise.
+        Both options create a separate project. Ideate develops this tale;
+        inspiration uses its story engine for an original premise.
       </p>
 
       {s.summary && (

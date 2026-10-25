@@ -15,22 +15,54 @@ from . import image_studio
 NATURAL_FINISH = "Observe a specific lived-in moment. Use distinct faces, subtle asymmetry, unposed gestures, plausible anatomy and weight, motivated light, restrained highlights, worn materials and believable spatial relationships. Avoid waxy skin, identical faces, excessive glow and oversharpening. Preserve the requested medium; for illustration use intentional brushwork or paper texture rather than forcing photography."
 
 
-def writings(folder):
+def writing_output(value):
+    if value.get('status')=='complete':return value.get('result',{})
+    preview=value.get('preview',{})
+    if preview.get('stage') in ('Draft','Revise'):return preview
+    return next((s['output'] for s in reversed(value.get('steps',[])) if s.get('stage') in ('Draft','Revise') and s.get('output',{}).get('text')), {})
+
+
+def writings(folder, include_live=False):
     values=[]
     for path in (Path(folder)/'creative').glob('*.json'):
         value=load(path)
-        if value.get('status')=='complete' and value.get('request',{}).get('operation')!='review' and isinstance(value.get('result',{}).get('text'),str):values.append(value)
+        output=writing_output(value)
+        if (value.get('status')=='complete' or include_live) and value.get('request',{}).get('operation')!='review' and isinstance(output.get('text'),str) and output['text'].strip():values.append(value)
     return sorted(values,key=lambda v:v.get('created_at',''),reverse=True)
 
 
 def material(folder, source='latest', manual='', use_story=True):
     if not isinstance(manual,str) or len(manual)>20000:raise ValueError('Keep the brief under 20,000 characters')
-    rows=writings(folder);sources=[];title='Your brief';selected='manual'
+    follow_latest=source=='latest'
+    rows=writings(folder,True);sources=[];title='Your brief';selected='manual';status='complete'
+    display_text=None
+    drafts=load(Path(folder)/'workspace-drafts.json') if (Path(folder)/'workspace-drafts.json').is_file() else {}
     if use_story:
-        if source=='latest' and rows:source=rows[0]['id']
-        if source=='working':
+        if source=='latest' and drafts.get('writing.chapter'):source='active'
+        elif source=='latest' and rows:source=rows[0]['id']
+        if source=='active' or source.startswith('chapter:'):
+            from .creative_studio import chapter_context,scene_output
+            author=load(Path(folder)/'author-workspace.json') if (Path(folder)/'author-workspace.json').is_file() else {}
+            chapter=drafts.get('writing.chapter',1);scene_id=drafts.get('writing.sceneIds',{}).get(str(chapter))
+            if source.startswith('chapter:'):
+                scene_id=source.removeprefix('chapter:')
+                match=next((s for s in author.get('scenes',[]) if s['id']==scene_id),None)
+                if match is None:raise ValueError('Choose a chapter from this project')
+                chapter=match['chapter']
+            scenes=[s for s in author.get('scenes',[]) if s['chapter']==chapter]
+            scene=next((s for s in scenes if s['id']==scene_id),scenes[0] if scenes else {'id':f'chapter-{chapter}','chapter':chapter,'title':f'Chapter {chapter}','content':''})
+            output=scene_output(Path(folder),scene,drafts,live=True)
+            selected=output['source_id'];title=output['title'];status=output['status'];display_text=output['text']
+            sources=chapter_context(Path(folder),chapter,scene['id'])
+            if display_text.strip():sources.append({'file':f'Current chapter: {title}','text':display_text})
+            else:
+                key='creative.input' if chapter==1 else f'creative.chapter{chapter}.input'
+                display_text=drafts.get(key,'')
+                if display_text.strip():sources.append({'file':f'Chapter {chapter} idea','text':display_text})
+        elif source=='working':
             drafts=load(Path(folder)/'workspace-drafts.json') if (Path(folder)/'workspace-drafts.json').is_file() else {}
-            text=drafts.get('creative.input','')
+            chapter=drafts.get('writing.chapter',1)
+            text=drafts.get('creative.input' if chapter==1 else f'creative.chapter{chapter}.input','')
             if not isinstance(text,str) or not text.strip():raise ValueError('Add text in Ideas & writing first')
             sources=[{'file':'Current editor text','text':text}];selected='working';title='Current editor text'
         elif source in ('latest','manuscript'):
@@ -38,24 +70,42 @@ def material(folder, source='latest', manual='', use_story=True):
         else:
             record=next((v for v in rows if v['id']==source),None)
             if record is None:raise ValueError('Choose writing from this project')
-            output=record['result'];selected=record['id'];title=output.get('title') or 'Generated writing'
+            output=writing_output(record);selected=record['id'];status=record['status']
+            if follow_latest and status=='complete':
+                drafts_path=Path(folder)/'workspace-drafts.json'
+                drafts=load(drafts_path) if drafts_path.is_file() else {}
+                edited=drafts.get('writing.edits',{}).get(record.get('request',{}).get('scene_id'),{})
+                if edited.get('base')==selected and isinstance(edited.get('text'),str):output={**output,**edited}
+            title=output.get('title') or 'Generated writing'
             sources=[{'file':'creative/'+selected+'.txt','text':output['text']}]
+            if record.get('request',{}).get('chapter'):
+                from .creative_studio import chapter_context
+                cfg=record['request']
+                sources=chapter_context(Path(folder),cfg['chapter'],cfg.get('scene_id',''))+sources
             if output.get('completed_brief'):sources.append({'file':'creative/'+selected+'.json','text':json.dumps(output['completed_brief'],ensure_ascii=False)})
+    writing_signature=hashlib.sha256(json.dumps(sources,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     if manual.strip():sources.append({'file':'Your instructions','text':manual.strip()})
     if not sources:raise ValueError('Choose story writing or enter your own brief')
     signature=hashlib.sha256(json.dumps(sources,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
-    return {'source_id':selected,'title':title,'signature':signature,'sources':sources}
+    return {'source_id':selected,'title':title,'signature':signature,'writing_signature':writing_signature,'sources':sources,'status':status,'display_text':display_text}
 
 
-def catalog(folder):
-    rows=writings(folder)
+def catalog(folder, source='latest'):
+    rows=writings(folder,True)
     images=[i for i in image_studio.gallery(folder) if i['status']=='completed']
     tracks=[]
-    for path in (Path(folder)/'soundtracks').glob('*.json'):
+    for path in sorted((Path(folder)/'soundtracks').glob('*.json'),key=lambda p:p.stat().st_mtime,reverse=True):
         value=load(path)
         if value.get('job',{}).get('status')=='completed':
             tracks.append({'id':path.stem,'title':value.get('source_title') or value.get('cue',{}).get('mode','Soundtrack'),'mode':value.get('cue',{}).get('mode','')})
-    return {'writing':[{'id':v['id'],'title':v['result'].get('title') or 'Generated writing'} for v in rows], 'images':images,'tracks':tracks}
+    current=None
+    try:
+        selected=material(folder,source)
+        text=selected['display_text'] if selected.get('display_text') is not None else '\n\n'.join(s['text'] for s in selected['sources'])
+        current={k:selected[k] for k in ('source_id','title','signature','status')}
+        current.update(excerpt=text,words=len(text.split()))
+    except ValueError:pass
+    return {'writing':[{'id':v['id'],'title':writing_output(v).get('title') or 'Generated writing','status':v['status']} for v in rows], 'images':images,'tracks':tracks,'current':current}
 
 
 def music_settings(folder, data, models, *, selected=None):
@@ -126,6 +176,6 @@ def create_music(folder, data, progress, *, selected=None):
             time.sleep(1)
         else:raise ValueError('The music request is still pending in the connected studio. Do not submit it again yet.')
         value=job['result'];ident=value['job']['id'];value['cue']=cue
-    value.update(settings={k:settings[k] for k in ('mode','seconds','model','lyrics','prompt')},source_id=settings['source']['source_id'],source_title=settings['source']['title'])
+    value.update(settings={k:settings[k] for k in ('mode','seconds','model','lyrics','prompt')},source_id=settings['source']['source_id'],source_title=settings['source']['title'],source_signature=settings['source']['signature'],writing_signature=settings['source']['writing_signature'])
     save(folder/'soundtracks'/(ident+'.json'),value)
     return value

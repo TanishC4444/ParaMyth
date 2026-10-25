@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse,FileResponse,Response,StreamingRespon
 from .. import image_studio,creative_studio
 from ..production import create_plan,normalize_config,validate_breakdown,schedule,budget
 from ..production_exports import export
+from ..production_research import search_key
 from ..soundtracks import Vultr,plan as soundtrack_plan,wav_stream
 from ..storage import load,save
 from .config import ROOT,get_settings
@@ -87,14 +88,14 @@ def legacy_job(ident:str,runtime=RUNTIME):
 @router.get('/api/config',tags=['studio configuration'],dependencies=[Depends(local)])
 def config(request:Request,runtime=RUNTIME):
     current=folder(request,runtime);paths=sorted((current/'production'/'plans').glob('*.json'),key=lambda p:p.stat().st_mtime,reverse=True)[:20]
-    return {'story':current.name,'vultr':bool(os.getenv('VULTR_INFERENCE_API_KEY')),'search':bool(os.getenv('SERPAPI_API_KEY')),'google':bool(runtime.google.access or runtime.google.refresh),'google_oauth':bool(os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET')),'redirect_uri':str(request.base_url).rstrip('/')+'/google/callback','plans':[p.stem for p in paths]}
+    return {'story':current.name,'vultr':bool(os.getenv('VULTR_INFERENCE_API_KEY')),'search':bool(search_key()),'google':bool(runtime.google.access or runtime.google.refresh),'google_oauth':bool(os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET')),'redirect_uri':str(request.base_url).rstrip('/')+'/google/callback','plans':[p.stem for p in paths]}
 
 
 @router.get('/api/studio/features',tags=['studio configuration'],dependencies=[Depends(local)])
 def features(runtime=RUNTIME):
     return {'framework':'FastAPI','repositories':workflows.repositories(get_settings()),'workflow_count':len(workflows.local_catalog(runtime.root)),
             'features':['writing runners','all workflow dispatch inputs','workflow source and job graphs','run history and logs','artifact file previews/downloads','project uploads and switching','ideas','drafting','critique','revision loop','image generation','image prompt preparation','image to location scouting','Vultr film scores and songs','local ambience','progressive music playback','production schedules','budget arithmetic','SerpAPI scouting and key failover','legal/logistical follow-ups','Google Calendar OAuth/sync','ICS/CSV/call-sheet exports','persistent local jobs','local output library','interactive OpenAPI console'],
-            'configured':{'vultr':bool(os.getenv('VULTR_INFERENCE_API_KEY')),'muse_image':bool(getattr(image_studio,'muse_key',lambda:'')()),'serpapi':bool(os.getenv('SERPAPI_API_KEY')),'google_oauth':bool(os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET')),'github_server_token':bool(os.getenv('PARAMYTH_GITHUB_TOKEN'))}}
+            'configured':{'vultr':bool(os.getenv('VULTR_INFERENCE_API_KEY')),'muse_image':bool(getattr(image_studio,'muse_key',lambda:'')()),'serpapi':bool(search_key()),'google_oauth':bool(os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET')),'github_server_token':bool(os.getenv('PARAMYTH_GITHUB_TOKEN'))}}
 
 
 @router.post('/api/studio/creative',tags=['creative writing'],dependencies=[Depends(write)],status_code=202)
