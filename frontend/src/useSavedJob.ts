@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react"
-import { api, projectPath, type Job } from "./api"
+import { api, projectPath, studioJobs, type Job } from "./api"
 import { useDraftState, useStudio } from "./store"
 
-type Handle = { id: string; kind: string }
+type Handle = { id: string; kind: string; local?: boolean }
 /** Watch existing jobs only. Navigation, refresh and network retries never submit work. */
 export function useSavedJob(
   field: string,
@@ -18,9 +18,9 @@ export function useSavedJob(
     let live = true
     if (!project.id) return
     // Recover work started in another tab, even before its local handle was saved.
-    void api<{ jobs: Job[] }>(projectPath("/api/studio/jobs", project.id)).then(({ jobs }) => {
+    void studioJobs(project.id).then((jobs) => {
       const active = jobs.find((j) => kinds.includes(j.kind) && ["queued", "running"].includes(j.status))
-      if (live && active) setHandle((current) => current || { id: active.id, kind: active.kind })
+      if (live && active) setHandle((current) => current || { id: active.id, kind: active.kind, local: active.local })
     }).catch((e) => { if (live) latest.current.failed(String(e)) })
     return () => { live = false }
   }, [project.id, kindKey, setHandle])
@@ -30,16 +30,18 @@ export function useSavedJob(
     let timer: ReturnType<typeof setTimeout>
     const poll = async () => {
       try {
-        const job = await api<Job>("/api/job/" + handle.id)
+        const job = await api<Job>(projectPath((handle.local ? "/api/ui/jobs/" : "/api/job/") + handle.id, project.id))
         if (!live) return
         latest.current.progress(job)
         if (job.status === "complete") {
           await latest.current.complete(job)
+          window.dispatchEvent(new Event("studio-refresh"))
           if (live) setHandle((current) => current?.id === handle.id ? null : current)
           return
         }
         if (["failed", "interrupted", "cancelled"].includes(job.status)) {
           latest.current.failed(job.message)
+          window.dispatchEvent(new Event("studio-refresh"))
           setHandle((current) => current?.id === handle.id ? null : current)
           return
         }

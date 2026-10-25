@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:atlas": "node --test tests/atlas.test.cjs",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "test:cinematic": "node --test tests/cinematic.test.cjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

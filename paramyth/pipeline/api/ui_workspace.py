@@ -188,7 +188,7 @@ def local_job(ident:str,request:Request,runtime=RT):
 @router.get('/materials')
 def materials(request:Request,runtime=RT):
     from ..media_workspace import catalog
-    return catalog(folder(request,runtime))
+    return catalog(folder(request,runtime),request.query_params.get('source','latest'))
 
 
 @router.post('/images/prepare',dependencies=[Depends(write)],status_code=202)
@@ -199,7 +199,7 @@ def prepare_current_image(request:Request,data:dict=Body(...),runtime=RT):
     def operation(progress):
         result=image_studio.prepare_prompt(current,data,bool(data.get('enhance',True)),sources=selected['sources'])
         if data.get('natural_finish',True):result['prompt']=result['prompt'][:2900]+'\n'+media_workspace.NATURAL_FINISH
-        return {**result,'source_id':selected['source_id'],'source_title':selected['title']}
+        return {**result,'source_id':selected['source_id'],'source_title':selected['title'],'source_signature':selected['signature']}
     return {'job_id':runtime.submit('image-prompt',current,operation,local=True),'local':True}
 
 
@@ -229,14 +229,15 @@ def current_production(request:Request,data:dict=Body(...),runtime=RT):
     current=folder(request,runtime)
     selected=media_workspace.material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
     cfg=normalize_config(data.get('config',{}))
-    ids=data.get('image_ids',[])
+    available=media_workspace.catalog(current) if data.get('automatic_assets') else None
+    ids=[i['id'] for i in available['images'][:3]] if available else data.get('image_ids',[])
     if not isinstance(ids,list) or len(ids)>3 or any(not isinstance(i,str) for i in ids):raise ValueError('Choose up to three project images')
     images=[]
     for ident in ids:
         raw=image_studio.image_file(current,ident,0).read_bytes()
         if len(raw)>5*1024*1024:raise ValueError('Choose images under 5 MB')
         images.append({'mime':'image/png','data':base64.b64encode(raw).decode()})
-    track_ids=data.get('track_ids',[])
+    track_ids=[t['id'] for t in available['tracks'][:3]] if available else data.get('track_ids',[])
     if not isinstance(track_ids,list) or len(track_ids)>3 or any(not isinstance(i,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',i) for i in track_ids):raise ValueError('Choose up to three project soundtracks')
     for ident in track_ids:
         track=read(current/'soundtracks'/(ident+'.json'),{})
@@ -244,10 +245,23 @@ def current_production(request:Request,data:dict=Body(...),runtime=RT):
         selected['sources'].append({'file':'soundtracks/'+ident+'.json','text':json.dumps({'cue':track.get('cue',{}),'settings':track.get('settings',{}),'note':'Selected soundtrack direction for production planning. Audio has not been transcribed or analyzed.'},ensure_ascii=False)})
     def operation(progress):
         result=create_plan(current,cfg,images,progress,sources=selected['sources'])
-        result.update(source_id=selected['source_id'],source_title=selected['title'],source_signature=selected['signature'],image_ids=ids,track_ids=track_ids)
+        result.update(source_id=selected['source_id'],source_title=selected['title'],source_signature=selected['signature'],writing_signature=selected['writing_signature'],image_ids=ids,track_ids=track_ids)
         save(current/'production'/'plans'/(result['id']+'.json'),result)
         return result
     return {'job_id':runtime.submit('production',current,operation,local=True),'local':True}
+
+
+@router.post('/production/prepare',dependencies=[Depends(write)],status_code=202)
+def prepare_production(request:Request,data:dict=Body(...),runtime=RT):
+    from ..media_workspace import material
+    from ..production import prepare_direction,normalize_config
+    current=folder(request,runtime)
+    selected=material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
+    config=normalize_config(data.get('config',{}))
+    def operation(progress):
+        progress('Developing production direction from your writing')
+        return {**prepare_direction(selected['sources'],config),'source_id':selected['source_id'],'source_signature':selected['signature']}
+    return {'job_id':runtime.submit('production-brief',current,operation,local=True),'local':True}
 
 
 @router.put('/notes',dependencies=[Depends(write)])

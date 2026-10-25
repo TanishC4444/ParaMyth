@@ -8,6 +8,8 @@ import { Icon } from "./ui"
 
 import Journey from "./Journey"
 
+import Workflow from "./views/Workflow"
+
 import Overview from "./views/Overview"
 
 import Projects from "./views/Projects"
@@ -39,7 +41,7 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
       ["overview", "overview", "Overview"],
       ["projects", "projects", "Projects"],
       ["atlas", "atlas", "Story atlas"],
-      ["creative", "ideas", "Creative workspace"],
+      ["workflow", "ideas", "Project workflow"],
       ["runs", "runs", "Pipelines & runs"],
     ],
   },
@@ -48,9 +50,6 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
     group: "Develop",
     items: [
       ["retrieval", "retrieval", "Literary retrieval"],
-      ["images", "images", "Images"],
-      ["music", "music", "Soundtracks"],
-      ["production", "production", "Production"],
     ],
   },
 
@@ -80,6 +79,8 @@ function Shell() {
   const [mobile, setMobile] = useState(false)
 
   useEffect(() => {
+    // The landing sequence owns its scroll position, including return visits.
+    if (view === "landing" || view === "atlas") return
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [view])
 
@@ -92,6 +93,7 @@ function Shell() {
   ).length
 
   const pages: Record<Exclude<View, "landing" | "atlas">, ReactElement> = {
+    workflow: <Workflow />,
     overview: <Overview />,
     projects: <Projects />,
     project: <ProjectWorkspace />,
@@ -110,7 +112,7 @@ function Shell() {
     <>
     {visitedLanding && <div hidden={!isLanding} className="workspace-view">
       <Suspense fallback={<div className="landing-loading" role="status">Opening a world of stories…</div>}>
-        <Landing focusAtlas={view === "atlas"} />
+        <Landing focusAtlas={view === "atlas"} active={isLanding} />
       </Suspense>
     </div>}
     <div className="app-shell" hidden={isLanding}>
@@ -220,11 +222,11 @@ function Shell() {
           </p>
         ) : (
           <>
-            {!["projects", "overview", "connections", "retrieval"].includes(
+            {!["workflow", "projects", "overview", "connections", "retrieval"].includes(
               view,
             ) && <Journey />}
             {!project.id &&
-            ["project", "images", "music", "production", "library"].includes(
+            ["workflow", "project", "images", "music", "production", "library"].includes(
               view,
             ) ? (
               <div className="story-empty">

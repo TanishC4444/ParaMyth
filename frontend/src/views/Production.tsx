@@ -2,11 +2,21 @@ import { useEffect, useState } from "react"
 import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
+import { useMaterials } from "../materials"
 import { PageTitle } from "../ui"
 export default function Production() {
-  const { project, mediaDirection, flush, refresh } = useStudio()
+  const { project, mediaDirection, flush, refresh, setDraft, go } = useStudio()
+  const { source, sourceId, sourceTitle, signature, streaming, images: availableImages, tracks: availableTracks, setSource } = useMaterials()
+  const [prompt, setPrompt] = useDraftState("production.prompt", "")
+  const [useStory, setUseStory] = useDraftState("production.useStory", true)
+  const [imageIds, setImageIds] = useDraftState<string[]>("production.imageIds", [])
+  const [trackIds, setTrackIds] = useDraftState<string[]>("production.trackIds", [])
+  const [automaticAssets, setAutomaticAssets] = useDraftState("production.automaticAssets", true)
+  const [starter, setStarter] = useDraftState<any>("production.starter", null)
+  const [showHistory, setShowHistory] = useState(false)
   const [config, setConfig] = useDraftState<any>("production.config", {
     region: "",
+    auto_region: true,
     start_date: new Date().toISOString().slice(0, 10),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     currency: "USD",
@@ -18,32 +28,38 @@ export default function Production() {
     search_limit: 2,
     skip_weekends: true,
   })
-  const [plan, setPlan] = useDraftState<any>("production.plan", null),
+  const [savedPlan, setPlan] = useDraftState<any>("production.plan", null),
     [ids, setIds] = useState<string[]>([]),
-    [images, setImages] = useState<any[]>([]),
-    [imageId, setImageId] = useDraftState("production.imageId",
-      sessionStorage.getItem("paramyth-scout-" + project.id) || "",
-    ),
     [submitting, setSubmitting] = useState(false),
     [status, setStatus] = useState(""),
     [error, setError] = useState(""),
     [scenes, setScenes] = useDraftState<any[]>("production.scenes", []),
     [budget, setBudget] = useDraftState<any[]>("production.budget", []),
     [google, setGoogle] = useState(false)
-  const [pendingJob, setPendingJob] = useSavedJob("production.pendingJob", ["production"], {
+  const [pendingJob, setPendingJob] = useSavedJob("production.pendingJob", ["production", "production-brief"], {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async (j) => {
+      if (j.kind === "production-brief") {
+        setStarter(j.result); setPrompt(j.result.brief); setConfig((c:any) => ({...c,region:c.region || j.result.region}));
+        setStatus("Direction and prompts are ready. Edit anything, then create your plan."); await refresh(); return;
+      }
       open(j.result)
+      setShowHistory(false)
       setIds((v) => [j.result.id, ...v.filter((x) => x !== j.result.id)])
       setStatus("Your production plan is ready.")
       await refresh()
     },
     failed: setError,
   })
+  const plan = savedPlan
+  const prompts = starter?.source_id === sourceId ? starter : plan?.starter
+  const changed = !!plan && useStory && (plan.source_id !== sourceId || !!plan.writing_signature && plan.writing_signature !== signature)
+  useEffect(() => { setShowHistory(false) }, [sourceId, useStory])
   const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
   const open = (p: any) => {
     setPlan(p)
+    setShowHistory(true)
     setConfig(p.config)
     setScenes(p.breakdown.scenes)
     setBudget(p.breakdown.budget_items)
@@ -57,46 +73,24 @@ export default function Production() {
         setGoogle(c.google)
         if (c.plans.length && !plan) {
           const p = await api(path("/api/plan/" + c.plans[0]))
-          if (live) { setPlan(p); if (!scenes.length) setScenes(p.breakdown.scenes); if (!budget.length) setBudget(p.breakdown.budget_items); }
+          if (live && p.source_id === sourceId) { setPlan(p); if (!scenes.length) setScenes(p.breakdown.scenes); if (!budget.length) setBudget(p.breakdown.budget_items); }
         }
       })
-      .catch((e) => live && setError(e.message))
-    api(path("/api/images"))
-      .then(
-        (v) =>
-          live &&
-          setImages(v.images.filter((x: any) => x.status === "completed")),
-      )
       .catch((e) => live && setError(e.message))
     return () => {
       live = false
     }
-  }, [project.id])
-  const create = async () => {
+  }, [project.id, sourceId])
+  const create = async (prepare = false) => {
     setSubmitting(true)
     setError("")
     try {
       await flush()
-      let references: any[] = []
-      if (imageId) {
-        const response = await fetch(path(`/media/images/${imageId}/0.png`))
-        if (!response.ok) throw Error("Could not load selected image")
-        const blob = await response.blob()
-        if (blob.size > 5 * 1024 * 1024)
-          throw Error("Choose a reference image under 5 MB")
-        const encoded = await new Promise<string>((resolve, reject) => {
-          const r = new FileReader()
-          r.onload = () => resolve(String(r.result).split(",")[1])
-          r.onerror = reject
-          r.readAsDataURL(blob)
-        })
-        references = [{ mime: "image/png", data: encoded }]
-      }
-      const q = await api(path("/api/generate"), {
-        config: { ...config, brief: mediaDirection },
-        images: references,
+      const q = await api(path(prepare ? "/api/ui/production/prepare" : "/api/ui/production"), {
+        config: {...config,auto_region:config.auto_region !== false}, prompt: [prompt, mediaDirection].filter(Boolean).join("\n"),
+        source, use_story: useStory, image_ids: imageIds, track_ids: trackIds, automatic_assets: automaticAssets,
       })
-      setPendingJob({ id: q.job_id, kind: "production" })
+      setPendingJob({ id: q.job_id, kind: prepare ? "production-brief" : "production", local: q.local })
       await refresh()
     } catch (e) {
       setError(String(e))
@@ -130,6 +124,8 @@ export default function Production() {
         title="Production"
         text="Turn your story into a shoot schedule, budget and location plan."
       />
+      {changed && <p className="source-changed">Your writing has changed since this plan. <button disabled={busy} onClick={() => void create()}>Update from current writing</button></p>}
+      {streaming && <p className="hint" role="status">Following the live draft. Creating a plan uses the words available when you start.</p>}
       {error && (
         <p className="live-status error" role="alert">
           {error}
@@ -143,13 +139,31 @@ export default function Production() {
       <div className="production-layout">
         <section className="panel composer">
           <h2>Plan your shoot</h2>
+          <label className="field">What do you want to make?<textarea disabled={busy} value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={6000} placeholder="Leave this blank and we’ll propose the approach, locations and practical details from your story." /></label>
+          <button className="secondary" disabled={busy || (!useStory && !prompt.trim())} onClick={() => void create(true)}>Suggest direction & prompts</button>
+          <button className="secondary" onClick={() => { setUseStory(true); setSource("latest"); setShowHistory(false); }}>Use my generated writing</button>
+          <label className="inline-suggestion"><input type="checkbox" checked={useStory} onChange={(e) => setUseStory(e.target.checked)} />Use {sourceTitle}</label>
+          <label className="inline-suggestion"><input type="checkbox" checked={automaticAssets} onChange={e => setAutomaticAssets(e.target.checked)} />Include latest visuals and soundtracks automatically</label>
+          <details className="workspace-options"><summary>Include generated visuals · {imageIds.length} selected</summary>
+            <p className="hint">{automaticAssets ? 'The three latest finished visuals will be included. Turn off automatic selection to choose specific ones.' : 'Choose up to three visuals. New images appear here when they finish.'}</p>
+            <div className="reference-picker">{availableImages.map((image) => <label key={image.id}>
+              <img src={path(`/media/images/${image.id}/0.png`)} alt={image.title} loading="lazy" />
+              <span><input type="checkbox" checked={imageIds.includes(image.id)} disabled={!imageIds.includes(image.id) && imageIds.length >= 3} onChange={(e) => setImageIds((v) => e.target.checked ? [...v, image.id] : v.filter((id) => id !== image.id))} />{image.title}</span>
+            </label>)}</div>
+            {!availableImages.length && <p className="hint">Generate an image in Visuals to use it here.</p>}
+          </details>
+          <details className="workspace-options"><summary>Include soundtrack direction · {trackIds.length} selected</summary>
+            <p className="hint">Bring the mood and sound choices into your plan.</p>
+            {availableTracks.map((track) => <label className="toggle" key={track.id}><input type="checkbox" checked={trackIds.includes(track.id)} disabled={!trackIds.includes(track.id) && trackIds.length >= 3} onChange={(e) => setTrackIds((v) => e.target.checked ? [...v, track.id] : v.filter((id) => id !== track.id))} />{track.title} · {track.mode}</label>)}
+            {!availableTracks.length && <p className="hint">Finished soundtracks appear here automatically.</p>}
+          </details>
           <div className="form-grid">
             <label className="field">
               Filming region
               <input
                 value={config.region}
                 onChange={(e) => set("region", e.target.value)}
-                placeholder="City or region"
+                placeholder="Leave blank and we’ll propose a region"
               />
             </label>
             <label className="field">
@@ -161,7 +175,7 @@ export default function Production() {
               />
             </label>
           </div>
-          <details className="workspace-options"><summary>Budget & visual reference</summary>
+          <details className="workspace-options"><summary>Budget settings</summary>
             <div className="form-grid">
             <label className="field">
               Currency
@@ -182,33 +196,6 @@ export default function Production() {
               />
             </label>
           </div>
-          <label className="field">
-            Visual reference
-            <select
-              value={imageId}
-              onChange={(e) => {
-                setImageId(e.target.value)
-                sessionStorage.setItem(
-                  "paramyth-scout-" + project.id,
-                  e.target.value,
-                )
-              }}
-            >
-              <option value="">Story only</option>
-              {images.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          {imageId && (
-            <img
-              className="preview-image"
-              src={path(`/media/images/${imageId}/0.png`)}
-              alt="Selected location reference"
-            />
-          )}
           </details>
           <details>
             <summary>Schedule settings</summary>
@@ -263,20 +250,20 @@ export default function Production() {
           </details>
           <button
             className="primary"
-            disabled={busy}
+            disabled={busy || (!useStory && !prompt.trim())}
             onClick={() => void create()}
           >
             {busy ? "Working on your plan…" : "Create production plan"}
           </button>
           {!config.region && (
             <p className="hint">
-              Add a filming region when you want location research.
+              We’ll propose a filming region and research it. You can change it before making any arrangements.
             </p>
           )}
         </section>
         <section className="panel">
           <h2>Your plan</h2>
-          {ids.length > 1 && <label className="field">
+          {ids.length > 0 && <label className="field">
             Saved version
             <select
               value={plan?.id || ""}
@@ -297,12 +284,18 @@ export default function Production() {
           {plan ? (
             <>
               <h3>{plan.title}</h3>
+              <p className="hint">Based on {plan.source_title || "earlier saved writing"}{plan.image_count ? ` · ${plan.image_count} visual references` : ""}</p>
               <p>
                 <b>{plan.schedule.shoot_days} shoot days</b> ·{" "}
                 {plan.budget.total_high > 0 ? `${plan.budget.currency} ${plan.budget.total_low.toLocaleString()}–${plan.budget.total_high.toLocaleString()}` : "Budget not estimated"}
               </p>
               <p className="hint">Budget estimates need review before booking.</p>
-              <details><summary>Plan overview</summary><p>{plan.recommendations.summary}</p></details>
+              <p className="production-plan-summary">{plan.recommendations.summary}</p>
+              <h3>Start here</h3><ol className="production-steps">{plan.recommendations.next_steps.slice(0,5).map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
+              <h3>Location leads · {plan.config.region || 'Region undecided'}</h3>
+              {plan.recommendations.locations.slice(0,3).map((place:any,i:number)=><article className="production-location" key={i}><b>{place.name}</b><p>{place.match}</p>{place.source_ids.map((id:string)=>{const evidence=plan.evidence.find((e:any)=>e.id===id);return evidence?<a key={id} href={evidence.url} target="_blank" rel="noreferrer">{evidence.title} ↗ </a>:null;})}<small>{(place.unknowns || []).join(' · ')}</small></article>)}
+              <details><summary>Crew, equipment & practical tasks</summary><ul>{plan.recommendations.crew_equipment.map((item:string,i:number)=><li key={i}>{item}</li>)}</ul>{plan.recommendations.legal_logistics.map((item:any,i:number)=><p key={i}><b>{item.owner}</b> · {item.task}</p>)}</details>
+              <details><summary>Planning assumptions</summary><ul>{[...(plan.starter?.assumptions || []),...plan.breakdown.assumptions,...plan.breakdown.missing_info].map((item:string,i:number)=><li key={i}>{item}</li>)}</ul></details>
               {plan.warnings.length > 0 && <details><summary>Review notes ({plan.warnings.length})</summary>{plan.warnings.map((w: string, i: number) => (
                 <p className="hint" key={i}>
                   {w}
@@ -361,6 +354,7 @@ export default function Production() {
           )}
         </section>
       </div>
+      {prompts && <details className="panel production-prompt-picks"><summary>Suggested visual & soundtrack prompts</summary><p>{prompts.reason}</p>{prompts.image_prompts.map((item:any,i:number)=><article key={i}><b>{item.title}</b><p>{item.prompt}</p><button onClick={()=>{setDraft(project.id,'images.prompt',item.prompt);setDraft(project.id,'images.subject',item.title);setDraft(project.id,'images.provenance',null);go('images');}}>Use in Visuals</button></article>)}<article><b>Soundtrack direction</b><p>{prompts.sound_prompt}</p><button onClick={()=>{setDraft(project.id,'music.prompt',prompts.sound_prompt);go('music');}}>Use in Soundtracks</button></article></details>}
       {plan && (
         <>
           {plan.schedule.unscheduled.length > 0 && <p className="live-status error">{plan.schedule.unscheduled.length} scenes still need scheduling. Open Schedule & budget to review.</p>}

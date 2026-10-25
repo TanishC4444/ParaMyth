@@ -53,6 +53,10 @@ For legal research seek government/film commission requirements in the specified
 Never put private cast data, entire story text, secrets or identifying image data in queries.
 Dependencies must refer only to other scene IDs and must not form cycles.'''
 RESEARCH_PROMPT = '''Create practical recommendations from this scene breakdown and search evidence.
+Make this useful for someone with no production experience: identify the first five
+actions in priority order, who should do each, and the concrete deliverable. Tie
+location matches, crew, equipment and logistics to specific scenes, props and shots.
+Give lower-cost alternatives when appropriate. Avoid generic advice without an action.
 Return {"summary":"...","locations":[{"name":"...","match":"...","source_ids":["R1"],"unknowns":["..."]}],
 "legal_logistics":[{"task":"...","owner":"producer|location manager|legal counsel|safety coordinator",
 "source_ids":[],"status":"needs verification"}],"crew_equipment":["..."],
@@ -86,6 +90,7 @@ def normalize_config(raw):
     if not isinstance(raw,dict): raise ValueError('Production constraints must be an object')
     cfg = {}
     cfg['region'] = str(raw.get('region','')).strip()[:300]
+    cfg['auto_region'] = bool(raw.get('auto_region',False))
     cfg['brief'] = str(raw.get('brief',''))[:6000]
     cfg['currency'] = str(raw.get('currency','USD')).upper()
     if not re.fullmatch('[A-Z]{3}', cfg['currency']): raise ValueError('Use a three-letter currency code')
@@ -248,15 +253,27 @@ def validate_recommendations(value, evidence):
     if not isinstance(value,dict): raise ValueError('Invalid research recommendations')
     ids={r['id'] for r in evidence}
     for name,cap in [('locations',6),('legal_logistics',20)]:
-        rows=value.get(name,[])
+        rows=value.setdefault(name,[])
         if not isinstance(rows,list) or len(rows)>cap: raise ValueError('Invalid '+name)
         for row in rows:
             if not isinstance(row,dict): raise ValueError('Invalid recommendation')
             refs=strings(row.get('source_ids',[]))
             if not set(refs)<=ids: raise ValueError('Recommendation references unknown research')
             row['verification']='search lead; verify with authority/owner' if refs else 'unverified planning suggestion'
-    for name in ('crew_equipment','risks','next_steps'): strings(value.get(name,[]))
+    for name in ('crew_equipment','risks','next_steps'): strings(value.setdefault(name,[]))
     return value
+
+
+def prepare_direction(sources, config, model=None):
+    model=model or Muse()
+    result=model.ask('Propose a practical adaptation of this writing. Fill unspecified production choices without asking questions. Preserve explicit constraints. Choose a real filming city/region when none is supplied, as an editable proposal, never as the user location. Give concrete affordable scene staging, an achievable crew approach, and 2-3 useful visual prompts and one soundtrack prompt. Do not invent availability or researched facts. Return JSON: {"brief":"production direction, scope and practical approach in 120-200 words","region":"city, region, country","reason":"why this region fits","assumptions":["..."],"image_prompts":[{"title":"...","prompt":"..."}],"sound_prompt":"..."}.',{'sources':[{'file':s['file'],'text':s['text'][:12000]} for s in sources[:6]],'constraints':config})
+    for key in ('brief','region','reason','sound_prompt'):
+        if not isinstance(result.get(key),str) or not result[key].strip() or len(result[key])>6000:raise ProviderError('Production direction was incomplete. Try preparing it again.')
+    result['region']=config.get('region') or result['region'][:300]
+    strings(result.get('assumptions',[]),20)
+    rows=result.get('image_prompts',[])
+    if not isinstance(rows,list) or len(rows)>3 or any(not isinstance(r,dict) or not isinstance(r.get('title'),str) or not isinstance(r.get('prompt'),str) or len(r['prompt'])>4000 for r in rows):raise ProviderError('Visual direction was incomplete. Try preparing it again.')
+    return result
 
 
 def create_plan(folder, raw, images=(), progress=lambda message:None, *, sources=None):
@@ -266,7 +283,12 @@ def create_plan(folder, raw, images=(), progress=lambda message:None, *, sources
     # Give every narrative source room; bound transmission for usage control.
     allowance=max(300,60000//len(sources))
     material=[{'file':s['file'],'text':s['text'][:allowance]} for s in sources][:40]
-    model=Muse();progress('Muse Glimmer is breaking down the story and visual references')
+    model=Muse();starter=None
+    if cfg['auto_region'] and not cfg['region']:
+        progress('Choosing a production approach and a proposed filming region')
+        starter=prepare_direction(material,cfg,model)
+        cfg['region']=starter['region'];cfg['brief']='\n'.join(filter(None,[cfg['brief'],starter['brief']]))[:6000]
+    progress('Breaking down the story and visual references')
     breakdown=validate_breakdown(model.ask(BREAKDOWN_PROMPT,{'constraints':cfg,'story_sources':material,'source_excerpts_may_be_truncated':any(len(s['text'])>allowance for s in sources)},images))
     progress('Building schedule and checking budget arithmetic')
     timing=schedule(breakdown['scenes'],cfg)
@@ -278,7 +300,8 @@ def create_plan(folder, raw, images=(), progress=lambda message:None, *, sources
     research=[];evidence=[];warnings=[]
     search=Search(folder/'production',daily_limit=os.getenv('PARAMYTH_SEARCH_DAILY_LIMIT','10'),plan_limit=cfg['search_limit'])
     if cfg['region']:
-        for query in breakdown.get('search_queries',[])[:cfg['search_limit']]:
+        queries=breakdown.get('search_queries',[]) or [{'purpose':'location','query':'film commission location library '+ ' '.join(breakdown.get('visual_criteria',[])[:2])},{'purpose':'logistics','query':'film commission production resources crew equipment rental'}]
+        for query in queries[:cfg['search_limit']]:
             progress('Researching '+query['purpose']+' with cached SerpAPI searches')
             try:
                 result=search.search(query['query']+' '+cfg['region'],query['purpose']);research.append(result)
@@ -291,7 +314,7 @@ def create_plan(folder, raw, images=(), progress=lambda message:None, *, sources
     advice=validate_recommendations(model.ask(RESEARCH_PROMPT,{'breakdown':breakdown,'constraints':cfg,'schedule':timing,'budget':costs,'evidence':evidence,'research_date_utc':datetime.now(timezone.utc).isoformat()}),evidence)
     value={'schema_version':1,'id':hashlib.sha256(json.dumps([cfg,breakdown,timing],sort_keys=True).encode()).hexdigest()[:24],
            'title':breakdown.get('title','Production plan'),'created_at':datetime.now(timezone.utc).isoformat(),'provider':getattr(model,'provider','Vultr Serverless Inference'),'model':getattr(model,'model',MODEL),'model_calls':model.calls,'source_files':[s['file'] for s in sources],
-           'image_count':len(images),'config':cfg,'breakdown':breakdown,'schedule':timing,'budget':costs,'recommendations':advice,'evidence':evidence,'research':research,'warnings':warnings,
+           'image_count':len(images),'config':cfg,'starter':starter,'breakdown':breakdown,'schedule':timing,'budget':costs,'recommendations':advice,'evidence':evidence,'research':research,'warnings':warnings,
            'status':'draft — availability, estimates, permits and legal requirements require verification'}
     save(folder/'production'/'plans'/(value['id']+'.json'),value)
     return value
