@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 import threading
 
+from ..calendar_sync import GoogleCalendar
 from ..soundtracks import discover_stories
 from ..storage import load, save
 
@@ -27,6 +28,8 @@ class Runtime:
         self.pool = ThreadPoolExecutor(max_workers=2)
         self.guard = threading.RLock()
         self.jobs, self.projects = {}, {}
+        # Calendar tokens and pending OAuth states live in memory only.
+        self.google, self.oauth = GoogleCalendar(), {}
         self.job_dir = self.root / 'runs' / 'studio-jobs'
         self.job_dir.mkdir(parents=True, exist_ok=True)
         for file in sorted(self.job_dir.glob('*.json'))[-200:]:
