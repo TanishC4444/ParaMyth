@@ -22,6 +22,7 @@ paramyth-production-export = "paramyth.production_exports:main"
 paramyth-rag-ingest = "paramyth.rag.ingest:main"
 paramyth-rag-search = "paramyth.rag.search:main"
 paramyth-soundtracks = "paramyth.soundtracks:main"
+paramyth-studio = "paramyth.studio.serve:main"
 
 [tool.setuptools.packages.find]
 include = ["paramyth*"]

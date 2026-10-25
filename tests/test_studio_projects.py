@@ -28,7 +28,7 @@ class StudioTestCase(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
-        self.app = create_app(self.root)
+        self.app = create_app(self.root, frontend=None)
         self.runtime = self.app.state.runtime
         self.addCleanup(self.runtime.close)
         self.client = TestClient(self.app)
