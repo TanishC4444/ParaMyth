@@ -4,6 +4,7 @@ import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { useMaterials } from "../materials"
 import { errorText, PageTitle } from "../ui"
+import { HelpTip } from '../Guide'
 export default function Production({ embedded = false }: { embedded?: boolean }) {
   const { project, mediaDirection, flush, refresh, setDraft, go } = useStudio()
   const { source, sourceId, sourceTitle, signature, streaming, images: availableImages, tracks: availableTracks, setSource } = useMaterials()
@@ -25,7 +26,9 @@ export default function Production({ embedded = false }: { embedded?: boolean })
     move_minutes: 45,
     contingency: 15,
     budget_cap: 0,
-    search_limit: 2,
+    search_limit: 8,
+    detailed: true,
+    auto_settings: true,
     skip_weekends: true,
   })
   const [savedPlan, setPlan] = useDraftState<any>("production.plan", null),
@@ -54,6 +57,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
   const plan = savedPlan
   const prompts = starter?.source_id === sourceId ? starter : plan?.starter
   const changed = !!plan && useStory && (plan.source_id !== sourceId || !!plan.writing_signature && plan.writing_signature !== signature)
+  const settingsChanged=!!plan && JSON.stringify(config)!==JSON.stringify(plan.config)
   useEffect(() => { setShowHistory(false) }, [sourceId, useStory])
   const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
@@ -93,7 +97,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
     try {
       await flush()
       const q = await api(path(prepare ? "/api/ui/production/prepare" : "/api/ui/production"), {
-        config: {...config,auto_region:config.auto_region !== false}, prompt: [prompt, mediaDirection].filter(Boolean).join("\n"),
+        config: {...config,detailed:true,auto_settings:config.auto_settings !== false,auto_region:config.auto_region !== false}, prompt: prompt.trim() || mediaDirection,
         source, use_story: useStory, image_ids: imageIds, track_ids: trackIds, automatic_assets: automaticAssets,
       })
       setPendingJob({ id: q.job_id, kind: prepare ? "production-brief" : "production", local: q.local })
@@ -122,14 +126,15 @@ export default function Production({ embedded = false }: { embedded?: boolean })
       setSubmitting(false)
     }
   }
-  const set = (k: string, v: any) => setConfig((c: any) => ({ ...c, [k]: v }))
+  const set = (k: string, v: any) => setConfig((c: any) => ({ ...c, [k]: v,locked_settings:[...new Set([...(c.locked_settings || []),...(['region','start_date','timezone','currency','day_hours','setup_minutes','move_minutes','contingency','budget_cap','search_limit','skip_weekends','crew_size'].includes(k)?[k]:[])])] }))
   return (
     <div className="page simple-workspace">
       <PageTitle level={embedded ? "h2" : "h1"}
         title="Production"
         text="Turn your story into a shoot schedule, budget and location plan."
-      />
+      ><HelpTip label="How production planning works">Your connected model reasons about the shoot. SerpAPI supplies real-world research leads. Automatic planning fills unspecified choices and keeps settings you enter. Estimates and search leads need confirmation before booking.</HelpTip></PageTitle>
       {changed && <p className="source-changed">Your writing has changed since this plan. <button disabled={busy} onClick={() => void create()}>Update from current writing</button></p>}
+      {settingsChanged && <p className="source-changed">Your settings have changed. Create a new plan, or recalculate the schedule and budget below.</p>}
       {streaming && <p className="hint" role="status">Following the live draft. Creating a plan uses the words available when you start.</p>}
       {error && (
         <p className="live-status error" role="alert">
@@ -144,9 +149,9 @@ export default function Production({ embedded = false }: { embedded?: boolean })
       <div className="production-layout">
         <section className="panel composer">
           <h2>Plan your shoot</h2>
+          <fieldset className="production-form" disabled={busy}>
           <label className="field">What do you want to make?<textarea disabled={busy} value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={6000} placeholder="Leave this blank and we’ll propose the approach, locations and practical details from your story." /></label>
-          <button className="secondary" disabled={busy || (!useStory && !prompt.trim())} onClick={() => void create(true)}>Suggest direction & prompts</button>
-          <button className="secondary" onClick={() => { setUseStory(true); setSource("latest"); setShowHistory(false); }}>Use my generated writing</button>
+          <details className="workspace-options"><summary>Explore a direction first</summary><p className="hint">Optional: review a proposed approach before creating the full plan.</p><button className="secondary" disabled={busy || (!useStory && !prompt.trim())} onClick={() => void create(true)}>Suggest direction & prompts</button></details>
           <label className="inline-suggestion"><input type="checkbox" checked={useStory} onChange={(e) => setUseStory(e.target.checked)} />Use {sourceTitle}</label>
           <label className="inline-suggestion"><input type="checkbox" checked={automaticAssets} onChange={e => setAutomaticAssets(e.target.checked)} />Include latest visuals and soundtracks automatically</label>
           <details className="workspace-options"><summary>Include generated visuals · {automaticAssets?Math.min(3,availableImages.length):imageIds.filter(id=>availableImages.some(image=>image.id===id)).length} selected</summary>
@@ -181,6 +186,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
             </label>
           </div>
           <details className="workspace-options"><summary>Budget settings</summary>
+            <label className="toggle"><input type="checkbox" checked={config.local_crew ?? /\blocal crew\b|\bno (?:hotels?|lodging|accommodation)\b/i.test(prompt)} onChange={e=>setConfig((value:any)=>({...value,local_crew:e.target.checked}))}/>Crew is local; no accommodation or flights needed</label>
             <div className="form-grid">
             <label className="field">
               Currency
@@ -204,13 +210,14 @@ export default function Production({ embedded = false }: { embedded?: boolean })
           </details>
           <details>
             <summary>Schedule settings</summary>
+            <label className="toggle"><input type="checkbox" checked={config.auto_settings!==false} onChange={e=>setConfig((value:any)=>({...value,auto_settings:e.target.checked}))}/>Choose unspecified schedule and budget settings for me</label>
             <div className="form-grid">
               {[
                 ["day_hours", "Workday hours"],
                 ["setup_minutes", "Setup minutes"],
                 ["move_minutes", "Move minutes"],
                 ["contingency", "Contingency %"],
-                ["search_limit", "Research searches (0–3)"],
+                ["search_limit", "Research searches (0–12)"],
               ].map(([key, label]) => (
                 <label key={key} className="field">
                   {label}
@@ -265,6 +272,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
               We’ll propose a filming region and research it. You can change it before making any arrangements.
             </p>
           )}
+          </fieldset>
         </section>
         <section className="panel">
           <h2>Your plan</h2>
@@ -292,9 +300,10 @@ export default function Production({ embedded = false }: { embedded?: boolean })
               <p className="hint">Based on {plan.source_title || "earlier saved writing"}{plan.image_count ? ` · ${plan.image_count} visual references` : ""}</p>
               <p>
                 <b>{plan.schedule.shoot_days} shoot days</b> ·{" "}
-                {plan.budget.total_high > 0 ? `${plan.budget.currency} ${plan.budget.total_low.toLocaleString()}–${plan.budget.total_high.toLocaleString()}` : "Budget not estimated"}
+                {plan.budget.total_high > 0 ? `${plan.budget.unknown_costs?.length?'Priced costs only: ':''}${plan.budget.currency} ${plan.budget.total_low.toLocaleString()}–${plan.budget.total_high.toLocaleString()}` : "Budget not estimated"}
               </p>
-              <p className="hint">Budget estimates need review before booking.</p>
+              <p className="hint">{plan.budget.unknown_costs?.length ? `Budget incomplete: ${plan.budget.unknown_costs.length} items still need rates. The displayed range excludes these costs and does not establish affordability.` : 'Budget estimates need review before booking.'}</p>
+              {!!plan.budget.unknown_costs?.length && <details><summary>Costs still to price</summary><ul>{plan.budget.unknown_costs.map((item:string)=><li key={item}>{item}</li>)}</ul></details>}
               <p className="production-plan-summary">{plan.recommendations.summary}</p>
               <h3>Start here</h3><ol className="production-steps">{plan.recommendations.next_steps.slice(0,5).map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
               <h3>Location leads · {plan.config.region || 'Region undecided'}</h3>
@@ -306,7 +315,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
                   {w}
                 </p>
               ))}</details>}
-              <a className="secondary" href={path(`/export/${plan.id}/schedule.csv`)}>Download schedule</a>
+              <div className="comment-actions"><a className="secondary" href={path(`/export/${plan.id}/plan.pdf`)}>Download plan PDF</a><a className="secondary" href={path(`/export/${plan.id}/plan.docx`)}>Download plan Word</a></div>
               <details><summary>More downloads & calendar</summary>
               <div className="export-row">
                 {[

@@ -1,6 +1,8 @@
 /** Keep service diagnostics in the console, rather than in the writing tools. */
 export function requestMessage(detail: unknown, status?: number, fallback = "We couldn't reach your studio. Try again in a moment.") {
   const text = typeof detail === 'string' ? detail.replace(/^Error:\s*/, '') : ''
+  if (/Production response could not be read|Production model returned incomplete|task.*needs nonempty text/i.test(text)) return 'Your production plan could not be completed. Your source materials are saved. Try again.'
+  if (/Provider response exceeded the size limit/i.test(text)) return 'The generated response could not be loaded. Your request details are saved. Try again.'
   if (/MUSE_IMAGE|MODEL_API_KEY|image.*(?:key|provider).*(?:set|missing|unavailable)|set.*image.*key/i.test(text)) return "Image generation isn't available in this studio yet."
   if (/VULTR_MUSIC|music.*provider.*unavailable|instrumental.*unavailable/i.test(text)) return "Music generation isn't available in this studio yet."
   if (/_API_KEY|_INFERENCE_|server environment|Unexpected token|is not valid JSON|Failed to fetch|NetworkError|Load failed|timed out|TimeoutError|operation was aborted|request failed \(\d+\)|not found|^Not Found$/i.test(text)) return fallback

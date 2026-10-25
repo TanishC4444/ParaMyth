@@ -33,10 +33,11 @@ test('missing optional endpoints are requested once, across project query change
 });
 
 test('the gallery remains the asset source when the optional materials endpoint is missing',async()=>{
-  const mocks={'./api':{currentWorkspaceIdentity:()=> 'account:',projectPath:(p,id)=>p+'&project_id='+id,optionalApi:async()=>null,api:async p=>p.startsWith('/api/images')?{images:[{id:'kept',project_id:'project'}]}:{tracks:[]}},'./store':{}};
+  const mocks={'./api':{currentWorkspaceIdentity:()=> 'account:',projectPath:(p,id)=>p+'&project_id='+id,optionalApi:async()=>null,api:async p=>p.startsWith('/api/images')?{images:[{id:'kept',project_id:'project',status:'completed',images:[{index:0}]},{id:'failed',project_id:'project',status:'failed',images:[]}]}:{tracks:[]}},'./store':{}};
   const materials=moduleFor('src/materials.tsx',mocks,{},'\nexports.inspect={load,cache};');
   await materials.inspect.load('project','latest');
   assert.equal(materials.inspect.cache('account::project:latest').value.images[0].id,'kept');
+  assert.equal(materials.inspect.cache('account::project:latest').value.images.length,1);
   assert.equal(materials.projectAssets([{id:'mine',project_id:'project'},{id:'other',job:{project_id:'foreign'}}],'project').length,1);
 });
 

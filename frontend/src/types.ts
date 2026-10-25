@@ -1,7 +1,7 @@
-export type View = "workflow" | "landing" | "overview" | "projects" | "project" | "atlas" | "runs" | "creative" | "retrieval" | "images" | "music" | "production" | "library" | "news" | "connections" | "notfound" | "legal";
+export type View = "workflow" | "landing" | "overview" | "projects" | "project" | "atlas" | "runs" | "creative" | "retrieval" | "images" | "music" | "production" | "library" | "news" | "connections" | "discovery" | "tutorials" | "notfound" | "legal";
 export type ProjectTab = "brief" | "manuscript" | "canon" | "pipeline";
 
-export const MEDIA = ["Novel", "Short story", "Stage play", "Screenplay", "Audio drama", "Comic script"] as const;
+export const MEDIA = ["Novel", "Short story", "Stage play", "Screenplay", "Audio drama", "Comic script", "Documentary", "Television script"] as const;
 export type Medium = (typeof MEDIA)[number];
 
 export type SceneState = "Draft" | "Provisional" | "In review" | "Accepted";

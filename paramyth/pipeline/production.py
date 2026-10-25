@@ -98,6 +98,8 @@ def normalize_config(raw):
     cfg['locked_settings'] = raw.get('locked_settings',[])
     if not isinstance(cfg['locked_settings'],list) or any(x not in ('region','start_date','timezone','currency','day_hours','setup_minutes','move_minutes','contingency','budget_cap','search_limit','skip_weekends','crew_size') for x in cfg['locked_settings']):raise ValueError('Unknown locked production setting')
     cfg['brief'] = str(raw.get('brief',''))[:6000]
+    if raw.get('local_crew') is not None and not isinstance(raw['local_crew'],bool):raise ValueError('Choose whether the crew needs accommodation')
+    cfg['local_crew']=raw.get('local_crew') if isinstance(raw.get('local_crew'),bool) else bool(re.search(r'\blocal crew\b|\bno (?:hotels?|lodging|accommodation)\b',cfg['brief'],re.I))
     cfg['currency'] = str(raw.get('currency','USD')).upper()
     if not re.fullmatch('[A-Z]{3}', cfg['currency']): raise ValueError('Use a three-letter currency code')
     cfg['start_date'] = date.fromisoformat(str(raw.get('start_date',date.today().isoformat()))).isoformat()
@@ -183,7 +185,7 @@ def ask_validated(model, instruction, data, validator, images=(), progress=lambd
         if attempt==2:
             raise ProviderError('Production response could not be read after 3 attempts. '+detail) from None
         progress('Correcting the production response format ('+str(attempt+2)+' of 3)')
-        prompt=instruction+'\nThe previous response failed validation: '+detail+'. Return the exact requested JSON shape. Text lists must contain strings, never objects; combine owner, action and deliverable into a single string. Keep supplied facts and source IDs unchanged.'
+        prompt=instruction+'\nThe previous response failed validation: '+detail+'. Return the exact originally requested JSON shape. Lists of text contain strings; lists of structured records (tasks, departments, crew, equipment and sets) must remain objects with all required fields. Do not flatten structured records into strings. Keep supplied facts and source IDs unchanged.'
 
 
 class Muse:

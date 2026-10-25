@@ -58,6 +58,9 @@ def csv_bytes(rows, fields):
 
 
 def export(plan, kind):
+    if kind in ('plan.pdf', 'plan.docx'):
+        from ..document_exports import export_document, production_sections
+        return export_document(plan['title'], 'Production planning dossier', production_sections(plan), kind.split('.')[-1])
     if kind=='calendar.ics': return calendar_ics(plan),'text/calendar; charset=utf-8'
     if kind=='budget.csv': return csv_bytes(plan['budget']['items'],['category','description','quantity','unit','low_rate','high_rate','low_total','high_total','basis','status']),'text/csv; charset=utf-8'
     if kind=='schedule.csv': return csv_bytes(calendar_events(plan),['scene_id','summary','start','end','location','cast','department','deliverable','setup_move_minutes','meal_before','status']),'text/csv; charset=utf-8'

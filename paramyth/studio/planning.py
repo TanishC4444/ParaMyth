@@ -36,7 +36,7 @@ def callback_url(request):
 def config(request: Request, runtime=RUNTIME):
     current = folder(request, runtime)
     paths = sorted((current / 'production' / 'plans').glob('*.json'), key=lambda p: p.stat().st_mtime, reverse=True)[:20]
-    return {'story': current.name, 'vultr': bool(os.getenv('VULTR_INFERENCE_API_KEY')), 'search': bool(os.getenv('SERPAPI_API_KEY')),
+    return {'story': current.name, 'vultr': bool(os.getenv('VULTR_PRODUCTION_API_KEY') or os.getenv('VULTR_INFERENCE_API_KEY')), 'search': bool(os.getenv('SERPAPI_API_KEY')),
             'google': bool(runtime.google.access or runtime.google.refresh),
             'google_oauth': bool(os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET')),
             'redirect_uri': callback_url(request), 'plans': [p.stem for p in paths]}
@@ -67,6 +67,11 @@ def recalculate(request: Request, data: dict = Body(...), runtime=RUNTIME):
     breakdown['scenes'] = data.get('scenes', breakdown['scenes'])
     breakdown['budget_items'] = data.get('budget_items', breakdown.get('budget_items', []))
     validate_breakdown(breakdown)
+    if cfg.get('local_crew'):
+        from ..pipeline.production_operations import excluded_for_local_crew
+        breakdown['budget_items']=[row for row in breakdown['budget_items'] if not excluded_for_local_crew(row)]
+        if value.get('local_logistics'):
+            value['local_logistics'].update(hotels=[],flights=[],rooms=0,nights=0,occupancy_assumption='Local crew; accommodation and flights are not budgeted.')
     value.update(config=cfg, schedule=schedule(breakdown['scenes'], cfg), budget=budget(breakdown['budget_items'], cfg),
                  id=hashlib.sha256(json.dumps([data['id'], cfg, breakdown], sort_keys=True).encode()).hexdigest()[:24])
     if value.get('operations', {}).get('tasks'):

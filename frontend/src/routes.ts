@@ -16,6 +16,8 @@ const VIEWS: View[] = [
   "library",
   "news",
   "connections",
+  "discovery",
+  "tutorials",
 ]
 export const resolveRoute = (hash: string): View => {
   const v = hash.replace(/^#\/?/, "").split(/[/?]/)[0] as View

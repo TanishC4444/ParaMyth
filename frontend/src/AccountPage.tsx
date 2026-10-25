@@ -55,6 +55,7 @@ export default function AccountPage({ signup, available, onSignedIn, invitation=
       </form>
       <p className="account-service-note">Writing, images and music use the studio’s connected services. You don’t need your own API keys.</p>
       <a href="#/atlas">Explore the story atlas</a>
+      <a href="#/tutorials">How to use ParaMyth</a>
     </section>
   </main>
 }

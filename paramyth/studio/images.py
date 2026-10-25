@@ -42,3 +42,24 @@ def generate(request: Request, data: dict = Body(...), runtime=RUNTIME):
     image_studio.generation_settings(data, image_studio.CATALOG.get(data.get('model')))
     current = folder(request, runtime)
     return {'job_id': runtime.submit('image', current, lambda progress: image_studio.generate(current, data, progress))}
+
+
+@router.post('/api/images/create', dependencies=WRITE, status_code=202)
+def create_from_story(request: Request, data: dict = Body(...), runtime=RUNTIME):
+    """Prepare and render once in a durable job, without a second browser action."""
+    from ..pipeline import image_studio as renderer, media_workspace
+    renderer.input_spec(data)
+    model = renderer.CATALOG.get(data.get('model'))
+    renderer.generation_settings({**data, 'prompt': 'Preparing visual direction', 'n': 1}, model)
+    current = folder(request, runtime)
+    selected = media_workspace.material(current, data.get('source', 'latest'), '', True)
+    def operation(progress):
+        progress('Preparing the visual from your writing')
+        prepared = renderer.prepare_prompt(current, data, bool(data.get('enhance', True)), sources=selected['sources'])
+        prompt = prepared['prompt'][:2900] + '\n' + media_workspace.NATURAL_FINISH
+        result = renderer.generate(current, {**data, 'prompt': prompt, 'title': prepared['title'], 'n': 1}, progress)
+        result.update(source_id=selected['source_id'], source_title=selected['title'], writing_signature=selected['signature'])
+        from ..storage import save
+        save(renderer.record_path(current, result['id']), result)
+        return result
+    return {'job_id': runtime.submit('image', current, operation)}

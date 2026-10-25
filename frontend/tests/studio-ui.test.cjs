@@ -14,7 +14,7 @@ function render(path, { access = {}, studio = {}, props = {} } = {}) {
   function load(file) {
     if (/[\\/]store$/.test(file)) return { useStudio:()=>state, blankProject:()=>blank, useDraftState:(key,initial)=>React.useState(studio.drafts?.[key] ?? initial) };
     if (/[\\/]AccountGate$/.test(file)) return {useAccess:()=>access};
-    if (/[\\/]api$/.test(file)) return {};
+    if (/[\\/]api$/.test(file)) return {currentWorkspaceIdentity:()=> 'qa:',currentAccountIdentity:()=> 'qa'};
     if (/[\\/]site$/.test(file)) return {REPOSITORY:'https://github.com/TanishC4444/ParaMyth'};
     if (file.endsWith('.css')) return {};
     const full = [file,file+'.ts',file+'.tsx',file+'.json'].find(existsSync);
@@ -24,7 +24,7 @@ function render(path, { access = {}, studio = {}, props = {} } = {}) {
     const module = {exports:{}}; cache.set(full,module);
     const source = readFileSync(full,'utf8').replaceAll('import.meta.env','({BASE_URL:"/",VITE_API_BASE:""})');
     const code = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,target:ts.ScriptTarget.ES2020}}).outputText;
-    vm.runInNewContext(code,{exports:module.exports,module,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash:'#/overview'},URLSearchParams,console});
+    vm.runInNewContext(code,{exports:module.exports,module,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash:'#/overview'},URLSearchParams,crypto:require('node:crypto').webcrypto,console});
     return module.exports;
   }
   return renderToStaticMarkup(React.createElement(load(resolve(root,path)).default,props));
@@ -68,4 +68,22 @@ test('older projects without a scene-length preference still open the manuscript
   assert.match(html,/\(guided\)/);
   assert.match(html,/Point of view/);
   assert.match(html,/Location/);
+});
+
+test('tutorials cover the full workflow with short, actionable lessons',()=>{
+  const html=render('src/views/Tutorials.tsx');
+  for(const title of ['Start a project','Write and revise chapters','Prepare a documentary','Create visuals and sound','Plan a production','Share and collaborate','Keep and download your work','Use the keyboard and find help'])assert.ok(html.includes(title));
+  assert.match(html,/aria-label="Tutorial topics"/);
+});
+
+test('Discovery loads the real feed and offers an explicit share action',()=>{
+  const html=render('src/views/Discovery.tsx');
+  assert.match(html,/Share a post/);assert.match(html,/Loading posts/);assert.match(html,/aria-busy="true"/);
+  assert.doesNotMatch(html,/Sample project|Example character/);
+});
+
+test('writing exports offer Word, PDF and a private project dossier',()=>{
+  const html=render('src/ExportPanel.tsx');
+  assert.match(html,/Word document/);assert.match(html,/>PDF</);assert.match(html,/Project dossier/);
+  assert.match(html,/latest edits are saved before export/);
 });

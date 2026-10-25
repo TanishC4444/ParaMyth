@@ -10,7 +10,7 @@
     <script>
       // The app routes with hashes. Send "/atlas"-style paths to "/#/atlas" instead of a dead end.
       (function () {
-        var views = ["atlas", "overview", "projects", "workflow", "runs", "retrieval", "library", "connections", "news", "signin", "signup", "terms", "privacy", "contact", "accessibility", "credits"];
+        var views = ["atlas", "overview", "projects", "workflow", "runs", "retrieval", "library", "connections", "news", "discovery", "tutorials", "signin", "signup", "terms", "privacy", "contact", "accessibility", "credits"];
         var first = location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
         if (views.indexOf(first) !== -1) location.replace("/#/" + first);
         else history.replaceState(null, '', location.pathname + location.search + '#/nope-404');

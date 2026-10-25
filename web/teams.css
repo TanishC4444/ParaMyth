@@ -29,5 +29,5 @@ body:has(#workspace:not([hidden])) button.secondary,body:has(#profile) button.se
 
 @font-face{font-family:"Young Serif";src:url('/landing/young-serif.ttf') format('truetype');font-display:swap;font-weight:400}
 @font-face{font-family:Manrope;src:url('/landing/manrope.woff2') format('woff2');font-display:swap;font-weight:200 800}
-h1,h2,h3,.account-story h1,.account-card h2,body:has(#profile) h1,body:has(#profile) h2{font-family:"Young Serif",Georgia,serif;font-weight:400}body{font-family:Manrope,system-ui,sans-serif}[hidden]{display:none!important}.brand img{width:120px}#message:empty{display:none}
+h1,h2,h3,.account-story h1,.account-card h2,body:has(#profile) h1,body:has(#profile) h2{font-family:"Young Serif",Georgia,serif;font-weight:400}body{font-family:Manrope,system-ui,sans-serif}[hidden]{display:none!important}.brand img{width:120px}#message:empty{display:none}.panel-head h1{font-size:26px;margin:0}
 @media(max-width:760px){a,button,summary{min-height:44px;min-width:44px}a{display:inline-flex;align-items:center}.top-nav{gap:10px;flex-wrap:wrap;justify-content:flex-end}.top{gap:16px}.account-footer{align-items:center}.top-nav .nav-link{font-size:12px}.brand{flex-shrink:0}.account-layout,.account-card,.panel{min-width:0}input[type=checkbox]{min-height:20px;min-width:20px}}

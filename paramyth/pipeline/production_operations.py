@@ -74,8 +74,15 @@ def develop_operations(model,breakdown,cfg,timing,progress):
             if not isinstance(d.get('tasks'),list) or len(d['tasks'])>3:raise ValueError('Supply at most three tasks per department')
             if d['status']=='planned' and not d['tasks']:raise ValueError('Planned departments need actionable tasks')
             d['label']=DEPARTMENTS[d['id']]
-            for t in d['tasks']:
-                if not isinstance(t,dict) or not all(isinstance(t.get(k),str) and 0<len(t[k])<=1500 for k in ('id','task','owner','deliverable')):raise ValueError('Each task needs ID, action, owner and deliverable')
+            if d['status']=='not_applicable':
+                d['tasks']=[t for t in d['tasks'] if isinstance(t,dict) and any(t.get(key) for key in ('task','action','owner','deliverable'))]
+            for index,t in enumerate(d['tasks']):
+                if not isinstance(t,dict):raise ValueError(d['id']+' tasks must be objects, not strings')
+                if not t.get('id'):t['id']=d['id']+'_'+str(index+1)
+                if isinstance(t.get('id'),int):t['id']=str(t['id'])
+                if not t.get('task') and isinstance(t.get('action'),str):t['task']=t['action']
+                for key in ('id','task','owner','deliverable'):
+                    if not isinstance(t.get(key),str) or not 0<len(t[key])<=1500:raise ValueError(d['id']+' task '+str(index+1)+' needs nonempty text in the '+key+' field')
                 if t.get('anchor') not in ('first_shoot','last_shoot'):raise ValueError('Use a shoot date anchor')
                 t['offset_days']=int(number(t.get('offset_days'),-180,365,'task date offset'))
                 t['duration_hours']=float(number(t.get('duration_hours'),.5,8,'task hours'))
@@ -165,18 +172,28 @@ def reconcile_resources(breakdown,operations,cfg,timing):
     breakdown['budget_items']=rows
 
 
+def excluded_for_local_crew(row):
+    description=row.get('description','').lower()
+    if row.get('unit') in ('room-night','person-return'):return True
+    if row.get('category')=='locations':return False
+    travel=row.get('category') in ('travel','transport','accommodation')
+    return (travel and any(word in description for word in ('hotel','lodging','accommodation','airfare','flight')) or any(phrase in description for phrase in ('crew hotel','crew accommodation','crew lodging','crew return flight','flight tickets'))) and not any(word in description for word in ('meal','cater','food'))
+
+
 def research_logistics(search,cfg,timing,evidence,research,warnings,breakdown,operations,progress):
     first=min((datetime.fromisoformat(e['start']).date() for e in timing['events']),default=date.fromisoformat(cfg['start_date']))
     last=max((datetime.fromisoformat(e['end']).date() for e in timing['events']),default=first)
     checkin=first-timedelta(days=1);checkout=last+timedelta(days=1)
     count=cfg['crew_size'] or sum(c['count'] for c in operations.get('crew',[])) or 8
-    nights=(checkout-checkin).days;rooms=ceil(count/2)
+    nights=0 if cfg.get('local_crew') else (checkout-checkin).days;rooms=0 if cfg.get('local_crew') else ceil(count/2)
     region=cfg['region'];currency=cfg['currency'];arrival=cfg['arrival_airport'] or operations.get('arrival_airport','')
     out={'headcount':count,'headcount_basis':'user supplied' if cfg['crew_size'] else 'crew plan; cast/local hires must be confirmed','rooms':rooms,'nights':nights,'occupancy_assumption':'two adults per room; confirm room capacity and local hires','hotels':[],'meals':[],'transport':[],'equipment_suppliers':[],'medical':[],'flights':[],'missing':[],'check_in':checkin.isoformat(),'check_out':checkout.isoformat()}
-    jobs=[('hotels','google_hotels',region,{'check_in_date':checkin.isoformat(),'check_out_date':checkout.isoformat(),'adults':2,'currency':currency}),('meals','google_maps','crew catering restaurants near '+region,{}),('transport','google_maps','passenger van rental production transport near '+region,{}),('equipment_suppliers','google_maps','film camera lighting sound rental near '+region,{}),('medical','google_maps','hospital emergency department near '+region,{})]
-    if checkin<date.today():jobs=jobs[1:];out['missing'].append('Choose future shoot dates to research dated hotel and flight prices.')
-    if cfg['departure_airport'] and arrival and checkin>=date.today():jobs.insert(1,('flights','google_flights',cfg['departure_airport']+' to '+arrival,{'departure_id':cfg['departure_airport'],'arrival_id':arrival,'outbound_date':checkin.isoformat(),'return_date':checkout.isoformat(),'type':1,'adults':1,'currency':currency}))
-    else:out['missing'].append('Add a departure airport and confirm the destination airport to price flights; origin is never inferred from your timezone.')
+    jobs=[] if cfg.get('local_crew') else [('hotels','google_hotels',region,{'check_in_date':checkin.isoformat(),'check_out_date':checkout.isoformat(),'adults':2,'currency':currency})]
+    jobs += [('meals','google_maps','crew catering restaurants near '+region,{}),('transport','google_maps','passenger van rental production transport near '+region,{}),('equipment_suppliers','google_maps','film camera lighting sound rental near '+region,{}),('medical','google_maps','hospital emergency department near '+region,{})]
+    if checkin<date.today() and not cfg.get('local_crew'):jobs=jobs[1:];out['missing'].append('Choose future shoot dates to research dated hotel and flight prices.')
+    if not cfg.get('local_crew'):
+        if cfg['departure_airport'] and arrival and checkin>=date.today():jobs.insert(1,('flights','google_flights',cfg['departure_airport']+' to '+arrival,{'departure_id':cfg['departure_airport'],'arrival_id':arrival,'outbound_date':checkin.isoformat(),'return_date':checkout.isoformat(),'type':1,'adults':1,'currency':currency}))
+        else:out['missing'].append('Add a departure airport and confirm the destination airport to price flights; origin is never inferred from your timezone.')
     for key,engine,query,params in jobs:
         if len(research)>=cfg['search_limit']:out['missing'].append(key.replace('_',' ')+' research skipped: search allowance reached');continue
         progress('Finding '+key.replace('_',' ')+' around the proposed shoot region')
@@ -194,13 +211,16 @@ def research_logistics(search,cfg,timing,evidence,research,warnings,breakdown,op
     hotel_rates=[r['rate'] for r in out['hotels'] if r.get('rate') is not None and r.get('currency')==currency]
     flight_rates=[r['rate'] for r in out['flights'] if r.get('rate') is not None and r.get('currency')==currency]
     rows=breakdown['budget_items']
+    if cfg.get('local_crew'):
+        out['occupancy_assumption']='Local crew; accommodation and flights are not budgeted.'
+        rows[:]=[row for row in rows if not excluded_for_local_crew(row)]
     def allowance(description,quantity,unit,rates,basis):
         rows.append({'category':'travel','description':description,'quantity':quantity,'unit':unit,'low_rate':min(rates) if rates else 0,'high_rate':max(rates) if rates else 0,'basis':basis})
     # Replace provisional accommodation/airfare lines, avoiding double counting.
     if hotel_rates:
         rows[:]=[r for r in rows if not any(w in r['description'].lower() for w in ('hotel','lodging','accommodation'))]
         allowance('Crew accommodation',rooms*nights,'room-night',hotel_rates,f'Live hotel search allowance: {rooms} rooms × {nights} nights, 2 adults per room. Dates {checkin}–{checkout}; taxes/fees/capacity unconfirmed.')
-    elif not any(any(w in r['description'].lower() for w in ('hotel','lodging','accommodation')) for r in rows):allowance('Crew accommodation',rooms*nights,'room-night',[],f'{rooms} rooms × {nights} nights; quote needed')
+    elif rooms and not any(any(w in r['description'].lower() for w in ('hotel','lodging','accommodation')) for r in rows):allowance('Crew accommodation',rooms*nights,'room-night',[],f'{rooms} rooms × {nights} nights; quote needed')
     if flight_rates:
         rows[:]=[r for r in rows if not any(w in r['description'].lower() for w in ('flight','airfare'))]
         allowance('Crew return flights',count,'person-return',flight_rates,f'Live economy fare leads × {count} travelers, excluding baggage/freight/ground transfers.')

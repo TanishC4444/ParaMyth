@@ -5,6 +5,8 @@ import { uid, now } from "../data";
 import type { Scene } from "../types";
 import { errorText } from "../ui";
 import Creative from "./Creative";
+import ExportPanel from '../ExportPanel';
+import { HelpTip } from '../Guide';
 
 type Written = { id: string; status: string; request: { chapter?: number; scene_id?: string }; result?: { title?: string; text?: string }; preview?: Job["preview"]; error?: string };
 type Edit = { base: string; title: string; text: string };
@@ -39,6 +41,7 @@ export default function WritingWorkspace() {
   const base = record?.id || "manuscript";
   const draft = edits[scene.id]?.base === base ? edits[scene.id] : { base, title: record?.result?.title || record?.preview?.title || scene.title, text: record?.result?.text || record?.preview?.text || scene.content };
   const streaming = live && pending(live) && live.preview?.scene_id === scene.id && ["Draft","Revise"].includes(live.preview?.stage || "");
+  const streamingText=streaming ? live.preview?.text || (live.preview?.stage==='Revise'?draft.text:'') : draft.text;
   const busy = submitting || !!handle;
   const chapters = [...new Set([1, chapter, ...project.scenes.map(s => s.chapter), ...records.map(r => r.request.chapter || 1)])].sort((a,b) => a-b);
   const path = (p: string) => projectPath(p, project.id);
@@ -75,7 +78,7 @@ export default function WritingWorkspace() {
       if (!pending(job)) {
         events.close(); setHandle("");
         if (job.result?.request?.operation === 'review') setReviews(v=>({...v,[job.result.request.scene_id]:{...job.result.result,text:job.result.request.text}}));
-        else if (job.result) setRecords(rows => [job.result, ...rows.filter(r => r.id !== job.result.id)]);
+        else if (job.result) {setRecords(rows => [job.result, ...rows.filter(r => r.id !== job.result.id)]);if(job.result.request?.scene_id)setVersions(v=>({...v,[job.result.request.scene_id]:job.result.id}));}
         if (job.status !== 'complete') setError(job.message || 'Writing stopped. Your partial draft is saved.');
         window.dispatchEvent(new Event('studio-refresh'));
       }
@@ -96,7 +99,7 @@ export default function WritingWorkspace() {
         brief:[idea || project.brief.premise, ...suggestions.filter(s=>s.answer?.trim()).map(s=>`${s.aspect || 'Author detail'}: ${s.answer}`), directions[scene.id] || '', chapterScenes.length > 1 ? `Write only scene ${chapterScenes.indexOf(scene)+1} of chapter ${chapter}. Other scenes remain separate.` : 'Write this chapter as a complete narrative unit.'].filter(Boolean).join('\n\n'),
         text:operation !== 'draft' ? draft.text : '', target_passage:operation==='revise' ? passages[scene.id]?.trim() || '' : '', feedback:[revisions[scene.id] || 'Suggest or apply specific improvements to clarity, character choices, pacing and continuity while preserving the story.', passages[scene.id]?.trim() ? `Limit changes to this passage; preserve the rest of the chapter verbatim. Use the following passage as the revision scope:\n${passages[scene.id]}` : ''].filter(Boolean).join('\n\n'),
       });
-      if (generationProject.current === id) { setHandle(job.job_id); if(operation!=='review')setVersions(v => ({...v,[scene.id]:''})); setLive({ id:job.job_id,kind:'creative',project_id:id,status:'queued',message:'Preparing your chapter…',created_at:new Date().toISOString(),preview:{record_id:'',stage:operation==='review'?'Review':operation==='revise'?'Revise':'Draft',chapter,scene_id:scene.id,text:''} }); }
+      if (generationProject.current === id) { setHandle(job.job_id); setLive({ id:job.job_id,kind:'creative',project_id:id,status:'queued',message:operation==='review'?'Reviewing your chapter…':operation==='revise'?'Revising your chapter…':'Preparing your chapter…',created_at:new Date().toISOString(),preview:{record_id:'',stage:operation==='review'?'Review':operation==='revise'?'Revise':'Draft',chapter,scene_id:scene.id,text:''} }); }
       window.dispatchEvent(new Event('studio-refresh'));
     } catch (e) { if (generationProject.current === id) setError(errorText(e)); }
     finally { if (generationProject.current === id) setSubmitting(false); }
@@ -127,13 +130,12 @@ export default function WritingWorkspace() {
   return <div className="writing-studio-grid">
     <section className="writing-direction" aria-label="Ideas and revision direction">
       <Creative key={`${project.id}:${chapter}`} ideasOnly chapter={chapter} sceneId={scene.id} onStart={()=>void run('draft')} writingBusy={busy} />
-      <section className="panel chapter-direction">
-        <h2>Direction for chapter {chapter}</h2>
+      <details className="panel chapter-direction">
+        <summary>Chapter direction and length</summary>
         <label className="field">Chapter direction · optional<textarea value={directions[scene.id] || ''} onChange={e => setDirections(v => ({...v,[scene.id]:e.target.value}))} placeholder="Add a scene idea, ask for a revision, or leave this blank and we’ll continue the story." maxLength={6000} /></label>
-        <details><summary>Chapter length</summary><label className="field">Around {length} words<input type="range" min={100} max={3000} step={100} value={length} onChange={e => setLength(Number(e.target.value))} /></label></details>
-        <div className="comment-actions"><button className="primary" disabled={!ready || !project.id || busy} onClick={() => void run('draft')}>{busy ? 'Writing…' : chapterScenes.length > 1 ? 'Write this scene' : 'Write this chapter'}</button></div>
+        <label className="field">Around {length} words<input type="range" min={100} max={3000} step={100} value={length} onChange={e => setLength(Number(e.target.value))} /></label>
         <p className="hint">Earlier chapters guide continuity, including your latest edits. Blank details are filled in for you.</p>
-      </section>
+      </details>
     </section>
     <section className="panel chapter-manuscript" aria-label="Chapter writing">
       <div className="chapter-toolbar"><label>Chapter<select aria-label="Current chapter" value={chapter} onChange={e => setChapter(Number(e.target.value))}>{chapters.map(n => <option key={n} value={n}>Chapter {n}</option>)}</select></label><button disabled={busy || saving || Math.max(...chapters)>=100} onClick={() => void save(true,true)}>New chapter</button></div>
@@ -141,19 +143,20 @@ export default function WritingWorkspace() {
       {error && <p className="live-status error" role="alert">{error}</p>}
       {!!handle && <p className="live-status" role="status">{live?.message || 'Writing continues in the background.'} <button onClick={() => go('images')}>Work on visuals & production</button></p>}
       {sceneRecords.length>1 && <label className="field">Draft version<select value={record?.id || ''} onChange={e => setVersions(v => ({...v,[scene.id]:e.target.value}))}>{sceneRecords.map((r,i) => <option key={r.id} value={r.id}>{i===0 ? 'Latest draft' : `Earlier draft ${sceneRecords.length-i}`} · {r.status}</option>)}</select></label>}
-      {streaming ? <><h2>{live.preview?.title || `Chapter ${chapter}`}</h2><ChapterStream text={live.preview?.text || 'Waiting for the first words…'} /></> : <>
+      {streaming ? <><h2>{live.preview?.title || draft.title || `Chapter ${chapter}`}</h2><ChapterStream text={streamingText || 'Waiting for the first words…'} /></> : <>
         {record && record.status !== 'complete' && <p className="hint">Unfinished draft. You can keep this partial writing or try generating again.</p>}
         <input className="chapter-title" aria-label="Chapter title" value={draft.title} onChange={e => edit({title:e.target.value})} />
         <textarea className="chapter-editor" aria-label="Chapter manuscript" value={draft.text} onChange={e => edit({text:e.target.value})} placeholder="Your chapter will appear here as it is written. You can also write or edit it yourself." />
       </>}
       {!!draft.text.trim() && !streaming && <section className="chapter-revisions" aria-label="Chapter revisions">
-        <h3>Revise chapter {chapter}</h3>
+        <h3>Revise chapter {chapter} <HelpTip label="How chapter revisions work">Suggest revisions gives feedback. Apply revisions creates a new version using your instructions. Clear the passage field to revise the whole chapter; earlier versions stay available.</HelpTip></h3>
         <label className="field">What would you like to change?<textarea value={revisions[scene.id] || ''} maxLength={6000} onChange={e=>setRevisions(v=>({...v,[scene.id]:e.target.value}))} placeholder="For example: give the dialogue more tension, or make the ending quieter." /></label>
         <details><summary>Revise a specific passage</summary><label className="field">Passage to revise<textarea value={passages[scene.id] || ''} maxLength={10000} onChange={e=>setPassages(v=>({...v,[scene.id]:e.target.value}))} placeholder="Paste the passage you want changed. Leave blank to revise the whole chapter." /></label></details>
         <div className="comment-actions"><button disabled={busy} onClick={()=>void run('review')}>Suggest revisions</button><button className="primary" disabled={busy} onClick={()=>void run('revise')}>Apply revisions</button></div>
         {reviews[scene.id] && <div className="chapter-review"><p>{reviews[scene.id].summary}</p>{reviews[scene.id].text!==draft.text && <p className="hint">This feedback is from an earlier draft. You can request a fresh review.</p>}{(reviews[scene.id].issues || []).map((issue:any,i:number)=><article key={i}><b>{issue.problem}</b>{issue.quote && <blockquote>{issue.quote}</blockquote>}<p>{issue.fix}</p><button onClick={()=>{setRevisions(v=>({...v,[scene.id]:[v[scene.id],issue.fix].filter(Boolean).join('\n')}));if(issue.quote)setPassages(v=>({...v,[scene.id]:issue.quote}));}}>Use this revision</button></article>)}</div>}
       </section>}
-      <div className="chapter-footer"><span>{(streaming ? live.preview?.text || '' : draft.text).trim().split(/\s+/).filter(Boolean).length} words · Edits save automatically</span><div className="comment-actions"><button disabled={busy || saving || !draft.text.trim()} onClick={() => void save(false)}>Save to manuscript</button><button className="primary" disabled={busy || saving || !draft.text.trim()} onClick={() => void save(true)}>Save & next {chapterScenes.indexOf(scene)<chapterScenes.length-1 ? 'scene' : 'chapter'} →</button></div></div>
+      <div className="chapter-footer"><span>{streamingText.trim().split(/\s+/).filter(Boolean).length} words · Edits save automatically</span><div className="comment-actions"><button disabled={busy || saving || !draft.text.trim()} onClick={() => void save(false)}>Save to manuscript</button><button className="primary" disabled={busy || saving || !draft.text.trim()} onClick={() => void save(true)}>Save & next {chapterScenes.indexOf(scene)<chapterScenes.length-1 ? 'scene' : 'chapter'} →</button></div></div>
+      {!streaming && <ExportPanel sceneId={scene.id} />}
     </section>
   </div>;
 }

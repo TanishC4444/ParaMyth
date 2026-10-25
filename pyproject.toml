@@ -36,6 +36,7 @@ paramyth-studio = "paramyth.studio.serve:main"
 include = ["paramyth*"]
 
 [tool.setuptools.package-data]
+"paramyth" = ["assets/fonts/*"]
 "paramyth.studio" = ["migrations/*.sql"]
 "paramyth.pipeline" = ["production_ui.html", "image_ui.html", "studio_ui.html"]
 "paramyth.pipeline.api" = ["demo_data/**/*"]

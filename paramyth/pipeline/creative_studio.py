@@ -56,6 +56,26 @@ def resolve_passage(text, passage):
     return matches[0].group()
 
 
+def replacement_text(source, target, replacement):
+    """Accept one replacement fragment; never insert repeated surrounding chapter text."""
+    import re
+    before, _, after=source.partition(target)
+    if (before or after) and replacement.startswith(before) and (not after or replacement.endswith(after)):
+        replacement=replacement[len(before):len(replacement)-len(after) if after else None]
+    for part in (before,after):
+        for paragraph in part.split('\n\n'):
+            paragraph=paragraph.strip()
+            if len(paragraph)>=50 and paragraph in replacement and paragraph not in target:
+                raise ValueError('The replacement repeats surrounding chapter text. Return only the revised selected passage, without headings or unchanged surrounding material.')
+    # A model can still return a new script wrapper around an otherwise valid
+    # sentence. Those short labels evade the repeated-paragraph check above.
+    labels=r'(?im)^\s*(VIDEO\s*:|AUDIO\s*:|(?:INT\.?|EXT\.?|INT\.?/EXT\.?)\s|SEQUENCE\s+\d|SCENE\s+\d|CHAPTER\s+\d)'
+    original_labels=re.findall(labels,target)
+    if len(re.findall(labels,replacement))>len(original_labels):
+        raise ValueError('The selected passage does not include those script or chapter headings. Return only its revised sentence or paragraph, without VIDEO, AUDIO, location, sequence or chapter labels.')
+    return replacement
+
+
 def scene_output(folder, scene, drafts=None, records=None, live=False):
     """Resolve the version and edits shown in the chapter editor."""
     drafts=drafts if drafts is not None else (load(folder/'workspace-drafts.json') if (folder/'workspace-drafts.json').is_file() else {})
@@ -104,12 +124,19 @@ def run(folder,raw,progress=lambda message,**kwargs:None,*,stream=False):
         story_sources=material(folder,cfg['story_source'])['sources']
     else:story_sources=context(folder) if cfg['use_story'] else []
     sources=[{'file':s['file'],'text':s['text'][:max(3000,50000//max(1,len(story_sources)))]} for s in story_sources[:9]]
+    scoped_title=''
+    if cfg['target_passage']:
+        selected_scene=next((scene for scene in author.get('scenes',[]) if scene['id']==cfg['scene_id']),None)
+        if selected_scene:scoped_title=scene_output(folder,selected_scene)['title']
     is_ideas=cfg['operation']=='ideas' or (cfg['operation']=='loop' and cfg['loop_mode']=='ideas')
     idea_state=idea_development.analyze(cfg['idea_text'],cfg['structure'],cfg['medium']) if is_ideas else None
     idea_slots=idea_development.targets(idea_state,cfg['guidance_mode']=='suggest',cfg['advice_text']) if idea_state else []
     def parsed(response,stage):
         if stage!='Ideas':
             result=creative_stream.writing_result(response,stage)
+            if stage=='Revise' and cfg['target_passage']:
+                result['text']=replacement_text(cfg['text'],cfg['target_passage'],result['text'])
+                if scoped_title:result['title']=scoped_title
             if stage in ('Draft','Revise') and not cfg['target_passage']:media.validate_presentation(result['text'],cfg['medium'])
             return result
         choice=response['choices'][0]
@@ -123,6 +150,9 @@ def run(folder,raw,progress=lambda message,**kwargs:None,*,stream=False):
         if stream:
             last=[0.0]
             def chunk(raw,force=False):
+                # A fragment is validated before insertion. Keep the original visible
+                # rather than streaming an accidental whole chapter into a sentence.
+                if cfg['target_passage']:return
                 fields={'text':cfg['idea_text'],'title':'Your idea'} if stage=='Ideas' else creative_stream.preview(raw)
                 if cfg['target_passage'] and 'text' in fields:fields['text']=cfg['text'].replace(cfg['target_passage'],fields['text'],1)
                 record['preview']={'stage':stage,'record_id':ident,'chapter':cfg['chapter'],'context_chapter':cfg['context_chapter'],'scene_id':cfg['scene_id'],**fields}
@@ -146,7 +176,11 @@ def run(folder,raw,progress=lambda message,**kwargs:None,*,stream=False):
                     response=creative_stream.completion(provider,model,messages,temperature,chunk,schema=schema)
                     raw_output=response['choices'][0]['message']['content']
                     result=parsed(response,stage)
-                    chunk(raw_output,force=True)
+                    if cfg['target_passage'] and stage=='Revise':
+                        record['preview']={'stage':stage,'record_id':ident,'chapter':cfg['chapter'],'scene_id':cfg['scene_id'],'title':result['title'],'text':cfg['text'].replace(cfg['target_passage'],result['text'],1)}
+                        save(folder/'creative'/(ident+'.json'),record)
+                        progress(stage,preview=record['preview'])
+                    else:chunk(raw_output,force=True)
                     break
                 except (ProviderError,ValueError,KeyError,IndexError,TypeError) as exc:
                     record.setdefault('attempts',[]).append({'stage':stage,'attempt':attempt,'error':str(exc)[:500],'preview':record.get('preview',{})})
@@ -176,7 +210,10 @@ def run(folder,raw,progress=lambda message,**kwargs:None,*,stream=False):
     pace={'deliberate':'Dwell in one sustained scene or connected sequence. Advance at most ONE major plot turn in this unit. Dramatize decisions, attempts, reactions and consequences in real time before moving on; leave larger arcs unresolved. Do not summarize days or jump between many locations to cover the entire brief.',
           'balanced':'Use one or two consequential turns with clear causal transitions and space for character reactions. Do not compress the entire story into one unit.',
           'brisk':'Use up to three purposeful turns with concise transitions. Preserve causality and character reactions; do not resolve future story arcs just to end this unit.'}[cfg['pacing']]
-    write_prompt+='\nFORMAT CONTRACT: '+medium_contract['format']+'\nPACING CONTRACT: '+pace
+    if cfg['target_passage']:
+        data.pop('target_words',None)
+        write_prompt+='\nREPLACEMENT FORMAT: Preserve the local syntax of source_text. It may be a single sentence inside a script. Do not add VIDEO/AUDIO labels, scene headings, speaker cues or chapter material outside the selected passage. The whole-document medium contract is background context, not a request for a complete script. Apply only feedback that can be expressed within this replacement; leave other requested changes for a whole-chapter revision.'
+    else:write_prompt+='\nFORMAT CONTRACT: '+medium_contract['format']+'\nPACING CONTRACT: '+pace
     review_prompt+=' Assess the supplied medium and pacing contracts. Suggest targeted changes rather than rewriting the chapter. Quotes must be contiguous text copied exactly from source_text; leave quote empty for whole-chapter changes.'
     idea_prompt=idea_development.PROMPT
     if is_ideas:

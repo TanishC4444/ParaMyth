@@ -14,6 +14,7 @@ class MuseTests(unittest.TestCase):
    self.assertEqual(result['images'][0]['width'],64)
    self.assertEqual(request.call_args.args[0],s.META_BASE+'/responses')
    self.assertFalse(request.call_args.args[1]['store'])
+   self.assertEqual(request.call_args.kwargs['max_bytes'],64*1024*1024)
    self.assertNotIn('secret',s.record_path(folder,result['id']).read_text())
  def test_unsupported_controls(self):
   for extra in ({'seed':1},{'steps':10},{'n':2}):

@@ -46,6 +46,8 @@ const Connections = lazy(() => import("./views/Connections"))
 const News = lazy(() => import("./views/News"))
 
 const Landing = lazy(() => import("./views/Landing"))
+const Discovery = lazy(() => import('./views/Discovery'))
+const Tutorials = lazy(() => import('./views/Tutorials'))
 
 const TITLES: Partial<Record<View, string>> = {
   atlas: "Story atlas",
@@ -58,11 +60,13 @@ const TITLES: Partial<Record<View, string>> = {
   news: "Industry news",
   connections: "Connections",
   notfound: "Page not found",
+  discovery: "Discovery",
+  tutorials: "Tutorials",
 }
 
 const NAV: { group: string; items: [View, string, string][] }[] = [
   { group: "Workspace", items: [["overview", "overview", "Overview"], ["projects", "projects", "Projects"], ["workflow", "pen", "Project workspace"]] },
-  { group: "Discover", items: [["retrieval", "atlas", "Story atlas"], ["news", "news", "Industry news"]] },
+  { group: "Discover", items: [["discovery", "message", "Discovery"], ["retrieval", "atlas", "Story atlas"], ["news", "news", "Industry news"]] },
   { group: "Manage", items: [["runs", "runs", "Activity"], ["library", "library", "Project files"], ["connections", "connections", "Connections"]] },
 ]
 
@@ -126,6 +130,7 @@ function Shell() {
   const isLanding = view === "landing" || view === "atlas"
   const missing = view === "notfound"
   const legal = view === "legal"
+  const publicTutorial = view === 'tutorials' && (!access.authenticated && access.accounts_required || STATIC_SITE)
   const [visitedLanding, setVisitedLanding] = useState(isLanding)
   if (isLanding && !visitedLanding) setVisitedLanding(true)
 
@@ -148,6 +153,8 @@ function Shell() {
     library: <Library />,
     news: <News />,
     connections: <Connections />,
+    discovery: <Discovery />,
+    tutorials: <Tutorials />,
   }
 
   return (
@@ -161,8 +168,9 @@ function Shell() {
     </div>}
     {missing && <NotFound />}
     {legal && <AppErrorBoundary resetKey={location.hash}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><Legal key={location.hash} /></Suspense></AppErrorBoundary>}
-    {STATIC_SITE ? !isLanding && !missing && !legal && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
-    <div className="app-shell" hidden={isLanding || missing || legal}>
+    {publicTutorial && <AppErrorBoundary resetKey={view}><Suspense fallback={<PageLoading />}><Tutorials standalone /></Suspense></AppErrorBoundary>}
+    {STATIC_SITE ? !isLanding && !missing && !legal && !publicTutorial && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
+    <div className="app-shell" hidden={isLanding || missing || legal || publicTutorial}>
       <a className="studio-skip" href="#studio-content" onClick={event => { event.preventDefault(); content.current?.focus() }}>Skip to workspace</a>
       <aside ref={sidebar} id="studio-navigation" className={`sidebar ${mobile ? "open" : ""}`} aria-label="Workspace navigation" role={mobile ? "dialog" : undefined} aria-modal={mobile || undefined}>
         <div className="sidebar-brand-row">
@@ -200,6 +208,7 @@ function Shell() {
           {project.id && <button className="current-project" onClick={() => go("workflow")}><span className="current-project-icon"><Icon name="canon" /></span><span><small>Current project</small><b>{project.title}</b><small>{project.brief.medium}</small></span><Icon name="arrow" size={15} /></button>}
           {(!access.teams?.length || access.teams.some(team=>['owner','admin'].includes(team.role))) && <a className="studio-team-link" href="/studio/teams.html"><Icon name="connections" size={17} /><span>Team settings</span><span aria-hidden="true">↗</span></a>}
           <a className="sidebar-help" href="#/contact"><Icon name="message" size={17} />Help & support</a>
+          <button className="sidebar-help" aria-current={view==='tutorials'?'page':undefined} onClick={()=>go('tutorials')}><Icon name="ideas" size={17}/>Tutorials</button>
         </div>
       </aside>
       {mobile && (
@@ -231,7 +240,7 @@ function Shell() {
           <PageLoading label="Opening your saved workspace…" light />
         ) : (
           <>
-            {!["workflow", "projects", "overview", "connections", "retrieval", "news", "library", "runs"].includes(
+            {!["workflow", "projects", "overview", "connections", "retrieval", "news", "library", "runs", "discovery", "tutorials"].includes(
               view,
             ) && <Journey />}
             {!project.id &&
@@ -262,6 +271,21 @@ function Shell() {
 
 function PageCache({ pages, view }: { pages: Partial<Record<View, ReactElement>>; view: View }) {
   const [visited, setVisited] = useState<View[]>([])
+  const previous=useRef(view)
+  useEffect(()=>{
+    if(previous.current===view)return
+    previous.current=view
+    const root=document.getElementById('studio-content')
+    const focus=()=>{
+      const heading=root?.querySelector<HTMLElement>('.workspace-view:not([hidden]) h1')
+      if(!heading || !heading.getClientRects().length)return false
+      heading.tabIndex=-1;heading.focus({preventScroll:true});return true
+    }
+    if(focus())return
+    const observer=new MutationObserver(()=>{if(focus())observer.disconnect()})
+    if(root)observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']})
+    return()=>observer.disconnect()
+  },[view])
   if (pages[view] && !visited.includes(view)) setVisited([...visited, view])
   return <>{visited.map((id) => <div className="workspace-view" hidden={id !== view} key={id}>{pages[id]}</div>)}</>
 }

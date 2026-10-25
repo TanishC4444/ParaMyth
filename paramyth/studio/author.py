@@ -8,7 +8,7 @@ import re
 from ..storage import load
 
 MEDIA = {'book': 'Novel', 'novel': 'Novel', 'short_story': 'Short story', 'stage_play': 'Stage play',
-         'screenplay': 'Screenplay', 'audio_drama': 'Audio drama', 'comic_script': 'Comic script'}
+         'screenplay': 'Screenplay', 'audio_drama': 'Audio drama', 'comic_script': 'Comic script', 'documentary': 'Documentary', 'television': 'Television script'}
 SCENE_STATES = ('Draft', 'Provisional', 'In review', 'Accepted')
 FACT_KINDS = ('Event', 'Belief', 'Claim', 'Resource', 'Relationship', 'Thread')
 REVIEWS = (('review', 'Story'), ('rhetoric_review', 'Rhetoric'), ('memory_review', 'Memory'))

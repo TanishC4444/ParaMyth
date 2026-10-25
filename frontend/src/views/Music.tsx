@@ -5,6 +5,7 @@ import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
 import { useMaterials, projectAssets } from "../materials"
 import { BrandSpot } from "../brandArt"
+import { HelpTip } from '../Guide'
 export default function Music({ embedded = false }: { embedded?: boolean }) {
   const { project, mediaDirection, flush, refresh, go } = useStudio()
   const { source, sourceTitle, signature, streaming } = useMaterials()
@@ -29,6 +30,11 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
     failed: (message) => { setError(message); setStatus("") },
   })
   const busy = submitting || !!pendingJob
+  const selectedModel = models.find((m) => m.id === model)
+  const scoreUnavailable = !model || model === "minimax-music3" || selectedModel?.instrumental === false
+  const minSeconds=mode==='ambience'?5:selectedModel?.duration?.min || 5
+  const maxSeconds=mode==='ambience'?360:selectedModel?.duration?.max || 360
+  useEffect(()=>{if(seconds<minSeconds||seconds>maxSeconds)setSeconds(Math.max(minSeconds,Math.min(maxSeconds,seconds)))},[seconds,minSeconds,maxSeconds])
   const path = (p: string) => projectPath(p, project.id)
   const load = async () => {
     const data = await api(path("/api/studio/music"))
@@ -90,7 +96,7 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
       const q = await api(path("/api/ui/music"), {
         mode,
         seconds,
-        prompt: [prompt, mediaDirection].filter(Boolean).join("\n"),
+        prompt: prompt.trim() || mediaDirection,
         source, use_story: useStory, automatic,
         model,
         lyrics,
@@ -121,8 +127,8 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className="page simple-workspace">
       {streaming && <p className="hint" role="status">Following the live draft. New soundtracks use its current mood and story details.</p>}
-      {shown?.writing_signature && shown.writing_signature !== signature && <p className="source-changed">Your writing has changed since this soundtrack. <button disabled={busy} onClick={()=>void create()}>Create an updated soundtrack</button></p>}
-      <PageTitle level={embedded ? "h2" : "h1"} title="Soundtracks" text="Choose a sound. Your story sets the mood." />
+      {useStory && shown?.writing_signature && shown.writing_signature !== signature && <p className="source-changed">Your writing has changed since this soundtrack. <button disabled={busy} onClick={()=>void create()}>Create an updated soundtrack</button></p>}
+      <PageTitle level={embedded ? "h2" : "h1"} title="Soundtracks" text="Describe instruments, pace and mood. Your own direction takes priority." ><HelpTip label="About automatic sound settings">Automatic settings choose sound type and duration from your direction. Turn them off to control those choices. Ambient soundscapes use local synthesis; scores and songs need the connected music provider.</HelpTip></PageTitle>
       {error && <p className="live-status error" role="alert">{error}</p>}
       {status && <p className="live-status" role="status">{status}</p>}
       {providerUnavailable && <p className="hint" role="status">Music generation isn't available in this studio yet. Your saved tracks are still available below.</p>}
@@ -133,24 +139,25 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
           <label className="inline-suggestion"><input type="checkbox" checked={useStory} onChange={(e) => setUseStory(e.target.checked)} />Use {sourceTitle}</label>
           <label className="inline-suggestion"><input type="checkbox" checked={automatic} onChange={(e) => setAutomatic(e.target.checked)} />Choose sound and settings for me</label>
           <details className="workspace-options"><summary>Sound settings{automatic ? " · automatic" : ""}</summary>
-          <p className="hint">Turn off automatic settings to use your choices below.</p>
+          <p className="hint">{automatic ? 'Turn off automatic settings to use your choices below.' : 'Choose the sound type and duration below.'}</p>
           <label className="field">Sound type
-            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+            <select disabled={automatic||busy} value={mode} onChange={(e) => setMode(e.target.value)}>
               <option value="ambience">Ambient soundscape</option>
-              <option value="score">Cinematic score</option>
+              <option value="score" disabled={scoreUnavailable}>Cinematic score{scoreUnavailable ? " · provider needed" : ""}</option>
               <option value="song">Song with lyrics</option>
             </select>
           </label>
-          <label className="field">Duration · {seconds} seconds
-            <input type="range" min={5} max={360} value={seconds} onChange={(e) => setSeconds(Number(e.target.value))} />
+          {scoreUnavailable && <p className="hint">The connected provider does not support instrumental scores. You can create nature sounds locally or choose a song with lyrics.</p>}
+          <label className="field">{mode!=='ambience'&&selectedModel?.duration?.semantics==='max'?'Maximum duration':'Duration'} · {seconds} seconds
+            <input disabled={automatic||busy} type="range" min={minSeconds} max={maxSeconds} value={seconds} onChange={(e) => setSeconds(Number(e.target.value))} />
           </label>
           {mode === "song" && <label className="field">Lyrics<textarea className="tall" value={lyrics} onChange={(e) => setLyrics(e.target.value)} maxLength={12000} placeholder="Add the words for your song" /></label>}
           {mode !== "ambience" && <>
             {!model && <p className="hint">Connect a music provider in Connections to create scores and songs.</p>}
-            <details className="workspace-options"><summary>Sound settings</summary><label className="field">Music model<select value={model} onChange={(e) => setModel(e.target.value)}>{models.map((m) => <option value={m.id} key={m.id}>{m.name || m.id}</option>)}</select></label><p className="hint">Scores and songs use your connected music provider.</p></details>
+            <label className="field">Music model<select disabled={automatic||busy} value={model} onChange={(e) => setModel(e.target.value)}>{models.map((m) => <option value={m.id} key={m.id}>{m.name || m.id}</option>)}</select></label><p className="hint">Scores and songs use your connected music provider.</p>
           </>}
           </details>
-          <button className="primary" disabled={busy || providerUnavailable && (automatic || mode!=='ambience') || (!useStory && !prompt.trim()) || (!automatic && ((mode !== "ambience" && !model) || (mode === "song" && !lyrics.trim())))} onClick={() => void create()}>{busy ? "Preparing…" : automatic ? "Create soundtrack for me" : "Create soundtrack"}</button>
+          <button className="primary" disabled={busy || providerUnavailable && (automatic || mode!=='ambience') || (!useStory && !prompt.trim()) || (!automatic && ((mode !== "ambience" && !model) || (mode === "score" && scoreUnavailable) || (mode === "song" && !lyrics.trim())))} onClick={() => void create()}>{busy ? "Preparing…" : automatic ? "Create soundtrack for me" : "Create soundtrack"}</button>
           <p className="hint">Your soundtrack uses the selected writing and your prompt. You can keep writing while it generates.</p>
         </section>
         <section className="results" aria-label="Saved soundtracks">

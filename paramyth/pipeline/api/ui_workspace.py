@@ -164,10 +164,10 @@ def creative_records(request:Request,runtime=RT):
 
 
 @router.get('/writing/export')
-def writing_download(request:Request,format:str='docx',scene_id:str='',runtime=RT):
+def writing_download(request:Request,format:str='docx',scene_id:str='',packet:str='manuscript',runtime=RT):
     from urllib.parse import quote
     from ..writing_exports import export_writing
-    body,mime,filename=export_writing(folder(request,runtime),format,scene_id)
+    body,mime,filename=export_writing(folder(request,runtime),format,scene_id,packet)
     return Response(body,media_type=mime,headers={'Content-Disposition':"attachment; filename*=UTF-8''"+quote(filename),'Cache-Control':'no-store'})
 
 

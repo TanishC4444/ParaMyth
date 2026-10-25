@@ -237,11 +237,11 @@ def generate(folder, raw, progress=lambda message:None):
         if meta:
             payload={'model':body['model'],'input':body['prompt'],'store':False,
                      'tools':[{'type':'image_generation','size':body['size'],'output_format':'png'}]}
-            response=request_json(META_BASE+'/responses',payload,{'Authorization':'Bearer '+key,'Content-Type':'application/json'},timeout=300)
+            response=request_json(META_BASE+'/responses',payload,{'Authorization':'Bearer '+key,'Content-Type':'application/json'},timeout=300,max_bytes=64*1024*1024)
             if response.get('status')!='completed':raise ProviderError('Muse Image did not complete the request')
             items=[{'b64_json':item.get('result')} for item in response.get('output',[]) if item.get('type')=='image_generation_call' and item.get('status')=='completed']
         else:
-            response=request_json(BASE+'/images/generations',body,{'Authorization':'Bearer '+key,'Content-Type':'application/json'},timeout=300)
+            response=request_json(BASE+'/images/generations',body,{'Authorization':'Bearer '+key,'Content-Type':'application/json'},timeout=300,max_bytes=64*1024*1024)
             items=response.get('data')
         if not isinstance(items,list) or len(items)!=body['n']:raise ProviderError('Vultr returned an unexpected number of images')
         decoded=[]
@@ -259,7 +259,8 @@ def generate(folder, raw, progress=lambda message:None):
             target=root/(ident+'-'+str(index)+'.png')
             temporary=target.with_suffix('.png.tmp');temporary.write_bytes(blob);os.replace(temporary,target)
             record['images'].append({'index':index,'file':target.name,'width':w,'height':h,'sha256':hashlib.sha256(blob).hexdigest(),'url':f'/media/images/{ident}/{index}.png'})
-        record.update(status='completed',usage=response.get('usage',{}),completed_at=datetime.now(timezone.utc).isoformat())
+        usage=response.get('usage',{})
+        record.update(status='completed',usage={key:value for key,value in usage.items() if key in ('input_tokens','output_tokens','total_tokens') and type(value) is int and value>=0} if isinstance(usage,dict) else {},completed_at=datetime.now(timezone.utc).isoformat())
         save(record_path(folder,ident),record)
         return record
     except (ValueError,OSError,KeyError,TypeError):

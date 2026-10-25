@@ -4,6 +4,7 @@ import { download, hash, manuscriptLabel, mechanicalReview, MODES, modeOf, now, 
 import { useStudio, useDraftState } from "../store";
 import { FACT_KINDS, MEDIA, type Brief, type Character, type Dimension, type Fact, type FactKind, type Finding, type Project, type ProjectTab, type Scene } from "../types";
 import { ago, Chips, errorText, fmtTime, Icon, Segmented, Status } from "../ui";
+import ExportPanel from '../ExportPanel';
 
 const TABS: [ProjectTab, string][] = [["brief", "Brief"], ["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
 
@@ -76,6 +77,8 @@ const mediumHint: Record<Brief["medium"], string> = {
   "Screenplay": "Screen: INT./EXT. headings and visible action only.",
   "Audio drama": "Audio: SOUND: and MUSIC: cues carry the scene.",
   "Comic script": "Comics: numbered page and panel blocks.",
+  "Documentary": "Documentary: video and audio sequences, cited research and proposed interviews.",
+  "Television script": "Television: episode acts, scene headings and speaker cues.",
 };
 
 function ManuscriptTab() {
@@ -111,12 +114,6 @@ function ManuscriptTab() {
     setScene({ content: el.value.slice(0, a) + mark + el.value.slice(a, b) + mark + el.value.slice(b) });
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(a + mark.length, b + mark.length); });
   };
-  const exportManuscript = () => {
-    const banner = label === "Final" ? "" : `[${label.toUpperCase()} MANUSCRIPT: ${project.scenes.filter((s) => s.state !== "Accepted").length} scenes not yet accepted]\n\n`;
-    const body = chapters.map((c) => `CHAPTER ${c}\n\n` + project.scenes.filter((s) => s.chapter === c).map((s) => `## ${s.title}${s.state === "Accepted" ? "" : ` (${s.state.toLowerCase()})`}\n\n${s.content || "[not yet written]"}`).join("\n\n")).join("\n\n---\n\n");
-    download(`${slug(project.title)}-${label.toLowerCase()}.md`, banner + body, "text/markdown");
-    notify(`${label} manuscript exported`);
-  };
   const snapshot = () => { updateProject(project.id, (p) => ({ versions: [{ id: uid(), label: `Checkpoint ${p.versions.length + 1}`, created: now(), scenes: structuredClone(p.scenes) }, ...p.versions] })); notify("Checkpoint saved"); };
 
   return <div className="editor-layout">
@@ -133,9 +130,9 @@ function ManuscriptTab() {
       <div className="formatbar">
         <button aria-label="Bold" onClick={() => format("**")}><b>B</b></button><button aria-label="Italic" onClick={() => format("_")}><i>I</i></button><span />
         <button className="pill" onClick={runChecks}><Icon name="check" size={15} />Run checks</button>
-        <button className="pill" onClick={exportManuscript}><Icon name="download" size={15} />Export</button>
         <button className="pill" onClick={snapshot}><Icon name="canon" size={15} />Checkpoint</button>
       </div>
+      <ExportPanel sceneId={scene.id}/>
       <div className="paper">
         <select className="mobile-scenes" aria-label="Scene" value={scene.id} onChange={(e) => setSceneId(e.target.value)}>{project.scenes.map((s) => <option value={s.id} key={s.id}>Ch. {s.chapter} · {s.title} ({s.state.toLowerCase()})</option>)}</select>
         <div className="scene-meta"><Status>{scene.state}</Status>{scene.acceptedHash && <code title="Acceptance is locked to this exact version of the text">#{scene.acceptedHash}</code>}<span>Ch. {scene.chapter}</span>

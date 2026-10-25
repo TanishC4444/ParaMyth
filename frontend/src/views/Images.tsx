@@ -5,6 +5,7 @@ import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
 import { BrandSpot } from "../brandArt"
+import { HelpTip } from '../Guide'
 export default function Images({ embedded = false }: { embedded?: boolean }) {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
@@ -65,12 +66,12 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     setShape((previous) => shapes.includes(previous) ? previous : shapes.includes("16:9") ? "16:9" : shapes[0] || "")
     setResolution((previous) => resolutions.includes(previous) ? previous : resolutions[0] || "")
   }, [model, models])
-  const submit = async (generate: boolean) => {
+  const submit = async (generate: boolean, automatic = false) => {
     setSubmitting(true)
     setError("")
     try {
       await flush()
-      const body = generate
+      const body = automatic ? {model,kind,subject,style,source,direction:mediaDirection,enhance,aspect_ratio:shape,resolution,n:1,allow_backup:backup} : generate
         ? {
             model,
             prompt: prompt.slice(0, 3700) + "\nNatural finish: Distinct faces, subtle asymmetry, unposed gestures, plausible anatomy and weight, motivated light, worn materials and restrained highlights. Avoid waxy skin, identical faces, excessive glow and oversharpening. Preserve the requested medium and story details.",
@@ -92,7 +93,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
             enhance,
           }
       const queued = await api(
-        path(generate ? "/api/images/generate" : "/api/ui/images/prepare"),
+        path(automatic ? '/api/images/create' : generate ? "/api/images/generate" : "/api/ui/images/prepare"),
         body,
       )
       setStatus(
@@ -110,8 +111,8 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     <div className="page">
       <PageTitle level={embedded ? "h2" : "h1"}
         title="Visuals"
-        text="Turn a character, place or moment from your story into a visual. Review the prompt before rendering."
-      />
+        text="Describe a character, place or moment. Create a visual in one step, or open Prompt options to review it first."
+      ><HelpTip label="How visuals use your writing">Create visual prepares a prompt from your current source and renders one image. If you enter your own prompt, it uses that prompt. New images are available to production automatically.</HelpTip></PageTitle>
       {streaming && <p className="hint" role="status">Following your live writing. Prepare a prompt to use its latest details.</p>}
       {provenance?.source_signature && provenance.source_signature !== signature && <p className="source-changed">The writing has changed since this prompt. <button disabled={busy} onClick={()=>void submit(false)}>Update prompt from writing</button></p>}
       {error && (
@@ -156,7 +157,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
               maxLength={1500}
             />
           </label>
-          <label className="toggle">
+          <details className="workspace-options"><summary>Prompt options</summary><label className="toggle">
             <input
               type="checkbox"
               checked={enhance}
@@ -182,6 +183,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
             />
           </label>
           {prompt && provenance?.source_id !== sourceId && <p className="hint">Your saved prompt stays as written. Choose Prepare my prompt to use the current writing.</p>}
+          </details>
           <details>
             <summary>Image settings</summary>
             <label className="field">
@@ -231,10 +233,10 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           </details>
           <button
             className="primary"
-            disabled={busy || !prompt.trim() || !models.some(item=>item.id===model)}
-            onClick={() => void submit(true)}
+            disabled={busy || !models.some(item=>item.id===model)}
+            onClick={() => void submit(true,!prompt.trim())}
           >
-            {busy ? "Working…" : "Generate image"}
+            {busy ? "Working…" : "Create visual"}
           </button>
           {provenance && (
             <details>
@@ -270,15 +272,14 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
                 <p className="hint">Backup used: {img.fallback.reason}</p>
               )}
               <div className="comment-actions">
-                <button onClick={()=>void useImage(img,'prompt')}>Reuse prompt</button>
-                <button disabled={!img.images?.length} onClick={()=>void useImage(img,'production')}>Scout this location</button>
-                <button onClick={()=>void useImage(img,'music')}>Add sound</button>
+                <button disabled={!img.images?.length} onClick={()=>void useImage(img,'production')}>Use in production</button>
                 {img.images?.[0] && (
                   <a href={path(`/media/images/${img.id}/0.png?download=true`)}>
                     Download
                   </a>
                 )}
               </div>
+              <details><summary>More image actions</summary><div className="comment-actions"><button onClick={()=>void useImage(img,'prompt')}>Reuse prompt</button><button onClick={()=>void useImage(img,'music')}>Add sound</button></div></details>
             </article>
           ))}
           {!images.length && (

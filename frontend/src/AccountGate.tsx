@@ -84,7 +84,7 @@ export default function AccountGate({children}: {children:ReactNode}) {
   },[])
   const joining=route==='join'
   const authRoute=route==='signin' || route==='signup'
-  const publicRoute=route==='' || route==='atlas' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!joining && !authRoute && resolveRoute('#/'+route)==='notfound')
+  const publicRoute=route==='' || route==='atlas' || route==='tutorials' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!joining && !authRoute && resolveRoute('#/'+route)==='notfound')
   const provided=access || {accounts_required:true,shared_keys:true,github_admin:false,authenticated:false}
   if(publicRoute)return <AccessContext.Provider value={provided}><div key={(account?.id||'local')+':'+(access?.studio?.id||'personal')+':'+(access?.studio?.role||'owner')}>{children}</div></AccessContext.Provider>
   if(error)return <RecoveryPage message="We couldn’t connect to your Studio. Please check your connection and try again." />

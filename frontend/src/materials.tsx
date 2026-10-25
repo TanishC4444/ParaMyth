@@ -22,7 +22,7 @@ async function load(id:string,source:string) {
     ]);
     if(identity!==currentWorkspaceIdentity())return;
     entry.value={...(materials.status==='fulfilled' && materials.value || entry.value),
-      images:images.status==='fulfilled'?projectAssets(images.value.images || [],id):entry.value.images,
+      images:images.status==='fulfilled'?projectAssets(images.value.images || [],id).filter(row=>row.status==='completed' && row.images?.length):entry.value.images,
       tracks:music.status==='fulfilled'?projectAssets(music.value.tracks || [],id).filter(row=>row.job?.status==='completed').map(row=>({id:row.job.id,title:row.source_title || row.cue?.title || 'Saved soundtrack',mode:row.cue?.mode || 'score'})):entry.value.tracks};
     entry.listeners.forEach(fn=>fn());
   }

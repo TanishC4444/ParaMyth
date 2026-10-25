@@ -10,7 +10,7 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.staticfiles import StaticFiles
 
 from . import images, library, music, news, planning, projects, search, workspace, writing
-from .deps import TOKEN_HEADER, get_runtime, local, write
+from .deps import LOCAL, TOKEN_HEADER, get_runtime, local, write
 from .runtime import Runtime
 from .studios import router as accounts_router
 from .studio_http import StudioHTTPMiddleware, studio_path
@@ -41,6 +41,7 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         if not (root or os.getenv('PARAMYTH_WORKSPACE')):
             raise ValueError('Hosted mode requires PARAMYTH_WORKSPACE on a persistent volume')
     root = root or os.getenv('PARAMYTH_WORKSPACE') or Path.cwd()
+    app.state.shared_root = Path(root).resolve()
     if app.state.account_workspaces:
         from cryptography.fernet import Fernet
         from .hosting import HostedRequests
@@ -116,6 +117,19 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
     app.include_router(search.router)
     app.include_router(news.router)
     app.include_router(accounts_router)
+    from .discovery import router as discovery_router
+    from .research import router as research_router
+    app.include_router(discovery_router)
+    app.include_router(research_router)
+    if not app.state.account_workspaces:
+        @app.get('/api/ui/writing/export', dependencies=LOCAL)
+        def writing_export(request: Request, format: str = 'docx', scene_id: str = '', packet: str = 'manuscript'):
+            from urllib.parse import quote
+            from fastapi.responses import Response
+            from .deps import folder
+            from ..pipeline.writing_exports import export_writing
+            body, mime, filename = export_writing(folder(request, app.state.runtime), format, scene_id, packet)
+            return Response(body, media_type=mime, headers={'Content-Disposition': "attachment; filename*=UTF-8''" + quote(filename)})
     # Register before the frontend catch-all so its account links resolve.
     if app.state.frontend_origin:
         @app.get('/studio/{path:path}', include_in_schema=False)

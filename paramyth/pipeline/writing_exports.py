@@ -61,6 +61,11 @@ def render_docx(title,spec,rows):
     doc.styles['Title'].font.size=Pt(18 if spec['script'] else 20)
     doc.styles['Heading 1'].font.size=Pt(14)
     doc.add_heading(title,0)
+    doc.add_paragraph(spec['label'].capitalize() + ' · ' + str(sum(len(row['text'].split()) for row in rows)) + ' words')
+    if len(rows)>1:
+        doc.add_heading('Contents',1)
+        for row in rows:doc.add_paragraph(row['title'])
+    doc.add_page_break()
     for index,row in enumerate(rows):
         if index:doc.add_page_break()
         doc.add_heading(row['title'],1)
@@ -71,6 +76,7 @@ def render_docx(title,spec,rows):
             elif kind=='dialogue':p.paragraph_format.left_indent=Inches(1);p.paragraph_format.right_indent=Inches(1.5)
             elif kind=='cue':p.runs[0].bold=True
     footer=section.footer.paragraphs[0];footer.alignment=2
+    section.header.paragraphs[0].text=title
     field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),'PAGE');footer._p.append(field)
     doc.core_properties.title=title;doc.core_properties.subject=spec['label']
     output=io.BytesIO();doc.save(output);return output.getvalue()
@@ -99,25 +105,47 @@ def render_pdf(title,spec,rows):
     styles['dialogue'].leftIndent=72;styles['dialogue'].rightIndent=108
     title_style=ParagraphStyle('ProjectTitle',parent=styles['body'],fontSize=20,leading=26,spaceAfter=24)
     unit_style=ParagraphStyle('UnitTitle',parent=styles['body'],fontSize=15,leading=20,spaceAfter=18,keepWithNext=True)
-    elements=[Paragraph(escape(title),title_style)]
+    from ..document_exports import unicode_text
+    elements=[Paragraph(unicode_text(escape(title)),title_style),Paragraph(escape(spec['label'].capitalize())+' · '+str(sum(len(row['text'].split()) for row in rows))+' words',styles['body'])]
+    if len(rows)>1:
+        elements.append(Paragraph('Contents',unit_style))
+        elements.extend(Paragraph(escape(row['title']),styles['body']) for row in rows)
+    elements.append(PageBreak())
     for index,row in enumerate(rows):
         if index:elements.append(PageBreak())
-        elements.append(Paragraph(escape(row['title']),unit_style))
+        elements.append(Paragraph(unicode_text(escape(row['title'])),unit_style))
         for kind,text in blocks(row['text'],spec['script']):
-            elements.append(Spacer(1,12) if kind=='blank' else Paragraph(escape(text),styles[kind]))
+            elements.append(Spacer(1,12) if kind=='blank' else Paragraph(unicode_text(escape(text)),styles[kind]))
     def footer(canvas,doc):
-        canvas.setFont(font,9);canvas.drawRightString(540,36,str(doc.page))
+        from ..document_exports import document_font
+        canvas.setFont(document_font() or font,9);canvas.drawRightString(540,36,str(doc.page));canvas.drawString(doc.leftMargin,756,title[:80])
     doc.build(elements,onFirstPage=footer,onLaterPages=footer);return output.getvalue()
 
 
-def export_writing(folder,kind,scene_id=''):
-    title,spec,rows=manuscript(Path(folder),scene_id)
+def export_writing(folder,kind,scene_id='',packet='manuscript'):
+    if packet not in ('manuscript','project'):raise ValueError('Choose a manuscript or project dossier')
+    try:title,spec,rows=manuscript(Path(folder),scene_id)
+    except ValueError as error:
+        if packet!='project' or str(error)!='Write or generate a chapter before downloading':raise
+        current=Path(folder)
+        author=load(current/'author-workspace.json') if (current/'author-workspace.json').is_file() else {}
+        title=author.get('title','Your project');spec=contract({'medium':author.get('brief',{}).get('medium','Novel')});rows=[]
+    if packet=='project':
+        from ..document_exports import export_document,project_sections
+        current=Path(folder)
+        author=load(current/'author-workspace.json') if (current/'author-workspace.json').is_file() else {}
+        reports=sorted((current/'research').glob('*.json'),key=lambda path:path.stat().st_mtime,reverse=True)[:1]
+        sections=[{'title':row['title'],'paragraphs':[row['text']],'new_page':True,'script':spec['script']} for row in rows]
+        body,mime=export_document(title,spec['label'].capitalize()+' project dossier',sections+project_sections(author,[load(path) for path in reports]),kind)
+        stem=re.sub(r'[^\w -]','',title).strip()[:80] or 'project'
+        return body,mime,stem+'-dossier.'+kind
     if kind=='docx':body=render_docx(title,spec,rows);mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     elif kind=='pdf':body=render_pdf(title,spec,rows);mime='application/pdf'
     elif kind=='fountain':
         if spec['medium'] not in ('screenplay','television'):raise ValueError('Fountain downloads are for movie and television scripts')
         body=('Title: '+title+'\n\n'+'\n\n'.join('# '+r['title']+'\n\n'+r['text'] for r in rows)).encode('utf-8');mime='text/plain; charset=utf-8'
     elif kind=='txt':body=(title+'\n\n'+'\n\n'.join(r['title']+'\n\n'+r['text'] for r in rows)).encode('utf-8');mime='text/plain; charset=utf-8'
+    elif kind=='md':body=('# '+title+'\n\n'+'\n\n'.join('## '+r['title']+'\n\n'+r['text'] for r in rows)).encode('utf-8');mime='text/markdown; charset=utf-8'
     else:raise ValueError('Choose Word, PDF, Fountain or text')
     stem=re.sub(r'[^\w -]','',rows[0]['title'] if scene_id else title).strip()[:80] or 'writing'
     return body,mime,stem+'.'+kind

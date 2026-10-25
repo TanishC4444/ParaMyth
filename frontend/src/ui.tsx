@@ -56,7 +56,7 @@ export const Chips = ({ items, onChange, placeholder }: { items: string[]; onCha
 
 export const Segmented = <T extends string>({ value, options, onChange, label }: { value: T; options: readonly T[]; onChange: (v: T) => void; label: string }) => (
   <div className="segmented" role="radiogroup" aria-label={label}>
-    {options.map((o) => <button type="button" role="radio" aria-checked={o === value} key={o} className={o === value ? "selected" : ""} onClick={() => onChange(o)}>{o}</button>)}
+    {options.map((o,index) => <button type="button" role="radio" aria-checked={o === value} tabIndex={o === value || !options.includes(value)&&index===0 ? 0 : -1} key={o} className={o === value ? "selected" : ""} onClick={() => onChange(o)} onKeyDown={event=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?options.length-1:(index+(['ArrowRight','ArrowDown'].includes(event.key)?1:-1)+options.length)%options.length;onChange(options[next]);(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next])?.focus()}}>{o}</button>)}
   </div>
 );
 
