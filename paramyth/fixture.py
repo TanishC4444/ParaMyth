@@ -12,9 +12,9 @@ def respond(role, packet, req):
                                'location': 'bell tower', 'time': f'day {ch}, interval {sc}', 'goal': 'inspect the bell mechanism',
                                'obstacle': 'access requires cooperation', 'intended_change': 'a practical decision changes the inspection'})
         return json.dumps({'title': req.get('title'), 'threads': ['bell repair', 'trust'], 'technique_stack': ['consequential choice'], 'scenes': scenes})
-    if role in {'story_quality', 'memory_quality', 'chapter_quality'}:
+    if role in {'story_quality', 'memory_quality', 'chapter_quality', 'rhetoric_quality', 'whole_story_quality'}:
         prose = packet.get('current_prose', packet.get('prose', 'Mara checked the tower latch.'))
-        categories = ['evidence', 'knowledge'] if role == 'memory_quality' else ['continuity', 'viewpoint', 'scene_change']
+        categories = ['evidence', 'knowledge'] if role == 'memory_quality' else ['clarity', 'repetition'] if role == 'rhetoric_quality' else ['continuity', 'viewpoint', 'scene_change']
         return json.dumps({'pass': True, 'issues': [], 'checks': [
             {'category': c, 'reason': 'Deterministic fixture assessment only.', 'quote': prose[:28]} for c in categories]})
     if role == 'memory':

@@ -1,0 +1,29 @@
+name: Canon and editorial integration
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+        suite: [test_canon.py, test_editorial.py]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate canon and editorial recovery
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -p "$SUITE" -v 2>&1 | tee integration.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-${{ matrix.suite }}-${{ matrix.python }}
+          path: integration.txt

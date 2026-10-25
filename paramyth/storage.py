@@ -54,7 +54,11 @@ def export(folder, state, req):
         text = prefix + f'Chapter {chapter}\n\n' + '\n\n* * *\n\n'.join(s['prose'] for s in scenes)
         save(folder / 'chapters' / f'chapter-{chapter:02}.txt', text)
         chapters.append(text)
-    if len(chapters) == req['chapters']:
+    if len(chapters) == req['chapters'] and state.get('complete'):
         save(folder / 'story.txt', req.get('title', req['project_id']) + '\n\n' + '\n\n'.join(chapters))
+    body = prefix + '\n\n'.join(s['prose'] for s in state['accepted'])
+    save(folder / 'PROVISIONAL_STORY.txt', body)
+    if state.get('complete'):
+        save(folder / 'FINAL_STORY.txt', body)
     for scene in state['accepted']:
         save(folder / 'scenes' / f'{scene["id"]}.txt', prefix + scene['prose'])

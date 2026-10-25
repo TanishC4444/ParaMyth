@@ -68,3 +68,54 @@ provider diagnostics. Context enforcement is a character budget, not tokenizer-b
 `PARAMYTH_API_KEY` and variables `PARAMYTH_BASE_URL` and `PARAMYTH_MODEL` first.
 It runs one scene before the three-scene and checkpoint cases and retains outputs
 on failure. Missing configuration fails preflight without contacting a provider.
+
+## Retrieval and persistent canon
+
+Build a local keyword index from your own JSON corpus (objects with `id`, `title`,
+and `text`):
+
+```sh
+python -m paramyth.retrieval --corpus corpus.json --out corpus.db
+```
+
+Put `retrieval_index` in the story request and optionally pin the printed digest
+as `corpus_hash`. Results retain source IDs, excerpts, index version and corpus
+fingerprint. A mismatched version/hash is rejected. Retrieval is frozen in the run
+checkpoint; resuming does not silently change its sources. This is FTS5 keyword
+retrieval, not semantic/hybrid ranking or a retrieval-quality benchmark.
+
+`state.json` owns the append-only fact history; `canon.json` is a derived readable
+projection. Fact updates explicitly supersede existing current records with matching
+keys and kinds. Resource updates reconcile integer amounts and changes. Extracted
+witnesses must participate; public knowledge needs an explicitly public scene.
+Evidence must quote accepted prose. These checks validate structure and arithmetic,
+not the semantic truth of a model's interpretation.
+
+Actor visibility is applied before current-state projection. An absent character
+can retain an older fact without gaining a later private update. Working context
+prioritizes resources, relationships and unresolved threads; omitted IDs are explicit
+and the full ledger remains in checkpoints.
+
+## Parallel reviews and recovery
+
+Character proposals execute independently; only the POV proposal reaches direction.
+Story review, rhetoric review and memory extraction run concurrently against one
+immutable prose hash. A changed repair invalidates all three results and refreshes
+memory before independent verification. Canon commits remain sequential and atomic.
+
+Scene drafts, completed review branches and stage checkpoints stay under `work/`.
+Resume uses the same request/provider settings and accepted-state anchor. A failed
+memory review can be retried within the configured stage retry budget without
+regenerating the draft. Prose repair remains bounded by `max_repairs`; exhaustion
+requires inspecting diagnostics and starting a revised request in a new run folder.
+Custom transports must support concurrent calls. Hosted attempt diagnostics are
+isolated per worker thread.
+
+Completed scenes remain provisional until chapter checks and the whole-story audit
+pass. `FINAL_STORY.txt` and compatibility `story.txt` are written only after final
+acceptance; `PROVISIONAL_STORY.txt` remains available on failure. Whole-story audits
+have bounded recovery. Very long whole-story inputs can exceed the configured
+context budget; hierarchical long-book auditing is not implemented.
+
+This run format uses schema version 2. Retain earlier run folders as historical
+checkpoints and start a fresh folder rather than silently reinterpreting older state.

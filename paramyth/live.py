@@ -3,6 +3,7 @@ import json
 import os
 import socket
 import time
+import threading
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
@@ -20,7 +21,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 SCHEMAS = {
     'architect': 'JSON object: title, threads (string array), scenes. Each scene has id ch01-sc01 etc in reading order, chapter, pov (character ID), participants (ID array), location, time, goal, obstacle, intended_change. Exactly the requested chapters * scenes_per_chapter.',
-    'memory': 'JSON object: memories array. Each item: kind (event/belief/claim/resource/relationship/thread), text, evidence (exact prose quote at least 12 characters), known_by (character IDs or public). Beliefs also require holder. Extract only supported facts; never broaden witness knowledge.',
+    'memory': 'JSON object: memories array. Each item: kind (event/belief/claim/resource/relationship/thread), text, evidence (exact prose quote at least 12 characters), known_by (character IDs or public). Beliefs also require holder. Extract only supported facts; never broaden witness knowledge. Use fact_key and supersedes (existing IDs from prior_fact_index) for updates. Resource records require nonnegative integer amount; updates also need integer change reconciling the prior amount. Do not invent public visibility or absent witnesses.',
 }
 REVIEW = ('JSON object: pass boolean, issues array (severity blocking/advisory, category, quote exactly from prose, problem, fix), '
           'checks array. Each check: category, reason, quote exactly from prose. Cover continuity, viewpoint and scene_change for story/chapter; evidence and knowledge for memory. '
@@ -31,7 +32,7 @@ def instructions(role):
     if role in SCHEMAS:
         return SCHEMAS[role]
     if role.endswith('quality'):
-        return REVIEW
+        return REVIEW + (' Cover clarity and repetition for rhetoric reviews.' if role == 'rhetoric_quality' else '')
     return {'character': 'Propose a brief action and motive using only your own identity and visible facts. Proposals are not canon.',
             'director': 'Give a concise scene direction with competing tactics, an alternative and a concrete consequence. Do not invent accepted events.',
             'writer': 'Write only complete scene prose at the requested length. Respect POV knowledge, cast identities and accepted facts. Advance the scene rather than repeat prior discoveries.',
@@ -53,7 +54,14 @@ class ChatTransport:
         self.timeout, self.retries, self.cooldown, self.max_tokens = timeout, retries, cooldown, max_tokens
         self.opener = opener or build_opener(NoRedirect())
         self.sleep, self.clock, self.blocked_until = sleep, clock, 0
-        self.events = []
+        self._thread = threading.local()
+        self.all_events = []
+
+    @property
+    def events(self):
+        if not hasattr(self._thread, 'events'):
+            self._thread.events = []
+        return self._thread.events
 
     @classmethod
     def from_env(cls):
@@ -113,3 +121,4 @@ class ChatTransport:
             finally:
                 event['elapsed_seconds'] = self.clock() - started
                 self.events.append(event)
+                self.all_events.append(event)

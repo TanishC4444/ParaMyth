@@ -32,7 +32,7 @@ def main():
         report.update(accepted=state.get('complete', False), scenes=len(state['accepted']))
     finally:
         report['elapsed_seconds'] = time.monotonic() - started
-        report['provider_attempts'] = len(transport.events) if transport else 0
+        report['provider_attempts'] = len(transport.all_events) if transport else 0
         save(args.out / 'benchmark.json', report)
 
 

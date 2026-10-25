@@ -36,7 +36,7 @@ class SceneValidationTests(unittest.TestCase):
             self.assertEqual(load(Path(d) / 'state.json'), original)
             reports = [load(p) for p in (Path(d) / 'attempts').glob('*.json')]
             failures = [r for r in reports if r['status'] == 'error']
-            self.assertEqual(len(failures), 2)
+            self.assertEqual(len(failures), 4)  # Two isolated character branches, each with two bounded attempts.
             self.assertTrue(all(r['usage']['output_tokens'] == 17 for r in failures))
             self.assertTrue(run(req(), d)['complete'])
 
