@@ -33,6 +33,9 @@ test('legal links resolve, unknown routes show 404, and story anchors keep worki
  assert.equal(resolveRoute('#/missing-page'),'notfound');
  assert.equal(resolveRoute('#/atlas'),'atlas');
  assert.equal(resolveRoute('#/images'),'workflow');
+ assert.equal(resolveRoute('#/projects?studio=team-one'),'projects');
+ assert.equal(resolveRoute('#/workflow?studio=team-one'),'workflow');
+ assert.equal(resolveRoute('#/images?studio=team-one'),'workflow');
  assert.equal(resolveRoute('#landing-main'),'landing');
  assert.equal(resolveRoute(''),'landing');
 });

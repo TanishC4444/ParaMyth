@@ -311,7 +311,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     void refresh()
     const changed = () => {
       // Links such as #/images open the matching workflow tab, the same as the in-app buttons.
-      const raw = location.hash.replace(/^#\/?/, "").split("/")[0] as View
+      const raw = location.hash.replace(/^#\/?/, "").split(/[/?]/)[0] as View
       if (["creative", "images", "music", "production", "project"].includes(raw)) go(raw)
       else setView(routeView())
     }

@@ -18,7 +18,7 @@ const VIEWS: View[] = [
   "connections",
 ]
 export const resolveRoute = (hash: string): View => {
-  const v = hash.replace(/^#\/?/, "").split("/")[0] as View
+  const v = hash.replace(/^#\/?/, "").split(/[/?]/)[0] as View
   if ((LEGAL_ROUTES as readonly string[]).includes(v)) return "legal"
   if (["creative", "images", "music", "production", "project"].includes(v)) return "workflow"
   if (VIEWS.includes(v)) return v

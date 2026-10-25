@@ -15,7 +15,7 @@ export default function Workflow() {
   const {studio}=useAccess();
   const {project,jobs,go,setTab}=useStudio();
   const {writing,images,source,setSource,sourceTitle,current,streaming}=useMaterials();
-  const initial=location.hash.split('/').at(-1);
+  const initial=location.hash.split('?')[0].split('/').at(-1);
   const [section,setSection]=useDraftState('workflow.section',['images','music','production'].includes(initial || '')?'media':'writing');
   const [tool,setTool]=useDraftState('workflow.tool',['images','music','production'].includes(initial || '')?initial!:'images');
   const [pane,setPane]=useDraftState('workflow.writing','creative');
