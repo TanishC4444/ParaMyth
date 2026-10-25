@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from . import music, projects, workspace, writing
+from . import images, music, projects, workspace, writing
 from .deps import TOKEN_HEADER, local
 from .runtime import Runtime
 
@@ -34,4 +34,5 @@ def create_app(root=None):
     app.include_router(workspace.router)
     app.include_router(writing.router)
     app.include_router(music.router)
+    app.include_router(images.router)
     return app
