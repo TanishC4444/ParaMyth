@@ -30,6 +30,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
   useEffect(() => {
     const section = root.current!, atlas = atlasRef.current!, shell = section.closest<HTMLElement>(".cinematic-landing")!;
     const footer = shell.querySelector<HTMLElement>(".landing-footer");
+    const about = shell.querySelector<HTMLElement>(".about-section");
     let frame = 0, lastMemory = "", saveTimer = 0;
     let pendingMemory = { view: "book" as "book" | "atlas", bookProgress: 0 };
     const values = new Map<string, number>();
@@ -51,7 +52,6 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       const { top, height } = bounds();
       const p = scrollProgress(scrollY, top, height, innerHeight);
       progress.current = p;
-      if (p > .88) callbacks.current.onPrepareAtlas?.();
       const inBook = p < .9995;
       Object.entries(chapterMotion(p)).forEach(([key, value]) => { if (values.get(key) !== value) { values.set(key, value); shell.style.setProperty(`--${key}`, String(value)); } });
       shell.style.setProperty("--progress", String(p));
@@ -63,6 +63,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       section.inert = !inBook;
       atlas.inert = inBook;
       if (footer) footer.inert = inBook;
+      if (about) about.inert = p < .88;
       if (inBook) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
       if (p <= .72) bookmark.current = p;
       const memory = JSON.stringify({ view: inBook ? "book" : "atlas", bookProgress: Math.round(bookmark.current * 1000) / 1000 });
@@ -85,9 +86,10 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       focusWorld = false; paint(); atlas.focus({ preventScroll: true });
     };
     const enter = (animate = true) => {
+      callbacks.current.onPrepareAtlas?.();
       focusWorld = true;
       if (!animate || reducedRef.current || progress.current >= .9995) { place(1, true); jumpToWorld(); return; }
-      // An explicit Atlas click traverses the reveal. Returning visits skip it.
+      // Finish the book before navigating to the separate Atlas section.
       if (progress.current < .70) place(.70, false);
       const { top, height } = bounds();
       window.scrollTo({ top: top + height - innerHeight, behavior: "smooth" });
@@ -121,7 +123,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     return () => {
       flushMemory(); window.removeEventListener("scrollend", finishNavigation); window.removeEventListener("pagehide", flushMemory); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("scroll", refresh); window.removeEventListener("resize", resize);
       history.scrollRestoration = previousRestoration;
-      atlas.inert = false; atlas.removeAttribute("aria-hidden"); if (footer) footer.inert = false;
+      atlas.inert = false; atlas.removeAttribute("aria-hidden"); if (about) about.inert = false; if (footer) footer.inert = false;
       controls.current = null;
     };
   }, [atlasRef]);
@@ -145,7 +147,6 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
           <Artwork name={item.right} variant="book" className="scene-thumbnail" eager={i === 0} />
         </article>)}
       </div>
-      <div className="book-horizon" aria-hidden="true" />
       <nav className="book-chapters" aria-label="Book scenes">{SCENES.map((item, i) => <button key={item.label} aria-current={scene === i ? "step" : undefined} onClick={() => controls.current?.scene(i)} aria-label={`Scene ${i + 1}: ${item.label}`}><Artwork name={item.left} variant="book" eager={i < 2} /><span>{item.label}</span></button>)}</nav>
     </div>
   </section>;

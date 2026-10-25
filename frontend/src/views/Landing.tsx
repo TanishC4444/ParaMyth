@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Artwork } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
@@ -21,13 +21,21 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
   const intro = useRef<IntroActions>(null);
   const [atlasPrepared, setAtlasPrepared] = useState(focusAtlas);
   const prepareAtlas = useCallback(() => setAtlasPrepared(true), []);
+  useEffect(() => {
+    if (atlasPrepared || !active) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { prepareAtlas(); observer.disconnect(); }
+    }, { rootMargin: "300px" });
+    if (atlas.current) observer.observe(atlas.current);
+    return () => observer.disconnect();
+  }, [active, atlasPrepared, prepareAtlas]);
   const syncWorld = useCallback(() => intro.current?.syncWorld(), []);
   const [bookVisible, setBookVisible] = useState(!focusAtlas);
   const onBookChange = useCallback((visible: boolean) => setBookVisible(visible), []);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   return <div className="landing-shell cinematic-landing">
-    <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); intro.current?.enter(false); }}>Skip to content</a>
+    <a className="skip-link" href="#purpose-title" onClick={(event) => { event.preventDefault(); const about = document.querySelector<HTMLElement>(".about-section"); if (about) { about.inert = false; about.scrollIntoView({ behavior: "instant" }); } document.getElementById("purpose-title")?.focus({ preventScroll: true }); }}>Skip to content</a>
     <header className="landing-header">
       <nav aria-label="Landing navigation">
         <button className="dock-atlas" onClick={() => bookVisible ? intro.current?.enter() : intro.current?.replay()}><Icon name={bookVisible ? "atlas" : "library"} size={16} /><span>{bookVisible ? "Story Atlas" : "The Book"}</span></button>
@@ -38,7 +46,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
       <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} onBookChange={onBookChange} onPrepareAtlas={prepareAtlas} />
       <section className="about-section" aria-labelledby="purpose-title">
         <div className="about-intro">
-          <div><span className="about-eyebrow">About ParaMyth</span><h2 id="purpose-title">Story Development<br /><em>for Creative Directors</em></h2></div>
+          <div><span className="about-eyebrow">About ParaMyth</span><h2 id="purpose-title" tabIndex={-1}>Story Development<br /><em>for Creative Directors</em></h2></div>
           <div className="about-description"><p>Brainstorm concepts, draft treatments, and explore production ideas before committing to a direction. ParaMyth brings classic stories, early writing, and visual planning into one creative workspace.</p><div className="about-actions"><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{!access.authenticated && <a href="#/signin">Sign In</a>}</div></div>
         </div>
         <ol className="about-workflow"><li><h3>Discover</h3><p>Find a starting point in myths, fairy tales, and epics.</p></li><li><h3>Develop</h3><p>Shape the premise, characters, tone, and rough draft.</p></li><li><h3>Plan</h3><p>Explore scenes, visual direction, and production ideas.</p></li></ol>

@@ -80,6 +80,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
   const [mapReady, setMapReady] = useState(false)
   const [mapView, setMapView] = useState<string[]>([])
   const markMapReady = useCallback(() => setMapReady(true), [])
+  useEffect(() => { if (requestedMode === "globe") setMapReady(false) }, [requestedMode])
   const [mode, setMode] = useState<"globe" | "map">("globe")
   const [zooming, setZooming] = useState(false)
   const globeTransition = useRef<GlobeTransition>(null)
@@ -191,7 +192,12 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
       side.current?.scrollIntoView({ behavior: reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })
   }
 
-  useEffect(() => { if (story || cluster) reveal() }, [story?.id, cluster])
+  useEffect(() => {
+    if (story || cluster) {
+      reveal()
+      side.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true })
+    }
+  }, [story?.id, cluster])
 
   const select = async (id: string, fly = false) => {
     if (!data) return
@@ -357,6 +363,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
             <div className={`atlas-scene${zooming ? " zooming-in" : ""}`} data-mode={mode} aria-busy={zooming || (requestedMode === "map" && !mapReady)}>
               <div className={`atlas-layer globe-layer${mode === "globe" ? " active" : ""}`} inert={mode !== "globe"} aria-hidden={mode !== "globe"}>
                 <AtlasGlobe
+                  active={mode === "globe"}
                   transitionRef={globeTransition}
                   reduceMotion={reduceMotion}
                   onReady={onReady}
@@ -376,7 +383,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                 />
               </div>
               <div className={`atlas-layer map-layer${mode === "map" ? " active" : ""}`} inert={mode !== "map"} aria-hidden={mode !== "map"}>
-                <Suspense fallback={null}>
+                {requestedMode === "map" && <Suspense fallback={null}>
                   <AtlasMap
                     stories={visible}
                     selectedId={story?.id ?? null}
@@ -388,7 +395,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                     onCenter={rememberMapCenter}
                     reduceMotion={reduceMotion}
                   />
-                </Suspense>
+                </Suspense>}
               </div>
               {requestedMode === "map" && !mapReady && <span className="atlas-view-loading" role="status">Preparing map…</span>}
             </div>
@@ -503,7 +510,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                       ? "Selected Stories"
                       : "In This View"}
                 </span>
-                <h2>
+                <h2 tabIndex={-1}>
                   {listed.length}{" "}
                   {searching
                     ? listed.length === 1
@@ -515,8 +522,8 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                 </h2>
                 <p className="hint">
                   {mode === "globe"
-                    ? "Select a marker or a story."
-                    : "Select a marker or a story."}
+                    ? "Drag to rotate. Select a numbered marker to browse nearby stories, or select a story below. Search finds stories anywhere in the world."
+                    : "Select a marker or a story below. Search finds stories anywhere in the world."}
                 </p>
                 {cluster && (
                   <button className="link" onClick={() => setCluster(null)}>
@@ -665,7 +672,7 @@ function StoryDetail({
       <span className="eyebrow" style={{ color: ink(s.region) }}>
         {s.region}
       </span>
-      <h2>{s.title}</h2>
+      <h2 tabIndex={-1}>{s.title}</h2>
       <button className="atlas-place" onClick={onFocus} title="Show on map">
         <Icon name="pin" size={14} />
         {s.place}
