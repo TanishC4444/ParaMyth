@@ -1,18 +1,18 @@
-import { useStudio } from "./store"
+import { useStudio, useDraftState } from "./store"
 import type { View } from "./types"
 export default function Journey() {
   const { project, view, go, jobs, mediaDirection, setMediaDirection } =
     useStudio()
+  const [sceneId, setSceneId] = useDraftState("shared.scene", "")
   const active = jobs.filter((j) => ["running", "queued"].includes(j.status))
   return (
-    <section className="journey" aria-label="Your story workspace">
+    <section className="journey journey-compact" aria-label="Your story workspace">
       <div>
-        <span className="eyebrow">ONE STORY, EVERY POSSIBILITY</span>
         <strong>
           {project.id ? project.title : "Choose or create a story"}
         </strong>
         <button className="text-action" onClick={() => go("projects")}>
-          Change story
+          Change
         </button>
       </div>
       <nav aria-label="Make your story">
@@ -21,13 +21,12 @@ export default function Journey() {
           ["images", "Add visuals"],
           ["music", "Add sound"],
           ["production", "Plan production"],
-        ] as [View, string][]).map(([id, name], i) => (
+        ] as [View, string][]).map(([id, name]) => (
           <button
             key={id}
             aria-current={view === id ? "page" : undefined}
             onClick={() => go(id)}
           >
-            <small>0{i + 1}</small>
             {name}
           </button>
         ))}
@@ -39,23 +38,25 @@ export default function Journey() {
             .map((j) => j.kind)
             .filter((v, i, a) => a.indexOf(v) === i)
             .join(" and ")}{" "}
-          work is running. Keep shaping your story here; results will be saved
-          to this project.
+          work is running. Results will be saved here.
         </p>
       )}
       {["images", "music", "production"].includes(view) && (
+        <details className="journey-context">
+          <summary>{mediaDirection ? "Scene & direction · customized" : "Scene & direction"}</summary>
         <div className="journey-direction">
           <label>
             Focus on a scene
             <select
               aria-label="Shared source scene"
               onChange={(e) => {
+                setSceneId(e.target.value)
                 const s = project.scenes.find((x) => x.id === e.target.value)
                 setMediaDirection(
                   s ? `${s.title}: ${s.content.slice(0, 700)}` : "",
                 )
               }}
-              defaultValue=""
+              value={project.scenes.some((s) => s.id === sceneId) ? sceneId : ""}
             >
               <option value="">Whole story</option>
               {project.scenes.map((s) => (
@@ -75,6 +76,7 @@ export default function Journey() {
             />
           </label>
         </div>
+        </details>
       )}
     </section>
   )

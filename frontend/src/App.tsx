@@ -83,26 +83,9 @@ function Shell() {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [view])
 
-  if (view === "landing" || view === "atlas")
-    return (
-      <>
-        <Suspense
-          fallback={
-            <div className="landing-loading" role="status">
-              Opening a world of stories…
-            </div>
-          }
-        >
-          <Landing focusAtlas={view === "atlas"} />
-        </Suspense>
-        {toast && (
-          <div className="toast" role="status">
-            <Icon name="check" />
-            {toast}
-          </div>
-        )}
-      </>
-    )
+  const isLanding = view === "landing" || view === "atlas"
+  const [visitedLanding, setVisitedLanding] = useState(isLanding)
+  if (isLanding && !visitedLanding) setVisitedLanding(true)
 
   const active = jobs.filter(
     (r) => r.status === "running" || r.status === "queued",
@@ -124,7 +107,13 @@ function Shell() {
   }
 
   return (
-    <div className="app-shell">
+    <>
+    {visitedLanding && <div hidden={!isLanding} className="workspace-view">
+      <Suspense fallback={<div className="landing-loading" role="status">Opening a world of stories…</div>}>
+        <Landing focusAtlas={view === "atlas"} />
+      </Suspense>
+    </div>}
+    <div className="app-shell" hidden={isLanding}>
       <aside className={`sidebar ${mobile ? "open" : ""}`}>
         <button
           className="workspace-switch branded-workspace"
@@ -202,7 +191,7 @@ function Shell() {
               alt="ParaMyth"
             />
           </a>
-          <span className="local-label">
+          <span className={saving ? "local-label saving" : "local-label"}>
             {saving ? "SAVING YOUR CHANGES…" : "LIVE STUDIO · SAVED TO YOUR WORKSPACE"}
           </span>
           <div className="header-actions">
@@ -249,19 +238,26 @@ function Shell() {
                 </button>
               </div>
             ) : (
-              pages[view]
+              <PageCache key={project.id} pages={pages} view={view} />
             )}
           </>
         )}
       </main>
+    </div>
       {toast && (
         <div className="toast" role="status">
           <Icon name="check" />
           {toast}
         </div>
       )}
-    </div>
+    </>
   )
+}
+
+function PageCache({ pages, view }: { pages: Partial<Record<View, ReactElement>>; view: View }) {
+  const [visited, setVisited] = useState<View[]>([])
+  if (pages[view] && !visited.includes(view)) setVisited([...visited, view])
+  return <>{visited.map((id) => <div className="workspace-view" hidden={id !== view} key={id}>{pages[id]}</div>)}</>
 }
 
 export default function App() {

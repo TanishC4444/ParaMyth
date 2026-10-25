@@ -12,6 +12,7 @@ import {
   ink,
   label,
   loadAtlas,
+  bundledAtlas,
   loadStory,
   matches,
   seedFor,
@@ -50,8 +51,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
   const [data, setData] = useState<{
       index: AtlasIndex
       origin: AtlasOrigin
-    } | null>(null),
-    [error, setError] = useState("")
+    }>(bundledAtlas)
 
   const [q, setQ] = useState(""),
     [hidden, setHidden] = useState<Set<string>>(new Set()),
@@ -113,12 +113,9 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
       .then((value) => {
         if (active) {
           setData(value)
-          setError("")
         }
       })
-      .catch((e) => {
-        if (active) setError(e instanceof Error ? e.message : "Unavailable")
-      })
+      .catch(() => { /* The bundled atlas stays visible if live refresh fails. */ })
     return () => {
       active = false
     }
@@ -295,8 +292,8 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
   const sourceNote = !data
     ? ""
     : data.origin.kind === "api"
-      ? "Live from literary_rag.db via the studio API"
-      : "Bundled export of literary_rag.db · connect the studio API for live records"
+      ? "Live literary corpus"
+      : "Saved literary corpus · live records refresh when the studio is available"
 
   return (
     <div className={`${landing ? "atlas-landing" : "page"} atlas-page`}>
@@ -323,7 +320,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
         {data && (
           <span className={`atlas-source ${data.origin.kind}`}>
             <i />
-            {data.origin.kind === "api" ? "Studio API" : "Offline export"}
+            {data.origin.kind === "api" ? "Live corpus" : "Saved corpus"}
           </span>
         )}
       </PageTitle>
@@ -400,27 +397,6 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
           </>
         )}
       </div>
-      {error ? (
-        <div className="empty">
-          <Icon name="alert" />
-          <h3>Atlas unavailable</h3>
-          <p>{error}. Check the studio connection and retry.</p>
-          <button
-            className="secondary"
-            onClick={() => {
-              setError("")
-              void loadAtlas()
-                .then((value) => {
-                  setData(value)
-                  setError("")
-                })
-                .catch((e) => setError(e.message))
-            }}
-          >
-            Retry atlas
-          </button>
-        </div>
-      ) : (
         <div className="atlas-layout">
           <section
             className={`atlas-frame ${mode === "globe" ? "globe-frame" : ""}`}
@@ -634,7 +610,6 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
             )}
           </aside>
         </div>
-      )}
     </div>
   )
 }

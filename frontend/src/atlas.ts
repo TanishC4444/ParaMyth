@@ -1,3 +1,4 @@
+import corpusIndex from "./atlas-index.json";
 import type { AtlasApproach, AtlasIndex, AtlasPin, AtlasSource, AtlasStory, CreativeSeed } from "./types";
 
 /** Where atlas records came from: the studio API reading literary_rag.db, or the bundled export of it. */
@@ -18,18 +19,23 @@ const apiBases = () => {
 };
 
 let snapshot: Promise<{ corpus: string; regions: string[]; stories: AtlasStory[] }> | null = null;
-const loadSnapshot = () => (snapshot ??= json(`${import.meta.env.BASE_URL}atlas/stories.json`));
+const loadSnapshot = () => (snapshot ??= json<{ corpus: string; regions: string[]; stories: AtlasStory[] }>(`${import.meta.env.BASE_URL}atlas/stories.json`).catch((error) => { snapshot = null; throw error; }));
+export const bundledAtlas = { index: corpusIndex as AtlasIndex, origin: { kind: "snapshot" } as AtlasOrigin };
 
 export async function loadAtlas(): Promise<{ index: AtlasIndex; origin: AtlasOrigin }> {
   for (const base of apiBases()) {
-    try { return { index: await json<AtlasIndex>(`${base}/api/v1/atlas/stories`), origin: { kind: "api", base } }; } catch { /* try the next source */ }
+    try {
+      const index = await json<AtlasIndex>(`${base}/api/v1/atlas/stories`);
+      if (Array.isArray(index.stories) && index.stories.length && Array.isArray(index.regions)) return { index, origin: { kind: "api", base } };
+    } catch { /* Keep the bundled corpus visible while the live service is offline. */ }
   }
-  throw new Error("The live literary database is unavailable. Check Connections and start the studio server");
+  return bundledAtlas;
 }
 
 export async function loadStory(id: string, origin: AtlasOrigin): Promise<AtlasStory> {
-  if (origin.kind === "api") return json<AtlasStory>(`${origin.base}/api/v1/atlas/stories/${encodeURIComponent(id)}`);
-  const story = (await loadSnapshot()).stories.find((s) => s.id === id);
+  // The shipped export is real corpus data and works without the studio service.
+  const story = (await loadSnapshot().catch(() => null))?.stories.find((s) => s.id === id);
+  if (!story && origin.kind === "api") return json<AtlasStory>(`${origin.base}/api/v1/atlas/stories/${encodeURIComponent(id)}`);
   if (!story) throw new Error(`No mapped story ${id}`);
   return story;
 }
