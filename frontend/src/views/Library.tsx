@@ -9,6 +9,8 @@ export default function Library() {
     [selected, setSelected] = useDraftState<any>("library.selected", null),
     [body, setBody] = useState(""),
     [error, setError] = useState("")
+  const [revision,setRevision]=useState(0)
+  useEffect(()=>{const changed=()=>setRevision(value=>value+1);window.addEventListener('studio-shared-update',changed);return()=>window.removeEventListener('studio-shared-update',changed)},[])
   const url = (f: any, download = false) =>
     projectPath(
       "/api/studio/output?path=" +
@@ -24,7 +26,7 @@ export default function Library() {
     return () => {
       live = false
     }
-  }, [project.id])
+  }, [project.id,revision])
   useEffect(() => {
     let live = true
     setBody("")
@@ -39,7 +41,7 @@ export default function Library() {
     return () => {
       live = false
     }
-  }, [selected, project.id])
+  }, [selected, project.id,revision])
   return (
     <div className="page">
       <PageTitle

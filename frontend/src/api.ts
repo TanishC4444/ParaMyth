@@ -1,10 +1,11 @@
 /** Product actions use the configured backend; the UI stays on its own origin. */
-import { backendFetch, backendUrl, studioHost } from './transport'
-export { backendFetch, backendUrl, studioHost } from './transport'
+import { backendFetch, backendUrl, studioHost, currentStudioIdentity } from './transport'
+export { backendFetch, backendUrl, studioHost, currentStudioIdentity, setStudioIdentity } from './transport'
 const offline = "The online studio is not connected yet. You can still explore the story atlas."
 let csrf: Promise<string> | undefined
 let accountIdentity = 'local'
 export const currentAccountIdentity = () => accountIdentity
+export const currentWorkspaceIdentity = () => accountIdentity + ':' + currentStudioIdentity()
 export function setAccountIdentity(id: string) { if (accountIdentity !== id) { accountIdentity = id; csrf = undefined } }
 async function token() {
   if (!studioHost()) throw Error(offline)
@@ -30,13 +31,14 @@ export async function api<T = any>(
 ): Promise<T> {
   if (!studioHost()) throw Error(offline)
   const identity = accountIdentity
+  const workspace = currentWorkspaceIdentity()
   const verb = method || (body === undefined ? "GET" : "POST")
   const headers: Record<string, string> = { Accept: "application/json" }
   if (identity !== 'local') headers['X-ParaMyth-Account'] = identity
   if (body !== undefined) headers["Content-Type"] = "application/json"
   if (!["GET", "HEAD"].includes(verb))
     headers["X-ParaMyth-Token"] = await token()
-  if (identity !== accountIdentity) throw Error('Your account changed. Reload this page before continuing.')
+  if (identity !== accountIdentity || workspace !== currentWorkspaceIdentity()) throw Error('Your workspace changed. Reopen this project before continuing.')
   const r = await backendFetch(path, {
     method: verb,
     signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : path.startsWith("/api/studio/jobs") || path.startsWith("/api/ui/creative/jobs") || path.startsWith("/api/ui/jobs") ? AbortSignal.timeout(10000) : undefined,
@@ -50,13 +52,15 @@ export async function api<T = any>(
     if (r.status === 401) { csrf = undefined; window.dispatchEvent(new Event('paramyth-sign-in-required')) }
     if (r.status === 403) csrf = undefined
     const detail = value?.detail || value?.error
-    throw Error(
+    const error = new Error(
       typeof detail === "string"
         ? detail
         : Array.isArray(detail)
           ? detail.map((e: any) => e.msg).join("; ")
           : `Live studio request failed (${r.status}). Check Connections.`,
     )
+    Object.assign(error, {status:r.status})
+    throw error
   }
   return value as T
 }

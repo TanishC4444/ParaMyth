@@ -101,20 +101,40 @@ def workspace(request:Request,runtime=RT):
     current=getattr(runtime,'selected',None) or request.cookies.get('pm_pipeline_project')
     if current not in {p['id'] for p in items}:current=items[0]['id'] if items else ''
     meta=read(runtime.root/'runs'/'paramyth-workspace.json',{})
-    return {'projects':items,'current':current,'ideas':meta.get('ideas',[]),'pins':meta.get('pins',[]),'drafts':{p['id']:read(runtime.folder(p['id'])/'workspace-drafts.json',{}) for p in items}}
+    drafts={p['id']:read(runtime.folder(p['id'])/'workspace-drafts.json',{}) for p in items}
+    result={'projects':items,'current':current,'ideas':meta.get('ideas',[]),'pins':meta.get('pins',[]),'drafts':drafts}
+    if getattr(runtime,'studio',None):
+        from ...studio.team_workspace import field_revisions
+        result['draftRevisions']={ident:field_revisions(values) for ident,values in drafts.items()}
+    return result
 
 @router.patch('/projects/{ident}/workspace',dependencies=[Depends(write)])
 def save_workspace_drafts(ident:str,data:dict=Body(...),runtime=RT):
     # Field-level patches let independent workspace tabs save without replacing each other.
+    shared=bool(getattr(runtime,'studio',None))
+    versions=data.get('versions',{}) if shared else {}
+    if shared:
+        if not isinstance(versions,dict) or not isinstance(data.get('changes'),dict):
+            raise HTTPException(409,'Refresh this shared workspace before saving changes')
+        data=data['changes']
     if len(data)>150 or any(not re.fullmatch(r'[a-z][a-zA-Z0-9_.-]{0,79}',k) for k in data):
         raise ValueError('Invalid workspace field')
     if len(json.dumps(data,allow_nan=False))>2000000:raise ValueError('Workspace drafts are too large')
     target=runtime.folder(ident)/'workspace-drafts.json'
     with runtime.guard:
         current=read(target,{})
+        if shared:
+            from ...studio.team_workspace import field_revision
+            for key in data:
+                actual=field_revision(current[key]) if key in current else 'new'
+                if versions.get(key,'new')!=actual:
+                    raise HTTPException(409,'A teammate changed this field. Your local edits are kept; reload the latest version before merging them.')
         updated={**current,**data}
         if len(json.dumps(updated,allow_nan=False))>4000000:raise ValueError('Workspace drafts are too large')
         save(target,updated)
+    if shared:
+        from ...studio.team_workspace import field_revisions
+        return {'saved':True,'versions':field_revisions(updated)}
     return {'saved':True}
 
 

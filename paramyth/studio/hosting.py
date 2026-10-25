@@ -46,6 +46,9 @@ class HostedRequests(BaseHTTPMiddleware):
                 expected = request.headers.get('X-ParaMyth-Account')
                 if expected and expected != str(account['id']):
                     raise HTTPException(409, 'Your account changed. Reload this page before continuing.')
+                if not studio_path(path):
+                    from .team_workspace import authorize_workspace
+                    request.state.studio = await run_in_threadpool(authorize_workspace, request, account)
                 if request.method not in ('GET', 'HEAD', 'OPTIONS') and not studio_path(path):
                     accounts.require_csrf(request)
             if path == '/api/ui/retrieval-connection' and request.method == 'POST':

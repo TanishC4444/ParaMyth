@@ -47,8 +47,8 @@ export default function Connections() {
           {!access.accounts_required && <a className="primary" href="/studio/teams.html?mode=signup">
             Create an account
           </a>}
-          <a className="secondary" href="/studio/teams.html">
-            {access.accounts_required ? "Manage account & team" : "Sign in / Manage team"}
+          <a className="secondary" href="/studio/account.html">
+            {access.accounts_required ? "Manage account" : "Sign in"}
           </a>
         </div>
       </section>

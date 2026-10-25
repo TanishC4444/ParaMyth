@@ -2,6 +2,7 @@ import { lazy, type ReactElement, Suspense, useEffect, useState } from "react"
 
 import { StudioProvider, useStudio } from "./store"
 import AccountGate, { useAccess } from './AccountGate'
+import { WorkspacePicker, SharedConflicts } from './TeamWorkspace'
 
 import type { View } from "./types"
 
@@ -172,11 +173,12 @@ function Shell() {
           />
           <small>Back to a world of stories</small>
         </button>
+        <WorkspacePicker />
         <nav aria-label="Primary">
-          <a className="studio-team-link" href="/studio/teams.html">
+          {(!access.teams?.length || access.teams.some(team=>['owner','admin'].includes(team.role))) && <a className="studio-team-link" href="/studio/teams.html">
             <Icon name="connections" />
-            <span>Studio accounts & teams</span>
-          </a>
+            <span>Manage teams</span>
+          </a>}
           {NAV.map((g) => (
             <div key={g.group} className="nav-group">
               <span>{g.group}</span>
@@ -246,10 +248,11 @@ function Shell() {
             >
               <Icon name="settings" />
             </button>
-            <a className="text-action" href={access.authenticated ? "/studio/teams.html" : "#/signin"}>{access.authenticated ? "Account" : "Sign in"}</a>
+            <a className="text-action" href={access.authenticated ? "/studio/account.html" : "#/signin"}>{access.authenticated ? "Account" : "Sign in"}</a>
             {!access.authenticated && <a className="text-action" href="#/signup">Create account</a>}
           </div>
         </header>
+        <SharedConflicts />
         {error && (
           <div className="live-error" role="alert">
             {error}

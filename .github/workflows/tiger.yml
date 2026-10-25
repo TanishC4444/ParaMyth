@@ -1,9 +1,9 @@
 name: Tiger accounts and teams
 on:
   push:
-    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'tests/test_legacy_migration.py', 'tests/test_studio_serve.py', 'tests/test_account_workspaces.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
+    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'tests/test_legacy_migration.py', 'tests/test_studio_serve.py', 'tests/test_account_workspaces.py', 'tests/test_team_workspaces.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
   pull_request:
-    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'tests/test_legacy_migration.py', 'tests/test_studio_serve.py', 'tests/test_account_workspaces.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
+    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'tests/test_legacy_migration.py', 'tests/test_studio_serve.py', 'tests/test_account_workspaces.py', 'tests/test_team_workspaces.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
 permissions:
   contents: read
 jobs:
@@ -50,6 +50,7 @@ jobs:
           python -m unittest discover -s tests -p test_studios.py -v
           python -m unittest discover -s tests -p test_advanced_studios.py -v
           python -m unittest discover -s tests -p test_account_workspaces.py -v
+          python -m unittest discover -s tests -p test_team_workspaces.py -v
       - run: python -m unittest discover -s tests -p test_tiger_db.py -v
       - run: python -m unittest discover -s tests -p test_studio_serve.py -v
       - run: python -m unittest discover -s tests -p test_hosted_startup.py -v

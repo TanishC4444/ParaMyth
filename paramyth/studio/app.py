@@ -103,6 +103,8 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         app.dependency_overrides[studio_routes.local] = local
         app.dependency_overrides[studio_routes.write] = write
         app.include_router(ui_workspace.router)
+        from .team_workspace import router as team_router
+        app.include_router(team_router)
         app.include_router(atlas.router)
     else:
         app.include_router(workspace.router)

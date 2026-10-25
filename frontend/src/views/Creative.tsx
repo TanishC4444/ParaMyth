@@ -69,7 +69,8 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
   useEffect(() => {
     const changed = () => setRevision((n) => n + 1);
     window.addEventListener("studio-refresh", changed);
-    return () => window.removeEventListener("studio-refresh", changed);
+    window.addEventListener("studio-shared-update", changed);
+    return () => window.removeEventListener("studio-refresh", changed); window.removeEventListener("studio-shared-update", changed);
   }, []);
   useEffect(() => { setRecords([]); setJobs([]); setSubmitting(false); setAdopting(""); }, [project.id,chapter]);
   useEffect(() => {

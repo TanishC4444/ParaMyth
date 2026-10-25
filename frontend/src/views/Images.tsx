@@ -54,7 +54,8 @@ export default function Images() {
       .catch((e) => live && setError(e.message))
     const changed = () => { void api(path("/api/images")).then((v) => { if (live) setImages(v.images); }).catch(() => {}); }
     window.addEventListener("studio-refresh", changed)
-    return () => { live = false; window.removeEventListener("studio-refresh", changed) }
+    window.addEventListener("studio-shared-update", changed)
+    return () => { live = false; window.removeEventListener("studio-refresh", changed); window.removeEventListener("studio-shared-update", changed) }
   }, [project.id])
   const useImage=async(img:any,destination:'prompt'|'production'|'music')=>{
     try{

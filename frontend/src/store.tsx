@@ -10,7 +10,7 @@ import {
   useState,
   useCallback,
 } from "react"
-import { api as requestApi, currentAccountIdentity, studioHost, projectPath, studioJobs, type Job } from "./api"
+import { api as requestApi, currentAccountIdentity, currentWorkspaceIdentity, currentStudioIdentity, studioHost, projectPath, studioJobs, type Job } from "./api"
 import { resolveRoute } from "./routes"
 import { STATIC_SITE } from "./site"
 import { uid, now, modeOf } from "./data"
@@ -60,12 +60,18 @@ const empty = (): Store => ({
   pins: [],
 })
 type WorkspaceDrafts = Record<string, Record<string, any>>
+type SharedConflict = {id:string;field:string;local:any;remote:any}
 const backupKey = (id: string, account: string) => `paramyth-pending-drafts:${account}:${id}`
+const viewField = (key:string) => key.startsWith('workflow.') || ['project.tab','writing.chapter','writing.scene'].includes(key)
+const viewKey = (id:string,account:string) => 'paramyth-view:'+account+':'+id
+function viewPreferences(id:string,account:string){try{return JSON.parse(localStorage.getItem(viewKey(id,account)) || '{}')}catch{return {}}}
 function pendingBackup(id: string, account: string): Record<string, any> {
   try { return JSON.parse(localStorage.getItem(backupKey(id, account)) || "{}") } catch { return {} }
 }
 
 type Studio = {
+  conflicts: SharedConflict[]
+  resolveConflicts: (mine:boolean) => Promise<void>
   drafts: WorkspaceDrafts
   setDraft: (id: string, key: string, value: any) => void
   store: Store
@@ -118,10 +124,12 @@ export function useDraftState<T>(key: string, initial: T | (() => T)): [T, Dispa
 }
 export function StudioProvider({ children }: { children: ReactNode }) {
   const access = useAccess()
-  const account = useRef(currentAccountIdentity()).current
+  const account = useRef(currentAccountIdentity()+(currentStudioIdentity()?':'+currentStudioIdentity():'')).current
+  const workspaceIdentity = useRef(currentWorkspaceIdentity()).current
+  const readOnly = access.studio?.role === 'viewer'
   const active = useRef(true)
   async function api<T = any>(path: string, body?: unknown, method?: string): Promise<T> {
-    if (!active.current || account !== currentAccountIdentity()) throw Error('Your account changed. Reload this page before continuing.')
+    if (!active.current || workspaceIdentity !== currentWorkspaceIdentity()) throw Error('Your workspace changed. Reopen this project before continuing.')
     return requestApi<T>(path, body, method)
   }
   const [store, setRaw] = useState<Store>(empty),
@@ -138,6 +146,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     [workflow, setWorkflow] = useState(""),
     [drafts, setDrafts] = useState<WorkspaceDrafts>({})
   const draftsRef = useRef<WorkspaceDrafts>({})
+  const draftVersions = useRef<Record<string,Record<string,string>>>({})
+  const [conflicts,setConflicts] = useState<SharedConflict[]>([])
+  const conflictServer = useRef<any>(null)
   const dirtyDrafts = useRef<WorkspaceDrafts>({})
   const dirty = useRef(new Map<string, Project>()),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
@@ -208,7 +219,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
           for (const [id, fields] of Object.entries(dirtyDrafts.current)) {
             if (!Object.keys(fields).length) continue
             const snapshot = { ...fields }
-            await api(`/api/ui/projects/${id}/workspace`, snapshot, "PATCH")
+            const result = await api(`/api/ui/projects/${id}/workspace`, access.studio ? {changes:snapshot,versions:draftVersions.current[id] || {}} : snapshot, "PATCH")
+            if(result.versions){
+              const versions={...draftVersions.current[id]}
+              for(const key of Object.keys(snapshot))versions[key]=result.versions[key]
+              draftVersions.current[id]=versions
+            }
             if (Object.keys(snapshot).some(key => key.startsWith("writing.") || key.startsWith("creative."))) window.dispatchEvent(new CustomEvent("studio-writing-progress", { detail: { projectId: id } }))
             for (const [key, value] of Object.entries(snapshot)) {
               if (dirtyDrafts.current[id]?.[key] === value) delete dirtyDrafts.current[id][key]
@@ -217,6 +233,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
           }
           setError("")
         } catch (e) {
+          if(access.studio && (e as any)?.status===409){
+            const server=await api('/api/ui/workspace')
+            conflictServer.current=server
+            const rows:SharedConflict[]=[]
+            for(const [id,local] of dirty.current){
+              const remote=server.projects.find((p:Project)=>p.id===id)
+              if(remote && remote.revision!==ref.current.projects.find(p=>p.id===id)?.revision)rows.push({id,field:'project',local,remote})
+            }
+            for(const [id,fields] of Object.entries(dirtyDrafts.current))for(const [field,local] of Object.entries(fields)){
+              if((draftVersions.current[id]?.[field] || 'new')!==(server.draftRevisions?.[id]?.[field] || 'new'))rows.push({id,field,local,remote:server.drafts?.[id]?.[field]})
+            }
+            setConflicts(rows)
+          }
           setError(e instanceof Error ? e.message : "Could not save")
           throw e
         } finally {
@@ -238,12 +267,16 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         ideas: Store["ideas"]
         pins: Store["pins"]
         drafts: WorkspaceDrafts
+        draftRevisions?: Record<string,Record<string,string>>
       }>("/api/ui/workspace")
       const restored: WorkspaceDrafts = {}
       for (const p of value.projects) {
-        const pending = { ...pendingBackup(p.id, account), ...dirtyDrafts.current[p.id] }
+        const pending = readOnly ? {} : { ...pendingBackup(p.id, account), ...dirtyDrafts.current[p.id] }
         dirtyDrafts.current[p.id] = pending
-        restored[p.id] = { ...value.drafts?.[p.id], ...draftsRef.current[p.id], ...pending }
+        restored[p.id] = access.studio ? {...value.drafts?.[p.id],...viewPreferences(p.id,account),...pending} : { ...value.drafts?.[p.id], ...draftsRef.current[p.id], ...viewPreferences(p.id,account),...pending }
+        const versions={...value.draftRevisions?.[p.id]}
+        for(const key of Object.keys(pending))versions[key]=draftVersions.current[p.id]?.[key] || 'new'
+        draftVersions.current[p.id]=versions
       }
       draftsRef.current = restored
       setDrafts(restored)
@@ -273,7 +306,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setError(e instanceof Error ? e.message : "Live studio unavailable")
       setReady(true)
     }
-  }, [flush, access.accounts_required, access.authenticated])
+  }, [flush, access.accounts_required, access.authenticated, access.studio?.id])
   useEffect(() => {
     void refresh()
     const changed = () => {
@@ -286,7 +319,13 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     window.addEventListener("hashchange", changed)
     window.addEventListener("studio-refresh", update)
     const interval = setInterval(async () => {
-      if (!selection.current || document.hidden) return
+      if (document.hidden) return
+      if(access.studio && !dirty.current.size && !notesDirty.current && !Object.values(dirtyDrafts.current).some(fields=>Object.keys(fields).length)){
+        await refresh()
+        window.dispatchEvent(new Event('studio-shared-update'))
+        return
+      }
+      if (!selection.current) return
       try {
         setJobs(await studioJobs(selection.current))
       } catch {}
@@ -313,6 +352,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     const next = { ...draftsRef.current, [id]: { ...draftsRef.current[id], [key]: value } }
     draftsRef.current = next
     setDrafts(next)
+    if(viewField(key)){
+      try{localStorage.setItem(viewKey(id,account),JSON.stringify({...viewPreferences(id,account),[key]:value}))}catch{}
+      return
+    }
+    if(readOnly)return
     dirtyDrafts.current[id] = { ...dirtyDrafts.current[id], [key]: value }
     try { localStorage.setItem(backupKey(id, account), JSON.stringify(dirtyDrafts.current[id])) } catch {}
     setSaving(true)
@@ -320,6 +364,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     timer.current = setTimeout(() => void flush().catch(() => {}), 700)
   }, [flush])
   const setStore = (fn: (s: Store) => Store) => {
+    if(readOnly)return
     const prev = ref.current
     const next = fn(prev)
     for (const p of next.projects) {
@@ -366,6 +411,32 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     store.projects[0] ||
     blankProject()
   const value: Studio = {
+    conflicts,
+    resolveConflicts:async(mine)=>{
+      const server=conflictServer.current
+      if(!server)return
+      for(const row of conflicts){
+        if(row.field==='project'){
+          if(mine){
+            const local=dirty.current.get(row.id)
+            if(local)dirty.current.set(row.id,{...local,revision:row.remote.revision})
+            set({...ref.current,projects:ref.current.projects.map(p=>p.id===row.id?{...p,revision:row.remote.revision}:p)})
+          }else{
+            dirty.current.delete(row.id)
+            set({...ref.current,projects:ref.current.projects.map(p=>p.id===row.id?row.remote:p)})
+          }
+        }else{
+          draftVersions.current[row.id]={...draftVersions.current[row.id],[row.field]:server.draftRevisions?.[row.id]?.[row.field] || 'new'}
+          if(!mine){
+            delete dirtyDrafts.current[row.id]?.[row.field]
+            draftsRef.current={...draftsRef.current,[row.id]:{...draftsRef.current[row.id],[row.field]:row.remote}}
+          }
+          try{localStorage.setItem(backupKey(row.id,account),JSON.stringify(dirtyDrafts.current[row.id] || {}))}catch{}
+        }
+      }
+      setDrafts(draftsRef.current);setConflicts([])
+      await flush();await refresh()
+    },
     store,
     drafts,
     setDraft,

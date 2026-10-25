@@ -49,7 +49,8 @@ export default function Music() {
       .catch((e) => live && setError(e.message))
     const changed = () => { void api(path("/api/studio/music")).then((v) => { if (live) setTracks(v.tracks); }).catch(() => {}); }
     window.addEventListener("studio-refresh", changed)
-    return () => { live = false; window.removeEventListener("studio-refresh", changed) }
+    window.addEventListener("studio-shared-update", changed)
+    return () => { live = false; window.removeEventListener("studio-refresh", changed); window.removeEventListener("studio-shared-update", changed) }
   }, [project.id])
   useEffect(() => {
     const active = tracks.filter(

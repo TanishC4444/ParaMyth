@@ -2,7 +2,7 @@ name: Deploy ParaMyth website
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', 'web/teams.*', 'web/js/teams.js', '.github/workflows/website.yml']
+    paths: ['frontend/**', 'web/teams.*', 'web/account.html', 'web/js/teams.js', 'web/js/account.js', '.github/workflows/website.yml']
   workflow_dispatch:
 permissions:
   contents: read

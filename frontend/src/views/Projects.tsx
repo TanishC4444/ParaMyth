@@ -4,6 +4,7 @@ import { useStudio, blankProject } from "../store";
 import { errorText, Icon, PageTitle, Status } from "../ui";
 import { MEDIA, type Brief, type Medium, type Project, type Scene } from "../types";
 import { ProjectCover } from "../brandArt";
+import { useAccess } from '../AccountGate';
 
 /** Same keyword detection idea as the backend selector: an explicit medium wins, otherwise premise words decide. */
 const detectMedium = (premise: string): Medium | null => {
@@ -17,11 +18,12 @@ const detectMedium = (premise: string): Medium | null => {
 };
 
 export default function Projects() {
+  const {studio}=useAccess();
   const { store, selectProject } = useStudio();
   const [q, setQ] = useState(""), [medium, setMedium] = useState("All"), [state, setState] = useState("All"), [mode, setMode] = useState<"grid" | "list">("grid"), [create, setCreate] = useState(false);
   const result = store.projects.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()) && (medium === "All" || p.brief.medium === medium) && (state === "All" || manuscriptLabel(p) === state));
   return <div className="page">
-    <PageTitle title="Projects" text="Each project has its own brief, manuscript, canon and run history, and every run stays with the project that started it."><button className="primary" onClick={() => setCreate(true)}><Icon name="plus" />New project</button></PageTitle>
+    <PageTitle title={studio ? studio.name+' · Projects' : 'Projects'} text={studio ? 'Shared writing, visuals, soundtracks and production. Teammates see saved changes as you work.' : 'Your personal projects. Share a project from its workflow to work with your team.'}>{studio?.role!=='viewer'&&<button className="primary" onClick={() => setCreate(true)}><Icon name="plus" />New project</button>}</PageTitle>
     <div className="toolbar">
       <label><Icon name="search" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects" /></label>
       <select aria-label="Medium" value={medium} onChange={(e) => setMedium(e.target.value)}><option>All</option>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select>

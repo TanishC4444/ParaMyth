@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const {readFileSync, existsSync} = require('node:fs');
-const {resolve, dirname} = require('node:path');
+const {resolve, dirname, isAbsolute} = require('node:path');
 const {test} = require('node:test');
 const vm = require('node:vm');
 const ts = require('typescript');
@@ -10,9 +10,9 @@ const root = resolve(__dirname, '..');
 function loader(hash = '#/', stubStore = false) {
   const cache = new Map();
   const load = file => {
-    if (!file.startsWith('.' ) && !file.startsWith('/')) return require(file);
-    if (stubStore && file.endsWith("/store")) return {useStudio: () => ({go() {}})};
-    const path = file.startsWith('/') ? file : resolve(root, file);
+    if (!file.startsWith('.' ) && !isAbsolute(file)) return require(file);
+    if (stubStore && /[\\/]store$/.test(file)) return {useStudio: () => ({go() {}})};
+    const path = isAbsolute(file) ? file : resolve(root, file);
     if (path.endsWith('.css')) return {};
     const full = [path,path+'.ts',path+'.tsx',path+'.json'].find(existsSync);
     if (!full) throw Error('Missing '+path);
@@ -22,7 +22,7 @@ function loader(hash = '#/', stubStore = false) {
     let source = readFileSync(full,'utf8').replaceAll('import.meta.env', '({BASE_URL:"/",VITE_API_BASE:""})');
     // The server-render checks never call API methods; this only supplies the hosting flag.
     const code = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
-    vm.runInNewContext(code,{module,exports:module.exports,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash,hostname:'paramyth.tech'},document:{querySelector:()=>null},console,URL,AbortSignal,matchMedia:()=>({matches:false})});
+    vm.runInNewContext(code,{module,exports:module.exports,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash,hostname:'paramyth.tech'},document:{querySelector:()=>null},console,URL,URLSearchParams,AbortSignal,matchMedia:()=>({matches:false})});
     return module.exports;
   };
   return path => load(resolve(root,path));

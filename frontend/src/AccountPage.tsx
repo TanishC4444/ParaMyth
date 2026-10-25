@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import './account.css'
 import { backendFetch } from './transport'
 
-export default function AccountPage({ signup, available, onSignedIn }: { signup: boolean; available: boolean; onSignedIn: () => Promise<void> }) {
+export default function AccountPage({ signup, available, onSignedIn, invitation='' }: { signup: boolean; available: boolean; onSignedIn: () => Promise<void>; invitation?:string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -26,7 +26,7 @@ export default function AccountPage({ signup, available, onSignedIn }: { signup:
       setPassword('')
       try { localStorage.setItem('paramyth-account-change', String(Date.now())) } catch {}
       await onSignedIn()
-      location.hash = '#/workflow'
+      location.hash = invitation ? '#/join?invite='+encodeURIComponent(invitation) : '#/workflow'
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'We couldn’t reach the studio. Try again.')
     } finally { setBusy(false) }
@@ -37,10 +37,11 @@ export default function AccountPage({ signup, available, onSignedIn }: { signup:
       <div><p className="eyebrow">YOUR NEXT CHAPTER</p><h1>A world of stories.<br />A space for yours.</h1><p>Bring your ideas, writing, images and sound together. Your work will be here when you return.</p></div>
     </section>
     <section className="account-form-panel" aria-labelledby="account-title">
-      <div className="account-tabs" aria-label="Account options"><a aria-current={!signup ? 'page' : undefined} href="#/signin">Sign in</a><a aria-current={signup ? 'page' : undefined} href="#/signup">Create account</a></div>
+      <div className="account-tabs" aria-label="Account options"><a aria-current={!signup ? 'page' : undefined} href={'#/signin'+(invitation?'?invite='+encodeURIComponent(invitation):'')}>Sign in</a><a aria-current={signup ? 'page' : undefined} href={'#/signup'+(invitation?'?invite='+encodeURIComponent(invitation):'')}>Create account</a></div>
       <p className="eyebrow">YOUR PARAMYTH STUDIO</p>
       <h2 id="account-title">{signup ? 'Start your story.' : 'Welcome back.'}</h2>
       <p>{signup ? 'Create an account to save everything you make.' : 'Sign in to pick up where you left off.'}</p>
+      {invitation && <p className="account-notice">Sign in with your invited email address. You’ll join the team and go straight to its projects.</p>}
       {!available && <p className="account-notice" role="status">The online studio isn’t connected yet. You can explore the story atlas while we finish setting it up.</p>}
       <form onSubmit={submit}>
         {signup && <label className="field">Your name<input autoComplete="name" value={name} onChange={event => setName(event.target.value)} maxLength={100} required /></label>}

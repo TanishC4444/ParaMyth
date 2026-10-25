@@ -19,11 +19,10 @@ $('show-login').addEventListener('click', () => accountMode(false));
 $('show-signup').addEventListener('click', () => accountMode(true));
 $('signup-link').addEventListener('click', () => accountMode(true));
 if (new URLSearchParams(location.search).get('mode') === 'signup') accountMode(true);
-let token = '', base = '', user = null, studios = [], active = null, project = null, dirty = false, busy = false;
+let token = '', base = '', user = null, studios = [], active = null, project = null, dirty = false, busy = false, redirecting = false;
 const pendingInvite = new URLSearchParams(location.hash.slice(1)).get('invite');
 if (pendingInvite) {
-  $('invitation-token').value = pendingInvite;
-  history.replaceState(null, '', location.pathname + location.search);
+  location.replace('/#/join?invite=' + encodeURIComponent(pendingInvite));
 }
 const configuredApi = document.querySelector('meta[name="paramyth-api"]')?.content || '';
 const defaultApi = configuredApi || (location.pathname.startsWith('/studio/') ? location.origin : 'http://localhost:8000');
@@ -111,7 +110,13 @@ function signedOut() {
   for (const id of ['members', 'comments', 'invitations', 'revisions', 'revision-preview']) $(id).replaceChildren();
 }
 async function loadStudios(preferred = active?.id) {
-  studios = await api('/studios');
+  const memberships = await api('/studios');
+  studios = memberships.filter(studio => ['owner', 'admin'].includes(studio.role));
+  if (!studios.length && memberships.length) {
+    redirecting = true;
+    location.replace('/#/projects?studio=' + encodeURIComponent(memberships[0].id));
+    return;
+  }
   $('studio-select').replaceChildren(...studios.map((s) => option(s.id, s.name)));
   active = studios.find((s) => s.id === preferred) || studios[0] || null;
   $('studio-content').hidden = !active;
@@ -123,7 +128,8 @@ async function loadStudio() {
   $('project-form').hidden = true; $('project-discussion').hidden = true; $('invite-result').hidden = true;
   $('my-role').textContent = `· ${active.role}`; $('rename-name').value = active.name;
   applyPermissions();
-  await loadMembers(); await loadProjects();
+  $('team-workspace-link').href = '/#/projects?studio=' + encodeURIComponent(active.id);
+  await loadMembers();
   if (['owner', 'admin'].includes(active.role)) await loadInvitations();
 }
 async function loadMembers() {
@@ -193,9 +199,9 @@ on('account-form', 'submit', async (ev) => {
   token = result.token; user = result.user; $('password').value = '';
   try { localStorage.setItem('paramyth-account-change', String(Date.now())); } catch {}
   try { localStorage.setItem('sf.api', base); } catch { /* storage is optional */ }
-  $('account').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
+  $('account').hidden = true; $('logout').hidden = false;
   $('welcome').textContent = `${user.display_name}'s studios`;
-  await loadStudios(); message('Signed in.');
+  await loadStudios(); $('workspace').hidden = redirecting; message('Signed in.');
 });
 on('logout', 'click', async () => {
   if (!discardDraft()) return;
@@ -206,13 +212,13 @@ on('logout', 'click', async () => {
 });
 // Restore the HttpOnly session after refresh; no bearer token goes into browser storage.
 (async () => {
-  if (!location.pathname.startsWith('/studio/')) return;
+  if (!location.pathname.startsWith('/studio/') || pendingInvite) return;
   base = defaultApi;
   try {
     user = await api('/accounts/me');
-    $('account').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
+    $('account').hidden = true; $('logout').hidden = false;
     $('welcome').textContent = `${user.display_name}'s studios`;
-    await loadStudios();
+    await loadStudios(); $('workspace').hidden = redirecting;
   } catch { signedOut(); }
 })();
 
@@ -224,7 +230,7 @@ on('create-studio', 'submit', async () => {
 on('join-studio', 'submit', async () => {
   if (!discardDraft()) return;
   const studio = await api('/invitations/accept', 'POST', {token: $('invitation-token').value.trim()});
-  $('invitation-token').value = ''; await loadStudios(studio.id); message('You joined the studio.');
+  $('invitation-token').value = ''; location.assign('/#/projects?studio=' + encodeURIComponent(studio.id));
 });
 on('studio-select', 'change', async () => {
   if (!discardDraft()) { $('studio-select').value = active.id; return; }
@@ -238,7 +244,7 @@ on('rename-studio', 'submit', async () => {
 });
 on('invite-form', 'submit', async () => {
   const result = await api(path('/invitations'), 'POST', {email: $('invite-email').value.trim(), role: $('invite-role').value});
-  const url = new URL(location.href); url.search = ''; url.hash = new URLSearchParams({invite: result.token}).toString();
+  const url = new URL('/#/join?invite=' + encodeURIComponent(result.token), location.origin);
   $('invite-link').value = url.href; $('invite-result').hidden = false; await loadInvitations();
   message('Invitation created. Copy the link and share it privately with the invited person.');
 });

@@ -12,7 +12,11 @@ PROJECT_COOKIE = 'paramyth_project'
 def get_runtime(request: Request) -> Runtime:
     if getattr(request.app.state, 'account_workspaces', False):
         from .accounts import user
-        return request.app.state.workspaces.get(user(request)['id'])
+        account = user(request)
+        studio = getattr(request.state, 'studio', None)
+        if studio:
+            return request.app.state.workspaces.for_studio(account['id'], studio)
+        return request.app.state.workspaces.get(account['id'])
     return request.app.state.runtime
 
 

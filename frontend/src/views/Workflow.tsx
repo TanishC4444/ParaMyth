@@ -7,8 +7,12 @@ import Music from "./Music";
 import Production from "./Production";
 import ProjectWorkspace from "./ProjectWorkspace";
 import "../workflow.css";
+import { ShareProject, TeamDiscussion } from '../TeamWorkspace';
+import { useAccess } from '../AccountGate';
+import SharedReader from './SharedReader';
 
 export default function Workflow() {
+  const {studio}=useAccess();
   const {project,jobs,go,setTab}=useStudio();
   const {writing,images,source,setSource,sourceTitle,current,streaming}=useMaterials();
   const initial=location.hash.split('/').at(-1);
@@ -19,8 +23,10 @@ export default function Workflow() {
   useEffect(()=>{if(pane==='brief')setTab('brief');else if(pane==='manuscript')setTab('manuscript');},[pane]);
   // A link straight to #/images, #/music or #/production opens that tool, even when another tab was saved last.
   useEffect(()=>{if(['images','music','production'].includes(initial||'')){setSection('media');setTool(initial!);}},[]);
+  if(studio?.role==='viewer')return <SharedReader />;
   return <div className="page project-workflow two-tab-workflow">
-    <header className="workflow-heading"><div><h1>{project.title}</h1><p>Your story and everything you make from it, saved together.</p></div><button className="secondary" onClick={()=>go('projects')}>Change project</button></header>
+    <header className="workflow-heading"><div><h1>{project.title}</h1><p>{studio?studio.name+' · Shared with your team. Saved changes update automatically.':'Your story and everything you make from it, saved together.'}</p></div><div className="modal-actions"><ShareProject /><button className="secondary" onClick={()=>go('projects')}>Change project</button></div></header>
+    <TeamDiscussion />
     <nav className="workflow-primary-tabs" aria-label="Project workflow tabs"><button aria-pressed={section==='writing'} onClick={()=>setSection('writing')}>Writing</button><button aria-pressed={section==='media'} onClick={()=>setSection('media')}>Visuals, sound & production</button>{active.length>0&&<span role="status">{active.length} running</span>}</nav>
     <section hidden={section!=='writing'} aria-label="Writing workspace">
       <nav className="workflow-tabs writing-subtabs" aria-label="Writing views">{[['creative','Write chapters'],['brief','Project brief'],['manuscript','Manuscript & versions']].map(([id,label])=><button key={id} aria-pressed={pane===id} onClick={()=>setPane(id)}>{label}</button>)}</nav>

@@ -8,13 +8,13 @@ const ts = require('typescript');
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 
-function accountPage(signup, available) {
+function accountPage(signup, available, invitation = '') {
   const file = resolve(__dirname, '../src/AccountPage.tsx');
   const code = ts.transpileModule(readFileSync(file, 'utf8'), {compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX}}).outputText;
   const exports = {};
   const nativeRequire = createRequire(file);
   vm.runInNewContext(code, {exports, require: id => id.endsWith('.css') ? {} : id === './transport' ? {backendFetch: async () => {throw Error('Not submitted')}} : nativeRequire(id)});
-  return renderToStaticMarkup(React.createElement(exports.default, {signup, available, onSignedIn: async () => {}}));
+  return renderToStaticMarkup(React.createElement(exports.default, {signup, available, invitation, onSignedIn: async () => {}}));
 }
 
 test('sign-in has labelled credentials and an accessible signup link', () => {
@@ -40,4 +40,10 @@ test('an unconnected static export explains availability and makes no false subm
   assert.match(html, /online studio isn’t connected/);
   assert.match(html, /disabled=""/);
   assert.match(html, /href="#\/atlas"/);
+});
+
+test('invited visitors keep their invitation when switching between signup and sign-in', () => {
+  const invitation = 'a'.repeat(43);
+  assert.match(accountPage(false, true, invitation), new RegExp('href="#/signup\\?invite=' + invitation + '"'));
+  assert.match(accountPage(true, true, invitation), new RegExp('href="#/signin\\?invite=' + invitation + '"'));
 });

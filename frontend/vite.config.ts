@@ -19,10 +19,12 @@ export default defineConfig({
       const web = fileURLToPath(new URL('../web/', import.meta.url))
       const output = resolve('dist/studio')
       await mkdir(resolve(output, 'js'), { recursive: true })
-      const html = await readFile(resolve(web, 'teams.html'), 'utf8')
-      await writeFile(resolve(output, 'teams.html'), html.replace('<head>', `<head><meta name="paramyth-api" content="${base}">`))
+      for(const name of ['teams','account']){
+        const html = await readFile(resolve(web, name+'.html'), 'utf8')
+        await writeFile(resolve(output, name+'.html'), html.replace('<head>', `<head><meta name="paramyth-api" content="${base}">`))
+        await copyFile(resolve(web, 'js/'+name+'.js'), resolve(output, 'js/'+name+'.js'))
+      }
       await copyFile(resolve(web, 'teams.css'), resolve(output, 'teams.css'))
-      await copyFile(resolve(web, 'js/teams.js'), resolve(output, 'js/teams.js'))
     },
   }],
   resolve: {

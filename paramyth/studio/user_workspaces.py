@@ -93,13 +93,16 @@ class Workspaces:
         self.slots = threading.BoundedSemaphore(16)
         self.guard = threading.RLock()
         self.runtimes = {}
+        self.studios = {}
         self.stopping = threading.Event()
         self.archiver = threading.Thread(target=self.archive_music, daemon=True, name='music-archive')
         self.archiver.start()
 
     def archive_music_once(self):
         from .music_archive import archive
-        for path in self.root.glob('users/*/runs/**/soundtracks/music_*.json'):
+        paths = (*self.root.glob('users/*/runs/**/soundtracks/music_*.json'),
+                 *self.root.glob('studios/*/runs/**/soundtracks/music_*.json'))
+        for path in paths:
             if self.stopping.is_set():
                 break
             try:
@@ -118,6 +121,16 @@ class Workspaces:
             if ident not in self.runtimes:
                 self.runtimes[ident] = UserRuntime(self.root / 'users' / ident, self)
             return self.runtimes[ident]
+
+    def for_studio(self, user_id, studio):
+        from .team_workspace import StudioRuntime, import_existing_projects
+        ident = str(UUID(str(studio['id'])))
+        with self.guard:
+            if ident not in self.studios:
+                self.studios[ident] = UserRuntime(self.root / 'studios' / ident, self)
+            shared = self.studios[ident]
+        import_existing_projects(shared, studio)
+        return StudioRuntime(shared, self.get(user_id), studio)
 
     def close(self):
         self.stopping.set()

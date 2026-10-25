@@ -33,3 +33,20 @@ test('unconfigured exports stay offline and local development keeps relative URL
   assert.equal(client.backendUrl('/api/ui/session'),'/api/ui/session');
   assert.throws(()=>transport('http://untrusted.example'),/HTTPS backend/);
 });
+
+test('team scope follows jobs, streams, media and exports without changing account endpoints', () => {
+  const {client} = transport('https://studio.up.railway.app');
+  client.setStudioIdentity('team-one');
+  for (const path of ['/api/ui/workspace', '/api/ui/creative/jobs/run/events?project_id=p', '/media/images/i/0.png?project_id=p', '/export/p/docx', '/google/status']) {
+    const url = new URL(client.backendUrl(path));
+    assert.equal(url.searchParams.get('studio_id'), 'team-one', path);
+    assert.equal(client.backendUrl(url.href), url.href);
+  }
+  for (const path of ['/api/v1/accounts/me', '/api/v1/studios', '/api/v1/invitations/accept'])
+    assert.equal(new URL(client.backendUrl(path)).searchParams.has('studio_id'), false, path);
+  const stale = client.backendUrl('/api/ui/workspace');
+  client.setStudioIdentity('team-two');
+  assert.throws(() => client.backendUrl(stale), /workspace changed/);
+  client.setStudioIdentity('');
+  assert.equal(client.backendUrl('/api/ui/workspace'), 'https://studio.up.railway.app/api/ui/workspace');
+});
