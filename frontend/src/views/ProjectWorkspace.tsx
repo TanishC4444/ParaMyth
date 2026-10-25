@@ -6,18 +6,18 @@ import { FACT_KINDS, MEDIA, type Brief, type Character, type Dimension, type Fac
 import { ago, Chips, errorText, fmtTime, Icon, Segmented, Status } from "../ui";
 import ExportPanel from '../ExportPanel';
 
-const TABS: [ProjectTab, string][] = [["brief", "Brief"], ["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
+const TABS: [ProjectTab, string][] = [["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
 
 export default function ProjectWorkspace({ embedded = false }: { embedded?: boolean }) {
   const { project, go } = useStudio();
-  const [tab, setTab] = useDraftState<ProjectTab>("project.tab", "brief");
+  const [savedTab, setTab] = useDraftState<ProjectTab>("project.tab", "manuscript");
+  const tab = savedTab === 'brief' ? 'manuscript' : savedTab;
   return <div className={`workspace${embedded ? " embedded-workspace" : ""}`}>
     {!embedded && <div className="editor-top">
       <button className="back" onClick={() => go("projects")}>‹ <span>Projects</span></button>
       <div><b>{project.title}</b><small>{project.brief.medium} · updated {ago(project.updated)}</small></div>
       <div className="tabs" role="tablist">{TABS.map(([id, label]) => <button role="tab" aria-selected={tab === id} key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div>
     </div>}
-    {tab === "brief" && <BriefTab />}
     {tab === "manuscript" && <ManuscriptTab />}
     {tab === "canon" && <CanonTab />}
     {tab === "pipeline" && <PipelineTab />}

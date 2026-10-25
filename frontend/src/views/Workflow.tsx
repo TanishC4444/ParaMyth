@@ -21,9 +21,10 @@ export default function Workflow() {
   const initial=location.hash.split('?')[0].split('/').at(-1);
   const [section,setSection]=useDraftState('workflow.section',['images','music','production'].includes(initial || '')?'media':'writing');
   const [tool,setTool]=useDraftState('workflow.tool',['images','music','production'].includes(initial || '')?initial!:'images');
-  const [pane,setPane]=useDraftState('workflow.writing','creative');
+  const [savedPane,setPane]=useDraftState('workflow.writing','creative');
+  const pane=savedPane==='brief'?'manuscript':savedPane;
   const active=jobs.filter(j=>['running','queued'].includes(j.status));
-  useEffect(()=>{if(['brief','manuscript','canon','pipeline'].includes(pane))setTab(pane as ProjectTab);},[pane]);
+  useEffect(()=>{if(['manuscript','canon','pipeline'].includes(pane))setTab(pane as ProjectTab);},[pane]);
   // A link straight to #/images, #/music or #/production opens that tool, even when another tab was saved last.
   useEffect(()=>{
     const changed=()=>{const route=location.hash.split('?')[0].split('/').at(-1);if(['images','music','production'].includes(route||'')){setSection('media');setTool(route!)}else if(route==='creative'||route==='project'){setSection('writing');setPane(route==='project'?'manuscript':'creative')}};
@@ -36,7 +37,7 @@ export default function Workflow() {
     <WorkspaceGuide />
     <nav className="workflow-primary-tabs" aria-label="Project workflow tabs"><button aria-pressed={section==='writing'} onClick={()=>setSection('writing')}>Writing</button><button aria-pressed={section==='media'} onClick={()=>setSection('media')}>Visuals, sound & production</button>{active.length>0&&<span role="status">{active.length} running</span>}</nav>
     <section hidden={section!=='writing'} aria-label="Writing workspace">
-      <nav className="workflow-tabs writing-subtabs" aria-label="Writing views">{[['creative','Write chapters'],['brief','Project brief'],['manuscript','Manuscript'],['canon','Story canon'],['pipeline','Pipeline']].map(([id,label])=><button key={id} aria-pressed={pane===id} onClick={()=>setPane(id)}>{label}</button>)}</nav>
+      <nav className="workflow-tabs writing-subtabs" aria-label="Writing views">{[['creative','Write chapters'],['manuscript','Manuscript'],['canon','Story canon'],['pipeline','Pipeline']].map(([id,label])=><button key={id} aria-pressed={pane===id} onClick={()=>setPane(id)}>{label}</button>)}</nav>
       <div hidden={pane!=='creative'}><WritingWorkspace /></div><div hidden={pane==='creative'} className="workflow-manuscript-tools"><ProjectWorkspace embedded /></div>
     </section>
     <section hidden={section!=='media'} aria-label="Media and production workspace">

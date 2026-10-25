@@ -1,15 +1,23 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSavedJob } from "../useSavedJob"
-import { api, projectPath } from "../api"
+import { api, projectPath, currentWorkspaceIdentity } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
 import { BrandSpot } from "../brandArt"
 import { HelpTip } from '../Guide'
+type ReferenceImage = { id: string; name: string; width: number; height: number }
 export default function Images({ embedded = false }: { embedded?: boolean }) {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
   const { source, sourceId, signature, streaming, images, refreshMaterials: load } = useMaterials()
+  const [references, setReferences] = useState<ReferenceImage[]>([])
+  const [referenceIds, setReferenceIds] = useDraftState<string[]>('images.referenceIds', [])
+  const [referenceDirection, setReferenceDirection] = useDraftState('images.referenceDirection', '')
+  const [uploading, setUploading] = useState(false)
+  const workspaceKey = currentWorkspaceIdentity() + ':' + project.id
+  const activeWorkspace = useRef(workspaceKey)
+  activeWorkspace.current = workspaceKey
   const [models, setModels] = useState<any[]>([]),
     [model, setModel] = useDraftState("images.model", ""),
     [kind, setKind] = useDraftState("images.kind", "scene"),
@@ -28,15 +36,48 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async (j) => {
       if (j.kind === "image") {
-        if (provenance?.source_id && j.result?.id) await api(path(`/api/ui/images/${j.result.id}/source`), { source: provenance.source_id });
+        if (!j.result?.reference_ids?.length && provenance?.source_id && j.result?.id) await api(path(`/api/ui/images/${j.result.id}/source`), { source: provenance.source_id });
         await load(); setStatus("Your image is ready.") }
       else { setPrompt(j.result.prompt); setProvenance(j.result); setStatus("Your prompt is ready to review.") }
       await refresh()
     },
     failed: (message) => { setError(message); setStatus("") },
   })
-  const busy = submitting || !!pendingJob
+  const busy = submitting || uploading || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
+  useEffect(() => {
+    let live = true
+    setReferences([]); setUploading(false)
+    api<{references: ReferenceImage[]}>(path('/api/images/references'))
+      .then(value => { if (live) setReferences(value.references) })
+      .catch(e => { if (live) setError(errorText(e)) })
+    return () => { live = false }
+  }, [workspaceKey])
+  const toggleReference = (id: string) => {
+    if (referenceIds.includes(id)) { setReferenceIds(referenceIds.filter(value => value !== id)); return }
+    if (referenceIds.length >= 3) { setError('Choose up to three reference images.'); return }
+    setReferenceIds([...referenceIds, id]); setModel('muse-image-1.0')
+  }
+  const upload = async (files: File[]) => {
+    if (!files.length || busy) return
+    if (referenceIds.length + files.length > 3) { setError('Choose up to three reference images. Clear a selection before uploading more.'); return }
+    if (files.some(file => !/\.(png|jpe?g|webp)$/i.test(file.name) || file.size > 5 * 1024 * 1024)) {
+      setError('Choose PNG, JPG or WebP images under 5 MB each.'); return
+    }
+    const identity = workspaceKey
+    setUploading(true); setError('')
+    try {
+      for (const file of files) {
+        if (activeWorkspace.current !== identity) break
+        const reference = await api<ReferenceImage>(path('/api/images/references?name=' + encodeURIComponent(file.name)), file)
+        if (activeWorkspace.current !== identity) break
+        setReferences(rows => [reference, ...rows])
+        setReferenceIds(ids => [...ids, reference.id])
+        setModel('muse-image-1.0')
+      }
+    } catch (e) { if (activeWorkspace.current === identity) setError(errorText(e)) }
+    finally { if (activeWorkspace.current === identity) setUploading(false) }
+  }
   useEffect(() => {
     let live = true
     api("/api/images/models")
@@ -67,6 +108,9 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     setResolution((previous) => resolutions.includes(previous) ? previous : resolutions[0] || "")
   }, [model, models])
   const submit = async (generate: boolean, automatic = false) => {
+    const editing = generate && referenceIds.length > 0
+    if (editing && !referenceDirection.trim()) { setError('Describe how Muse should change or use your reference images.'); return }
+    if (editing) automatic = false
     setSubmitting(true)
     setError("")
     try {
@@ -74,13 +118,13 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
       const body = automatic ? {model,kind,subject,style,source,direction:mediaDirection,enhance,aspect_ratio:shape,resolution,n:1,allow_backup:backup} : generate
         ? {
             model,
-            prompt: prompt.slice(0, 3700) + "\nNatural finish: Distinct faces, subtle asymmetry, unposed gestures, plausible anatomy and weight, motivated light, worn materials and restrained highlights. Avoid waxy skin, identical faces, excessive glow and oversharpening. Preserve the requested medium and story details.",
+            prompt: editing ? referenceDirection.trim() : prompt.slice(0, 3700) + "\nNatural finish: Distinct faces, subtle asymmetry, unposed gestures, plausible anatomy and weight, motivated light, worn materials and restrained highlights. Avoid waxy skin, identical faces, excessive glow and oversharpening. Preserve the requested medium and story details.",
             aspect_ratio: shape,
             resolution,
             n: 1,
-            kind,
-            title: subject || kind,
-            allow_backup: backup,
+            kind: editing ? 'custom' : kind,
+            title: editing ? referenceDirection.trim().slice(0, 100) : subject || kind,
+            allow_backup: editing ? false : backup,
           }
         : {
             kind,
@@ -94,7 +138,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           }
       const queued = await api(
         path(automatic ? '/api/images/create' : generate ? "/api/images/generate" : "/api/ui/images/prepare"),
-        body,
+        generate ? {...body, reference_ids: referenceIds} : body,
       )
       setStatus(
         "Your request is queued. You can keep working in another part of your story.",
@@ -111,8 +155,8 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     <div className="page">
       <PageTitle level={embedded ? "h2" : "h1"}
         title="Visuals"
-        text="Describe a character, place or moment. Create a visual in one step, or open Prompt options to review it first."
-      ><HelpTip label="How visuals use your writing">Create visual prepares a prompt from your current source and renders one image. If you enter your own prompt, it uses that prompt. New images are available to production automatically.</HelpTip></PageTitle>
+        text="Create a visual from your story, or upload reference images and describe an edit."
+      ><HelpTip label="How visuals use your writing">Create visual uses your current writing or your own image prompt. For a reference edit, select uploaded images and describe the changes. Each result is saved as a new image; your original references are preserved.</HelpTip></PageTitle>
       {streaming && <p className="hint" role="status">Following your live writing. Prepare a prompt to use its latest details.</p>}
       {provenance?.source_signature && provenance.source_signature !== signature && <p className="source-changed">The writing has changed since this prompt. <button disabled={busy} onClick={()=>void submit(false)}>Update prompt from writing</button></p>}
       {error && (
@@ -127,6 +171,31 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
       )}
       <div className="creative-layout">
         <section className="panel">
+          <section className="image-references" aria-label="Reference images">
+            <h2>Reference images <small>optional</small></h2>
+            <p className="hint">Upload up to three images, then describe what to change or combine. PNG, JPG or WebP · up to 5 MB each.</p>
+            <label className="field">Upload reference images
+              <input type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple disabled={busy || referenceIds.length >= 3}
+                onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files) }} />
+            </label>
+            {uploading && <p role="status">Uploading reference images…</p>}
+            {!!references.length && <details open={referenceIds.length > 0}><summary>Saved references · {referenceIds.length} selected</summary>
+              <div className="reference-grid">{references.map(reference => <label className="reference-card" key={reference.id}>
+                <img src={path('/media/image-references/' + reference.id)} alt={reference.name} loading="lazy" />
+                <span><input type="checkbox" checked={referenceIds.includes(reference.id)} disabled={busy}
+                  onChange={() => toggleReference(reference.id)} />{reference.name}</span>
+              </label>)}</div>
+            </details>}
+            {referenceIds.length > 0 && <>
+              <button className="text-action" disabled={busy} onClick={() => setReferenceIds([])}>Clear reference selection</button>
+              <label className="field">How should Muse use these images?
+                <textarea value={referenceDirection} onChange={e => setReferenceDirection(e.target.value)} maxLength={4000}
+                  placeholder="Keep the character’s face and pose, change the coat to blue, and place them in a moonlit forest." />
+              </label>
+              <p className="hint">Your selected images and these instructions are sent to Meta when you choose Generate edit. Originals stay saved in this project.</p>
+            </>}
+          </section>
+          <div hidden={referenceIds.length > 0}>
           <div className="form-grid">
             <label className="field">
               What are we making?
@@ -184,11 +253,12 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           </label>
           {prompt && provenance?.source_id !== sourceId && <p className="hint">Your saved prompt stays as written. Choose Prepare my prompt to use the current writing.</p>}
           </details>
+          </div>
           <details>
             <summary>Image settings</summary>
             <label className="field">
               Image model
-              <select value={model} onChange={(e) => setModel(e.target.value)}>
+              <select disabled={referenceIds.length > 0} value={model} onChange={(e) => setModel(e.target.value)}>
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name || m.id}
@@ -220,7 +290,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
                 </select>
               </label>
             </div>
-            {model.startsWith("muse") && (
+            {model.startsWith("muse") && !referenceIds.length && (
               <label className="toggle">
                 <input
                   type="checkbox"
@@ -233,10 +303,10 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           </details>
           <button
             className="primary"
-            disabled={busy || !models.some(item=>item.id===model)}
+            disabled={busy || !models.some(item=>item.id===model) || referenceIds.length > 0 && !referenceDirection.trim()}
             onClick={() => void submit(true,!prompt.trim())}
           >
-            {busy ? "Working…" : "Create visual"}
+            {busy ? "Working…" : referenceIds.length ? "Generate edit" : "Create visual"}
           </button>
           {provenance && (
             <details>

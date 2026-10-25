@@ -1,8 +1,10 @@
 """Image routes: prepare a prompt (optionally with Vultr), generate with Meta Muse, browse results."""
-from fastapi import APIRouter, Body, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
 
 from .. import image_studio
+from .. import image_references
 from .deps import LOCAL, RUNTIME, WRITE, folder
 
 router = APIRouter(tags=['images'], dependencies=LOCAL)
@@ -16,6 +18,29 @@ def models():
 @router.get('/api/images')
 def gallery(request: Request, runtime=RUNTIME):
     return {'images': image_studio.gallery(folder(request, runtime))}
+
+
+@router.get('/api/images/references')
+def references(request: Request, runtime=RUNTIME):
+    return {'references': image_references.list_references(folder(request, runtime))}
+
+
+@router.post('/api/images/references', dependencies=WRITE, status_code=201)
+async def upload_reference(request: Request, name: str = 'Reference image', runtime=RUNTIME):
+    current = folder(request, runtime)
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > image_references.MAX_UPLOAD_BYTES:
+            raise HTTPException(413, 'Choose an image under 5 MB')
+        chunks.append(chunk)
+    return await run_in_threadpool(image_references.store_reference, current, b''.join(chunks), name)
+
+
+@router.get('/media/image-references/{ident}')
+def reference_preview(ident: str, request: Request, runtime=RUNTIME):
+    value, path = image_references.read_reference(folder(request, runtime), ident)
+    return FileResponse(path, media_type=value['mime'], headers={'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
 
 
 @router.get('/api/images/{ident}')
@@ -41,6 +66,7 @@ def prepare(request: Request, data: dict = Body(...), runtime=RUNTIME):
 def generate(request: Request, data: dict = Body(...), runtime=RUNTIME):
     image_studio.generation_settings(data, image_studio.CATALOG.get(data.get('model')))
     current = folder(request, runtime)
+    image_references.validate_references(current, data)
     return {'job_id': runtime.submit('image', current, lambda progress: image_studio.generate(current, data, progress))}
 
 
@@ -52,6 +78,7 @@ def create_from_story(request: Request, data: dict = Body(...), runtime=RUNTIME)
     model = renderer.CATALOG.get(data.get('model'))
     renderer.generation_settings({**data, 'prompt': 'Preparing visual direction', 'n': 1}, model)
     current = folder(request, runtime)
+    image_references.validate_references(current, data)
     selected = media_workspace.material(current, data.get('source', 'latest'), '', True)
     def operation(progress):
         progress('Preparing the visual from your writing')

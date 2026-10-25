@@ -35,8 +35,9 @@ export async function api<T = any>(
   const workspace = currentWorkspaceIdentity()
   const verb = method || (body === undefined ? "GET" : "POST")
   const headers: Record<string, string> = { Accept: "application/json" }
+  const binary = typeof Blob !== 'undefined' && body instanceof Blob
   if (identity !== 'local') headers['X-ParaMyth-Account'] = identity
-  if (body !== undefined) headers["Content-Type"] = "application/json"
+  if (body !== undefined) headers["Content-Type"] = binary ? body.type || 'application/octet-stream' : "application/json"
   if (!["GET", "HEAD"].includes(verb))
     headers["X-ParaMyth-Token"] = await token()
   if (identity !== accountIdentity || workspace !== currentWorkspaceIdentity()) throw Error('Your workspace changed. Reopen this project before continuing.')
@@ -45,7 +46,7 @@ export async function api<T = any>(
     method: verb,
     signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : path.startsWith("/api/studio/jobs") || path.startsWith("/api/ui/creative/jobs") || path.startsWith("/api/ui/jobs") ? AbortSignal.timeout(10000) : AbortSignal.timeout(30000),
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: binary ? body : body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   }) } catch (error) { throw Error(requestMessage(error instanceof Error ? error.message : error)) }
   const json = (r.headers.get("content-type") || "").includes("json")
