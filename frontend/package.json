@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:atlas": "node --test tests/atlas.test.cjs",
     "format": "oxfmt",
-    "test:cinematic": "node --test tests/cinematic.test.cjs"
+    "test:cinematic": "node --test tests/cinematic.test.cjs",
+    "test:site": "node --test tests/site.test.cjs"
   },
   "dependencies": {
     "animejs": "4.1.3",

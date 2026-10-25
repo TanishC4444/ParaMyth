@@ -15,3 +15,15 @@ Checked at desktop (1024px) and phone (375px) widths.
 
 The public site is detected the same way as main's API guard: the studio only answers
 on loopback, so any other host is the public site.
+
+### Book, product information, and support revision
+
+- Removed the opening border, corner frame, and slogan. Added a dedicated description of story development for creative directors below the Atlas.
+- Slowed each scroll-controlled page turn from a 0.065 span of a 400vh track to 0.115 of an 800vh track. There is still no timed playback.
+- Moved subdivided paper bending and its normals into the vertex shader. Capped pixel ratios, deferred the Atlas until the book's third scene, bounded texture uploads to two concurrent loads, and throttled globe DOM overlays independently from GPU movement.
+- Book and gallery assets now come from named classic-story illustrations. Optimized variants retain the full source and rights metadata. The page library includes six Ramayana/Shahnameh additions.
+- Aligned the book's collapse and horizon with the actual globe centre at each breakpoint. Shared scroll curves control the crossfade and globe scale.
+- Added Terms, Privacy & Storage, Contact & Support, Accessibility, and Copyright & Credits routes. Support uses the existing repository; a dedicated public email and legal owner identity are awaiting owner input. No compliance certification or private support channel is claimed.
+- Loading, account connection errors, missing routes, stale chunks, and entry-module download failures have recovery actions. Physical-path 404 redirects also recognize legal destinations.
+- Verified with TypeScript, production build, cinematic/Atlas behavior tests, legal-route tests, server rendering of all five information pages, and local asset/source checks.
+- Browser access was disabled in Work settings during this revision. Visual layout, GPU execution, and measured frame rate could not be rechecked; source and server-render tests do not substitute for that check.

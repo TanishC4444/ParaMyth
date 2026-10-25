@@ -1,6 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
-import { Artwork, artUrl } from "../art";
+import { Artwork, bookArtUrl } from "../art";
 import { BOOK_ART } from "./scenes";
 import { chapterMotion, pageTurn } from "./motion";
 
@@ -20,7 +20,7 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" }); }
     catch { return; }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.setClearColor(0, 0);
     renderer.domElement.setAttribute("aria-hidden", "true");
     container.appendChild(renderer.domElement);
@@ -50,11 +50,17 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
     const textures = new Map<number, THREE.Texture>();
     const loader = new THREE.TextureLoader();
     let disposed = false, frame = 0;
-    const makeSurface = (front: number, back: number) => {
+    const makeSurface = (front: number, back: number, bending = false) => {
       const m = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
-        uniforms: { front: { value: blank }, back: { value: blank }, frontAspect: { value: 1 }, backAspect: { value: 1 } },
-        vertexShader: `varying vec2 uv0;varying vec3 normal0;void main(){uv0=uv;normal0=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+        uniforms: { bendTurn: { value: 0 }, bending: { value: bending ? 1 : 0 }, front: { value: blank }, back: { value: blank }, frontAspect: { value: 1 }, backAspect: { value: 1 } },
+        vertexShader: `uniform float bendTurn;uniform float bending;varying vec2 uv0;varying vec3 normal0;
+          void main(){uv0=uv;vec3 p=position;vec3 n=normal;
+          if(bending>.5){float a=bendTurn*3.14159265;float u=p.x/1.7;float curl=sin(a)*sin(u*3.14159265)*.23;
+          float slope=sin(a)*cos(u*3.14159265)*.23*3.14159265/1.7;
+          p=vec3(p.x*cos(a)-curl*sin(a),p.y,p.x*sin(a)+curl*cos(a));
+          n=normalize(vec3(-sin(a)-slope*cos(a),0.,cos(a)-slope*sin(a)));}
+          normal0=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
         fragmentShader: `uniform sampler2D front;uniform sampler2D back;uniform float frontAspect;uniform float backAspect;varying vec2 uv0;varying vec3 normal0;
           void main(){vec2 uv=gl_FrontFacing?uv0:vec2(1.-uv0.x,uv0.y);float border=.045;
           vec3 col=vec3(.94,.85,.68);if(uv.x>border&&uv.x<1.-border&&uv.y>border&&uv.y<1.-border){vec2 q=(uv-border)/(1.-2.*border);float aspect=gl_FrontFacing?frontAspect:backAspect;float pageAspect=.73913;if(aspect>pageAspect)q.x=(q.x-.5)*pageAspect/aspect+.5;else q.y=(q.y-.5)*aspect/pageAspect+.5;col=gl_FrontFacing?texture2D(front,q).rgb:texture2D(back,q).rgb;}
@@ -80,25 +86,19 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
     const right = new THREE.Mesh(baseGeo, makeSurface(11, 11)); right.position.set(W / 2, 0, .005); book.add(right);
     const leaves = Array.from({ length: 5 }, (_, i) => {
       const geometry = new THREE.PlaneGeometry(W, H, 32, 4); geometry.translate(W / 2, 0, 0); resources.push(geometry);
-      const origin = new Float32Array(geometry.attributes.position.array);
-      const mesh = new THREE.Mesh(geometry, makeSurface(i * 2 + 1, i * 2 + 2));
-      book.add(mesh); return { mesh, geometry, origin, index: i };
+
+      const mesh = new THREE.Mesh(geometry, makeSurface(i * 2 + 1, i * 2 + 2, true));
+      book.add(mesh); return { mesh, geometry, index: i };
     });
     const draw = () => {
       frame = 0; if (disposed) return;
       const p = progress.current, state = chapterMotion(p);
       book.rotation.set(.18 - state.collapse * 1.72, .015, -.025 * (1 - state.collapse));
-      book.position.set(0, -state.collapse * 1.15, 0);
-      book.scale.set(1 + state.collapse * .6, 1 - state.collapse * .5, 1);
+      book.position.set(0, 0, 0);
+      book.scale.set(1 - state.collapse * .2, 1, 1);
       for (const leaf of leaves) {
-        const turn = reduceRef.current ? Math.round(pageTurn(p, leaf.index)) : pageTurn(p, leaf.index), a = turn * Math.PI;
-        const positions = leaf.geometry.attributes.position;
-        for (let j = 0; j < positions.count; j++) {
-          const x = leaf.origin[j * 3], y = leaf.origin[j * 3 + 1], u = x / W;
-          const curl = Math.sin(a) * Math.sin(u * Math.PI) * .23;
-          positions.setXYZ(j, x * Math.cos(a) - curl * Math.sin(a), y + Math.sin(a) * .018 * Math.sin(y * 2) * u, x * Math.sin(a) + curl * Math.cos(a));
-        }
-        positions.needsUpdate = true; leaf.geometry.computeVertexNormals();
+        const turn = reduceRef.current ? Math.round(pageTurn(p, leaf.index)) : pageTurn(p, leaf.index);
+        (leaf.mesh.material as THREE.ShaderMaterial).uniforms.bendTurn.value = turn;
         leaf.mesh.position.z = turn < .5 ? .035 + (5 - leaf.index) * .004 : .035 + leaf.index * .004;
       }
       renderer.render(scene, camera);
@@ -114,12 +114,20 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
       camera.position.set(0, .35, 8); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix(); renderer.setSize(w, h); redraw();
     });
     resize.observe(container);
-    BOOK_ART.forEach((name, index) => loader.load(artUrl(name), texture => {
-      if (disposed) { texture.dispose(); return; }
-      texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-      textures.set(index, texture); binders.forEach(bind => bind());
-      if (textures.has(0) && textures.has(1)) setReady(true);
-    }, undefined, () => { /* The illustrated CSS fallback stays available. */ }));
+    // Keep image decoding and upload bounded. First spread always wins the queue.
+    const queue = BOOK_ART.map((name, index) => ({ name, index }));
+    const loadNext = () => {
+      if (disposed) return;
+      const item = queue.shift(); if (!item) return;
+      loader.load(bookArtUrl(item.name), texture => {
+        if (disposed) { texture.dispose(); return; }
+        texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
+        textures.set(item.index, texture); binders.forEach(bind => bind());
+        if (textures.has(0) && textures.has(1)) setReady(true);
+        loadNext();
+      }, undefined, loadNext);
+    };
+    loadNext(); loadNext();
     const lost = (e: Event) => { e.preventDefault(); setReady(false); };
     renderer.domElement.addEventListener("webglcontextlost", lost);
     return () => {
@@ -130,6 +138,6 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
   }, [progress]);
   return <div className={`storybook-object${ready ? " is-ready" : ""}`} aria-hidden="true">
     <div className="book-canvas" ref={host} />
-    <div className="book-static"><Artwork name={BOOK_ART[sceneIndex * 2]} eager /><Artwork name={BOOK_ART[sceneIndex * 2 + 1]} eager /></div>
+    <div className="book-static"><Artwork name={BOOK_ART[sceneIndex * 2]} variant="book" eager /><Artwork name={BOOK_ART[sceneIndex * 2 + 1]} variant="book" eager /></div>
   </div>;
 }

@@ -10,14 +10,14 @@
     <script>
       // The app routes with hashes. Send "/atlas"-style paths to "/#/atlas" instead of a dead end.
       (function () {
-        var views = ["atlas", "overview", "projects", "workflow", "runs", "retrieval", "library", "connections"];
+        var views = ["atlas", "overview", "projects", "workflow", "runs", "retrieval", "library", "connections", "terms", "privacy", "contact", "accessibility", "credits"];
         var first = location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
         if (views.indexOf(first) !== -1) location.replace("/#/" + first);
       })();
     </script>
     <style>
       html,body{margin:0;min-height:100%;background:#081216;color:#f5eedb}
-      body{font:16px/1.7 "Instrument Sans",Manrope,system-ui,sans-serif;background:radial-gradient(1200px 700px at 85% -10%,rgba(95,156,136,.16),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(212,170,92,.10),transparent 60%),#081216;min-height:100vh}
+      body{font:16px/1.7 "Instrument Sans",Manrope,system-ui,sans-serif;background:#112635;min-height:100vh}
       header{padding:26px 40px}
       .mark{display:inline-flex;align-items:center;gap:10px;color:#f5eedb;text-decoration:none;font:400 27px/1 Georgia,"Times New Roman",serif}
       .mark svg{width:34px;height:34px}
@@ -43,10 +43,10 @@
     </header>
     <main>
       <p class="kicker">404 · Page not found</p>
-      <h1>This chapter <em>isn't written</em> yet.</h1>
+      <h1>Page <em>not found.</em></h1>
       <p class="lede">There is no page at <code id="path"></code>. It may have moved, or the link may be mistyped.</p>
       <div class="actions">
-        <a class="primary" href="/">Back to the beginning →</a>
+        <a class="primary" href="/">Back to ParaMyth →</a>
         <a class="ghost" href="/#/atlas">Open the story atlas</a>
       </div>
     </main>
