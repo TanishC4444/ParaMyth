@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from . import projects
+from . import projects, workspace
 from .deps import TOKEN_HEADER, local
 from .runtime import Runtime
 
@@ -31,4 +31,5 @@ def create_app(root=None):
                             headers={'Cache-Control': 'no-store'})
 
     app.include_router(projects.router)
+    app.include_router(workspace.router)
     return app
