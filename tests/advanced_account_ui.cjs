@@ -11,7 +11,7 @@ function harness(status=409){
  };
  const location=new URL('http://127.0.0.1:5176/studio/teams.html?mode=signup');
  const context={URL,URLSearchParams,AbortSignal,location,history:{replaceState(a,b,url){location.href=String(url)}},localStorage:{getItem(){return null}},
-  document:{getElementById:node,querySelectorAll(){return [...nodes.values()]}},window:{addEventListener(){}},
+  document:{getElementById:node,querySelector(){return null},querySelectorAll(){return [...nodes.values()]}},window:{addEventListener(){}},
   fetch:async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return {ok:false,status,json:async()=>({detail:status===409?'Unable to create this account. Try signing in.':'Email or password is incorrect'})}}};
  vm.runInNewContext(readFileSync('web/js/teams.js','utf8'),context);
  node('email').value='test@example.invalid';node('password').value='example password';node('display-name').value='Test';
