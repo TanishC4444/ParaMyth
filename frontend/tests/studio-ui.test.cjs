@@ -56,6 +56,12 @@ test('an account workspace with no jobs gets an honest activity empty state',()=
   assert.doesNotMatch(html,/Start a writing workflow/);
 });
 
+test('activity hides provider configuration diagnostics in saved job messages',()=>{
+  const html=render('src/views/Runs.tsx',{studio:{jobs:[{id:'failed-image',kind:'image_generate',status:'failed',message:'Set MUSE_IMAGE_API_KEY in the server environment',created_at:'2026-10-25T08:00:00Z'}]}});
+  assert.match(html,/Image generation isn&#x27;t available in this studio yet/);
+  assert.doesNotMatch(html,/_API_KEY|server environment/);
+});
+
 test('older projects without a scene-length preference still open the manuscript',()=>{
   const project={...blank,scenes:[{id:'scene',chapter:1,title:'Chapter one',pov:'',location:'',content:'',state:'Draft',findings:[]}],brief:{...blank.brief,wordMin:100,wordMax:200}};
   const html=render('src/views/ProjectWorkspace.tsx',{studio:{project,drafts:{'project.tab':'manuscript'}},props:{embedded:true}});

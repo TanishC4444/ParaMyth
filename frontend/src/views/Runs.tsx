@@ -16,7 +16,7 @@ export default function Runs() {
 function AccountRuns() {
   const { jobs, project } = useStudio()
   return <div className="page activity-page"><PageTitle eyebrow="WORKSPACE" title="Activity" text={project.id ? `Writing, visuals and production jobs for ${project.title}.` : "Generation jobs and their progress appear here."} />
-    {jobs.length ? <div className="panel activity-table">{[...jobs].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(job => <article className="activity-row" key={job.id}><span><Icon name={job.kind.startsWith("image") ? "images" : job.kind.startsWith("music") ? "music" : "runs"} size={18} /></span><div><h2>{job.kind.replace(/_/g, " ")}</h2><p>{job.message || "Waiting for the next update."}</p></div><time dateTime={job.created_at}>{fmtTime(job.created_at)}</time><Status>{job.status}</Status></article>)}</div> : <EmptyState icon="runs" title="A clear view of work in progress" text="Start writing a chapter, generating a visual, or planning a production. You can follow each job here while you keep working." />}
+    {jobs.length ? <div className="panel activity-table">{[...jobs].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(job => <article className="activity-row" key={job.id}><span><Icon name={job.kind.startsWith("image") ? "images" : job.kind.startsWith("music") ? "music" : "runs"} size={18} /></span><div><h2>{job.kind.replace(/_/g, " ")}</h2><p>{job.message ? errorText(job.message) : "Waiting for the next update."}</p></div><time dateTime={job.created_at}>{fmtTime(job.created_at)}</time><Status>{job.status}</Status></article>)}</div> : <EmptyState icon="runs" title="A clear view of work in progress" text="Start writing a chapter, generating a visual, or planning a production. You can follow each job here while you keep working." />}
   </div>
 }
 
@@ -190,7 +190,7 @@ function WorkflowRuns() {
               <b>
                 {j.kind} · {j.status}
               </b>
-              <p>{j.message}</p>
+              <p>{j.message ? errorText(j.message) : ''}</p>
               <small>{new Date(j.created_at).toLocaleString()}</small>
             </article>
           ))}
