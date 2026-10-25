@@ -15,7 +15,7 @@ def scene(ident='s1', **overrides):
 class ExportTests(unittest.TestCase):
     def setUp(self):
         cfg = normalize_config({'start_date': '2026-11-02', 'timezone': 'America/Chicago'})
-        self.plan = {'id': 'a' * 24, 'title': 'Troy', 'created_at': '2026-10-24T12:00:00+00:00', 'config': cfg,
+        self.plan = {'id': 'a' * 24, 'title': 'Troy', 'created_at': '2026-10-24T19:00:00+00:00', 'config': cfg,
                      'schedule': schedule([scene()], cfg), 'recommendations': {'legal_logistics': [{'task': 'Check permit', 'owner': 'producer', 'source_ids': ['R1']}]},
                      'budget': {'items': [{'category': 'crew', 'description': '=cmd|calc', 'quantity': 1, 'unit': 'day', 'low_rate': 1, 'high_rate': 2}]}}
 
