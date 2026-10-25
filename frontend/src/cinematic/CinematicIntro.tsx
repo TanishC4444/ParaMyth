@@ -33,7 +33,9 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       const p = progress.current;
       const state = chapterMotion(p);
       Object.entries(state).forEach(([key, value]) => shell.style.setProperty(`--${key}`, String(value)));
+      const finishing = shell.dataset.intro === "true" && p >= 1;
       shell.dataset.intro = String(p < 1);
+      if (finishing) window.scrollTo({ top: 0, behavior: "instant" });
       shell.dataset.reduced = String(reduced);
       section.dataset.pastHero = String(p >= .52);
       section.dataset.progress = p.toFixed(3);

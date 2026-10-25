@@ -9,7 +9,7 @@
 .cinematic-landing .landing-header nav>button:hover{color:#fff;background:#ffffff0b}
 .cinematic-landing .landing-header nav .dock-studio{color:#b8f0df;border-color:#79d6be40;background:#79d6be0c}.cinematic-landing .landing-header nav .dock-studio:hover{background:#79d6be20;border-color:#79d6be88}
 .cinematic-landing a:focus-visible,.cinematic-landing button:focus-visible,.cinematic-landing summary:focus-visible{outline:2px solid #79d6be;outline-offset:4px}
-.cinematic-intro{position:absolute;inset:0 0 auto;height:100svh;min-height:520px;z-index:25;outline:none;pointer-events:none}
+.cinematic-intro{position:fixed;inset:0 0 auto;height:100svh;min-height:520px;z-index:25;outline:none;pointer-events:none}
 .cinematic-intro[data-finished=true]{visibility:hidden}
 .cinema-stage{position:absolute;inset:0;overflow:clip;isolation:isolate;background:transparent;color:#f3f5f4}
 .paramyth-wordmark{position:absolute;z-index:5;top:15%;left:0;right:0;text-align:center;font:800 clamp(92px,16vw,230px)/.9 ParaMyth Display,sans-serif;letter-spacing:-.035em;margin:0;color:#eff4f2;opacity:var(--hero);transform:translateY(calc((1 - var(--hero))*-32px));white-space:nowrap}
