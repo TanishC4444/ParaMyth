@@ -13,7 +13,7 @@ function accountPage(signup, available) {
   const code = ts.transpileModule(readFileSync(file, 'utf8'), {compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX}}).outputText;
   const exports = {};
   const nativeRequire = createRequire(file);
-  vm.runInNewContext(code, {exports, require: id => id.endsWith('.css') ? {} : nativeRequire(id)});
+  vm.runInNewContext(code, {exports, require: id => id.endsWith('.css') ? {} : id === './transport' ? {backendFetch: async () => {throw Error('Not submitted')}} : nativeRequire(id)});
   return renderToStaticMarkup(React.createElement(exports.default, {signup, available, onSignedIn: async () => {}}));
 }
 

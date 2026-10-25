@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { api } from "../api"
+import { api, backendUrl } from "../api"
 
 import { useStudio } from "../store"
 
@@ -384,7 +384,7 @@ function WorkflowRuns() {
                 <p key={j.id}>
                   {j.name} · {j.status} · {j.conclusion}{" "}
                   <a
-                    href={`/api/studio/history/${detail.run.id}/jobs/${j.id}/logs${query}`}
+                    href={backendUrl(`/api/studio/history/${detail.run.id}/jobs/${j.id}/logs${query}`)}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -400,7 +400,7 @@ function WorkflowRuns() {
                     "Expired"
                   ) : (
                     <a
-                      href={`/api/studio/history/${detail.run.id}/artifacts/${a.id}${query}&download=true`}
+                      href={backendUrl(`/api/studio/history/${detail.run.id}/artifacts/${a.id}${query}&download=true`)}
                     >
                       Download
                     </a>

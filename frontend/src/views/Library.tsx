@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { api, projectPath } from "../api"
+import { api, backendFetch, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { PageTitle } from "../ui"
 export default function Library() {
@@ -29,7 +29,7 @@ export default function Library() {
     let live = true
     setBody("")
     if (selected && /\.(txt|json|md|csv|ics)$/.test(selected.path))
-      fetch(url(selected))
+      backendFetch(url(selected))
         .then(async (r) => {
           if (!r.ok) throw Error("Could not open output")
           const t = await r.text()

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import './account.css'
+import { backendFetch } from './transport'
 
 export default function AccountPage({ signup, available, onSignedIn }: { signup: boolean; available: boolean; onSignedIn: () => Promise<void> }) {
   const [email, setEmail] = useState('')
@@ -12,8 +13,8 @@ export default function AccountPage({ signup, available, onSignedIn }: { signup:
     if (!available || busy) return
     setBusy(true); setError('')
     try {
-      const response = await fetch(`/api/v1/accounts/${signup ? 'signup' : 'login'}`, {
-        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      const response = await backendFetch(`/api/v1/accounts/${signup ? 'signup' : 'login'}`, {
+        method: 'POST', cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, ...(signup ? { display_name: name } : {}) }),
       })

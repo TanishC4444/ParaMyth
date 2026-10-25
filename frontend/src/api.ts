@@ -1,6 +1,6 @@
-/** All product actions use the same-origin live server. No fixture fallback. */
-// Static exports stay offline; a live hosted server marks its own HTML.
-export const studioHost = () => ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname) || document.querySelector('meta[name="paramyth-studio"]')?.getAttribute("content") === "live"
+/** Product actions use the configured backend; the UI stays on its own origin. */
+import { backendFetch, backendUrl, studioHost } from './transport'
+export { backendFetch, backendUrl, studioHost } from './transport'
 const offline = "The online studio is not connected yet. You can still explore the story atlas."
 let csrf: Promise<string> | undefined
 let accountIdentity = 'local'
@@ -9,8 +9,7 @@ export function setAccountIdentity(id: string) { if (accountIdentity !== id) { a
 async function token() {
   if (!studioHost()) throw Error(offline)
   if (!csrf)
-    csrf = fetch("/api/ui/session", {
-      credentials: "same-origin",
+    csrf = backendFetch("/api/ui/session", {
       cache: "no-store",
     })
       .then(async (r) => {
@@ -38,12 +37,11 @@ export async function api<T = any>(
   if (!["GET", "HEAD"].includes(verb))
     headers["X-ParaMyth-Token"] = await token()
   if (identity !== accountIdentity) throw Error('Your account changed. Reload this page before continuing.')
-  const r = await fetch(path, {
+  const r = await backendFetch(path, {
     method: verb,
     signal: path === "/api/ui/search" ? AbortSignal.timeout(60000) : path.startsWith("/api/studio/jobs") || path.startsWith("/api/ui/creative/jobs") || path.startsWith("/api/ui/jobs") ? AbortSignal.timeout(10000) : undefined,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
-    credentials: "same-origin",
     cache: "no-store",
   })
   const json = (r.headers.get("content-type") || "").includes("json")
@@ -75,7 +73,7 @@ export type Job = {
   preview?: { record_id: string; stage: string; context_chapter?: number; chapter?: number; scene_id?: string; title?: string; text?: string; summary?: string }
 }
 export const projectPath = (path: string, id: string) =>
-  `${path}${path.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(id)}`
+  backendUrl(`${path}${path.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(id)}`)
 export async function studioJobs(id: string): Promise<Job[]> {
   const results = await Promise.allSettled([
     api<{ jobs: Job[] }>(projectPath("/api/studio/jobs", id)),

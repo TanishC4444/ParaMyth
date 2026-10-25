@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { api } from "../api"
+import { api, backendFetch } from "../api"
 import { ago, fmtTime, Icon, PageTitle } from "../ui"
 
 type Headline = { title: string; link: string; source: string; source_id: string; published: string | null; summary: string }
@@ -9,7 +9,7 @@ type Feed = { items: Headline[]; sources: Source[]; checked: string; cache_secon
 /** The news route lives on the local studio. Without it (a static build, or the server is off) say so instead of erroring. */
 async function studioRunning() {
   try {
-    const r = await fetch("/api/v1/health", { cache: "no-store" })
+    const r = await backendFetch("/api/v1/health", { cache: "no-store" })
     return r.ok && (r.headers.get("content-type") || "").includes("json")
   } catch {
     return false

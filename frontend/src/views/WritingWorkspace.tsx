@@ -66,7 +66,7 @@ export default function WritingWorkspace() {
   useEffect(() => {
     if (!handle || !project.id) return;
     let active = true;
-    const events = new EventSource(projectPath(`/api/ui/creative/jobs/${handle}/events`,project.id));
+    const events = new EventSource(projectPath(`/api/ui/creative/jobs/${handle}/events`,project.id), { withCredentials: true });
     events.addEventListener('progress', event => {
       if (!active) return;
       const job = JSON.parse((event as MessageEvent).data) as Job;

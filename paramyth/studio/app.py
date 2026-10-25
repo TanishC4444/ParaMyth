@@ -32,9 +32,12 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
     account_workspaces = account_workspaces if account_workspaces is not None else os.getenv('PARAMYTH_ACCOUNT_WORKSPACES') == '1'
     app.state.account_workspaces = bool(account_workspaces or public_origin)
     app.state.public_origin = ''
+    app.state.frontend_origin = ''
     if public_origin:
         from .hosting import validate_origin
         app.state.public_origin = validate_origin(public_origin)
+        if os.getenv('PARAMYTH_FRONTEND_ORIGIN'):
+            app.state.frontend_origin = validate_origin(os.environ['PARAMYTH_FRONTEND_ORIGIN'])
         if not (root or os.getenv('PARAMYTH_WORKSPACE')):
             raise ValueError('Hosted mode requires PARAMYTH_WORKSPACE on a persistent volume')
     root = root or os.getenv('PARAMYTH_WORKSPACE') or Path.cwd()
@@ -49,6 +52,12 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         app.state.workspaces = Workspaces(root, key)
         app.router.on_shutdown.append(app.state.workspaces.close)
         app.add_middleware(HostedRequests)
+        if app.state.frontend_origin:
+            from fastapi.middleware.cors import CORSMiddleware
+            app.add_middleware(CORSMiddleware, allow_origins=[app.state.frontend_origin],
+                allow_credentials=True, allow_methods=['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+                allow_headers=['Accept', 'Content-Type', 'Authorization', 'X-ParaMyth-Token', 'X-ParaMyth-Account'],
+                expose_headers=['Content-Disposition'], max_age=600)
     else:
         app.state.runtime = Runtime(root)
         app.router.on_shutdown.append(app.state.runtime.close)
@@ -106,7 +115,12 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
     app.include_router(news.router)
     app.include_router(accounts_router)
     # Register before the frontend catch-all so its account links resolve.
-    if ACCOUNTS_UI.is_dir():
+    if app.state.frontend_origin:
+        @app.get('/studio/{path:path}', include_in_schema=False)
+        def frontend_account(request: Request, path: str):
+            query = '?' + request.url.query if request.url.query else ''
+            return RedirectResponse(app.state.frontend_origin + '/studio/' + path + query)
+    elif ACCOUNTS_UI.is_dir():
         app.mount('/studio', StaticFiles(directory=ACCOUNTS_UI, html=True), name='accounts-ui')
     # Account-page artwork must also work when only the API has been started.
     # Prefer built assets when a frontend is supplied, with source assets as fallback.
@@ -125,7 +139,11 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         @app.get('/favicon.ico', include_in_schema=False)
         def favicon_alias():
             return RedirectResponse('/favicon.svg')
-    if frontend and (Path(frontend) / 'index.html').is_file():
+    if app.state.frontend_origin:
+        @app.get('/', include_in_schema=False)
+        def frontend_redirect():
+            return RedirectResponse(app.state.frontend_origin + '/')
+    elif frontend and (Path(frontend) / 'index.html').is_file():
         @app.get('/', include_in_schema=False)
         @app.get('/index.html', include_in_schema=False)
         def frontend_index():

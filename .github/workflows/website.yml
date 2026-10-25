@@ -2,7 +2,7 @@ name: Deploy ParaMyth website
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', '.github/workflows/website.yml']
+    paths: ['frontend/**', 'web/teams.*', 'web/js/teams.js', '.github/workflows/website.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,8 +28,11 @@ jobs:
           corepack pnpm test:atlas
           corepack pnpm test:cinematic
           node --test tests/account-entry.test.cjs
+          node --test tests/transport.test.cjs
       - name: Build frontend
         working-directory: frontend
+        env:
+          VITE_API_BASE: ${{ vars.PARAMYTH_API_BASE }}
         run: corepack pnpm build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

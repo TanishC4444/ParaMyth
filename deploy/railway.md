@@ -1,15 +1,28 @@
 # Railway hosting
 
-Deploy the frontend and FastAPI studio as one service from the repository root.
-The Docker build compiles the existing frontend and serves it from the same
-origin as the API. Visitors sign in or create an account; provider credentials
-stay on the server.
+GitHub Actions deploys the public frontend to GitHub Pages at `paramyth.tech`.
+Railway runs FastAPI, generation jobs and private storage. Visitors sign in
+and use the workspace on the frontend; provider credentials stay on the server.
+
+Set the GitHub repository variable `PARAMYTH_API_BASE` to the Railway API
+origin. The website workflow supplies it as the public `VITE_API_BASE` build
+setting. Account and team pages are included in the GitHub Pages artifact too.
+Set Railway's `PARAMYTH_FRONTEND_ORIGIN` to `https://paramyth.tech` and
+`PARAMYTH_PUBLIC_ORIGIN` to the backend's HTTPS origin. The backend permits
+credentialed requests only from that exact frontend and redirects its own
+homepage/account links back to the frontend.
+
+Session cookies remain HttpOnly and Secure, with SameSite=None for split
+origins. A backend subdomain such as `api.paramyth.tech` is preferable to a
+Railway domain: it stays on the same site and works in browsers that block
+third-party cookies. Only the backend subdomain needs a DNS change; keep the
+apex domain on GitHub Pages. Never put session tokens into frontend storage.
 
 Configure the service with these variables:
 
 | Variable | Value |
 | --- | --- |
-| `RAILWAY_DOCKERFILE_PATH` | `deploy/Dockerfile` |
+| `RAILWAY_DOCKERFILE_PATH` | `deploy/Dockerfile.api` |
 | `PARAMYTH_WORKSPACE` | `/data` |
 | `RAILWAY_RUN_UID` | `0` |
 | `PORT` | `8000` |
@@ -28,7 +41,7 @@ environment variables or commit a credentials file. Apply database migrations
 separately with the migration role; the running app uses the restricted role.
 
 Generate a Railway domain targeting port 8000. Its `RAILWAY_PUBLIC_DOMAIN`
-automatically enables hosted account isolation. For a custom domain, add the
+automatically enables hosted account isolation. For a backend custom domain, add the
 domain in Railway, configure the DNS records Railway supplies, and set
 `PARAMYTH_PUBLIC_ORIGIN` to that exact HTTPS origin. The application rejects
 other hostnames, apart from Railway's healthcheck endpoint. Confirm the new

@@ -34,19 +34,28 @@ def origin(request):
 
 def same_origin(request):
     supplied = request.headers.get('origin')
-    if (supplied and supplied != origin(request)) or request.headers.get('sec-fetch-site') == 'cross-site':
+    trusted = {origin(request)}
+    frontend = getattr(request.app.state, 'frontend_origin', '')
+    if frontend:
+        trusted.add(frontend)
+    if (supplied and supplied not in trusted) or (request.headers.get('sec-fetch-site') == 'cross-site' and supplied not in trusted):
         raise HTTPException(403, 'Origin rejected')
 
 
 def set_session(response, request, session):
+    frontend = getattr(request.app.state, 'frontend_origin', '')
+    same_site = 'none' if frontend and frontend != origin(request) else 'lax'
     response.set_cookie(COOKIE, session['token'], max_age=SESSION_SECONDS,
                         httponly=True, secure=origin(request).startswith('https://'),
-                        samesite='lax', path='/')
+                        samesite=same_site, path='/')
     response.headers['Cache-Control'] = 'no-store'
 
 
-def clear_session(response):
-    response.delete_cookie(COOKIE, path='/', httponly=True, samesite='lax')
+def clear_session(response, request):
+    frontend = getattr(request.app.state, 'frontend_origin', '')
+    response.delete_cookie(COOKIE, path='/', httponly=True,
+                          secure=origin(request).startswith('https://'),
+                          samesite='none' if frontend and frontend != origin(request) else 'lax')
     for name in ('paramyth_project', 'pm_pipeline_project'):
         response.delete_cookie(name, path='/')
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { setAccountIdentity, studioHost } from './api'
+import { backendFetch, setAccountIdentity, studioHost } from './api'
 import AccountPage from './AccountPage'
 
 type Account = { id: string; email: string; display_name: string }
@@ -27,12 +27,12 @@ export default function AccountGate({children}: {children:ReactNode}) {
     let stopped=false
     const check=async () => {
       try {
-        const config=await fetch('/api/ui/public-config',{cache:'no-store'})
+        const config=await backendFetch('/api/ui/public-config',{cache:'no-store'})
         const value:Access=config.status===404 ? localAccess : await config.json()
         if (!config.ok && config.status!==404) throw Error('Could not check your sign-in. Please retry.')
         let signedIn:Account|null=null
         if(value.accounts_required){
-          const result=await fetch('/api/v1/accounts/me',{credentials:'same-origin',cache:'no-store'})
+          const result=await backendFetch('/api/v1/accounts/me',{cache:'no-store'})
           if(result.ok) signedIn=await result.json()
           else if(result.status!==401) throw Error('Account storage is unavailable. Please retry.')
         }

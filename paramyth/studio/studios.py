@@ -195,11 +195,11 @@ def me(ctx: Context):
 @router.post('/accounts/logout', status_code=204)
 def logout(request: Request, response: Response, ctx: Context):
     ctx[0].execute('DELETE FROM paramyth.sessions WHERE token_hash = %s', (digest(request_authorization(request).partition(' ')[2]),))
-    clear_session(response)
+    clear_session(response, request)
 
 
 @router.post('/accounts/password', status_code=204)
-def change_password(body: PasswordInput, response: Response, ctx: Context):
+def change_password(body: PasswordInput, request: Request, response: Response, ctx: Context):
     conn, user = ctx
     rate_limit('password', str(user['id']), 10)
     row = conn.execute('SELECT password_hash FROM paramyth.users WHERE id = %s FOR UPDATE', (user['id'],)).fetchone()
@@ -208,7 +208,7 @@ def change_password(body: PasswordInput, response: Response, ctx: Context):
     conn.execute('UPDATE paramyth.users SET password_hash = %s WHERE id = %s',
                  (password_hash(body.new_password), user['id']))
     conn.execute('DELETE FROM paramyth.sessions WHERE user_id = %s', (user['id'],))
-    clear_session(response)
+    clear_session(response, request)
 
 
 @router.get('/studios')

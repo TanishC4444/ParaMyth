@@ -25,7 +25,8 @@ if (pendingInvite) {
   $('invitation-token').value = pendingInvite;
   history.replaceState(null, '', location.pathname + location.search);
 }
-const defaultApi = location.pathname.startsWith('/studio/') ? location.origin : 'http://localhost:8000';
+const configuredApi = document.querySelector('meta[name="paramyth-api"]')?.content || '';
+const defaultApi = configuredApi || (location.pathname.startsWith('/studio/') ? location.origin : 'http://localhost:8000');
 try { $('team-api').value = location.pathname.startsWith('/studio/') ? defaultApi : localStorage.getItem('sf.api') || defaultApi; }
 catch { $('team-api').value = defaultApi; }
 // The bundled local UI already knows its server; only standalone hosting needs this setting.
@@ -46,7 +47,7 @@ function apiBase(value) {
 async function api(path, method = 'GET', body) {
   const response = await fetch(`${base}/api/v1${path}`, {
     method, headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {})},
-    body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin', cache: 'no-store',
+    body: body === undefined ? undefined : JSON.stringify(body), credentials: 'include', cache: 'no-store',
     signal: AbortSignal.timeout(30000),
   });
   const value = response.status === 204 ? null : await response.json();
@@ -206,7 +207,7 @@ on('logout', 'click', async () => {
 // Restore the HttpOnly session after refresh; no bearer token goes into browser storage.
 (async () => {
   if (!location.pathname.startsWith('/studio/')) return;
-  base = location.origin;
+  base = defaultApi;
   try {
     user = await api('/accounts/me');
     $('account').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;

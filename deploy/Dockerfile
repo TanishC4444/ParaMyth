@@ -3,6 +3,7 @@ WORKDIR /build
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 COPY frontend/ ./
+COPY web/ /web/
 RUN pnpm build
 
 FROM python:3.12-slim
