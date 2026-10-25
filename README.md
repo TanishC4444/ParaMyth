@@ -244,6 +244,14 @@ apart, adds a meal break by hour five and a 12-hour turnaround, and reports
 scenes it cannot fit. Up to three PNG, JPEG or WebP scene images (5 MB each)
 can guide scouting criteria; they never prove a real address or permission.
 
+With a filming `region` and `SERPAPI_API_KEY` set, up to `search_limit` (0–3)
+targeted web searches look for film offices, location libraries and permit
+rules. Results are cached in `production/search-cache.sqlite` (24 hours, 6 for
+legal), capped at `PARAMYTH_SEARCH_DAILY_LIMIT` searches a day (default 10), and
+can fail over to comma-separated `SERPAPI_BACKUP_KEYS`. Keys are never stored.
+Recommendations may name a real place only when a search result supports it,
+and every cited result stays a lead to verify.
+
 Plans are saved under `production/plans/` as drafts. Rates are model estimates,
 not quotes, and unknown costs are left out of totals. Permits, availability and
 legal requirements always need verification. Install the `production` extra for

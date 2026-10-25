@@ -6,10 +6,12 @@ from datetime import datetime, timedelta, timezone, date, time
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import vultr
+from .production_research import Search
 from .providers import ProviderError, request_json
 from .storage import load, save
 from .story_context import context
@@ -255,7 +257,8 @@ def validate_recommendations(value, evidence):
 
 
 def create_plan(folder, raw, images=(), progress=lambda message:None, search=None):
-    """Plan from the run folder's story. search(query, purpose) adds cited web research."""
+    """Plan from the run folder's story. search(query, purpose) adds cited web research;
+    by default SerpAPI is used when SERPAPI_API_KEY is configured."""
     cfg=normalize_config(raw); folder=Path(folder)
     sources=context(folder)
     # Give every narrative source room; bound transmission for usage control.
@@ -271,6 +274,8 @@ def create_plan(folder, raw, images=(), progress=lambda message:None, search=Non
             row['basis']+='; provisional quantity expanded to all scheduled shoot days — verify scope'
     costs=budget(breakdown.get('budget_items',[]),cfg)
     research=[];evidence=[];warnings=[]
+    if search is None and cfg['region'] and os.getenv('SERPAPI_API_KEY','').strip():
+        search=Search(folder/'production',daily_limit=os.getenv('PARAMYTH_SEARCH_DAILY_LIMIT','10'),plan_limit=cfg['search_limit'])
     if cfg['region'] and search is None:
         warnings.append('Web research is not configured: location and jurisdiction-specific research skipped.')
     elif cfg['region']:

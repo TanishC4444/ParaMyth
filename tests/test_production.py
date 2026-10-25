@@ -10,7 +10,7 @@ from unittest.mock import patch
 from paramyth.production import Muse, budget, create_plan, normalize_config, schedule, validate_breakdown, validate_recommendations
 from paramyth.providers import ProviderError
 
-KEY = {'VULTR_INFERENCE_API_KEY': 'test-key'}
+KEY = {'VULTR_INFERENCE_API_KEY': 'test-key', 'SERPAPI_API_KEY': ''}
 
 
 def scene(ident='s1', **overrides):
