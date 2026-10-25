@@ -120,8 +120,6 @@ class Vultr:
         spec = next((m for m in models if m['id'] == model), None)
         if spec is None: raise ValueError('Select an available Vultr music model.')
         if cue['mode'] == 'ambience': raise ValueError('Use local ambience for environmental soundtracks.')
-        if cue['mode']=='score' and (model=='minimax-music3' or spec.get('instrumental') is False):
-            raise ValueError('MiniMax Music 3 is a vocal-song model and cannot reliably make an instrumental score. Choose Song with vocals, Simple nature sounds, or connect an instrumental-capable provider.')
         if cue['mode'] == 'score':
             # Section tags satisfy the model's lyrics field without supplying sung words.
             lyrics = '[Instrumental]\n[Intro]\n[Instrumental]\n[Bridge]\n[Instrumental]\n[Outro]'
@@ -141,6 +139,10 @@ class Vultr:
 def music_payload(cue,model,seconds,lyrics):
     """Keep story prose out of a musical caption and repeat the same take."""
     import hashlib
+    # Request a vocal-free arrangement through the documented section tags.
+    # The provider rejects instrumental=True; prompt guidance is best effort.
+    if cue['mode']=='score':
+        lyrics='[Instrumental]\n[Intro]\n[Instrumental]\n[Bridge]\n[Instrumental]\n[Outro]'
     direction=cue.get('author_direction') or cue['prompt']
     vocal='No singing, choir, speech or vocals.' if cue['mode']=='score' else 'Follow the author direction.'
     caption='Global Metadata\nBasic Attributes: '+direction.strip()+'\nVocal Details\nVocal Style: '+vocal+'\nArrangement\nInstrument Lifecycle Description (Primary/Secondary Layering):\nPrimary: Follow the instruments and exclusions in Basic Attributes. Do not add a conflicting genre.'

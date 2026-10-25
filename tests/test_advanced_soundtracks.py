@@ -64,8 +64,13 @@ class SoundtracksTests(unittest.TestCase):
             result = provider.create(plan(self.root, 'song'), spec['id'], 30, 'Rain over the harbor')
             self.assertEqual(result['id'], 'music_abc')
             self.assertEqual(request.call_args.args[1]['lyrics'], 'Rain over the harbor')
-        with patch.object(provider,'json',return_value={'data':[spec]}):
-            with self.assertRaisesRegex(ValueError,'vocal-song'):provider.create(plan(self.root,'score'),spec['id'],60)
+        with patch.object(provider,'json',side_effect=[{'data':[{**spec, 'instrumental': False}]}, {'id':'music_score'}]) as request:
+            provider.create(plan(self.root,'score'),spec['id'],60,'Old song lyrics')
+            payload=request.call_args.args[1]
+            self.assertIn('[Instrumental]',payload['lyrics'])
+            self.assertNotIn('Old song lyrics',payload['lyrics'])
+            self.assertIn('No singing, choir, speech or vocals.',payload['prompt'])
+            self.assertNotIn('instrumental',payload)
         spec={**spec,'id':'instrumental-model','lyrics':'optional'}
         with patch.object(provider, 'json', side_effect=[{'data':[spec]}, {'id':'music_score'}]) as request:
             provider.create(plan(self.root, 'score', 'Soft solo piano. No drums or strings.'), spec['id'], 60)

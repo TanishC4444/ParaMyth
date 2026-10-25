@@ -14,9 +14,19 @@ from .deps import LOCAL, RUNTIME, WRITE, folder
 from .music_archive import guard as archive_guard
 
 router = APIRouter(tags=['soundtracks'], dependencies=LOCAL)
+local_router = APIRouter(tags=['soundtracks'], dependencies=LOCAL)
 TRACK_ID = re.compile(r'(music|local)_[a-f0-9]{24}')
 DONE = ('completed', 'failed', 'cancelled', 'expired')
 MAX_SAVE_BYTES = 100 * 1024 * 1024
+
+
+@local_router.post('/api/ui/music', dependencies=WRITE, status_code=202)
+def create_from_workspace(request: Request, data: dict = Body(...), runtime=RUNTIME):
+    """Use the same soundtrack inputs in the local and hosted workspace."""
+    from ..pipeline.media_workspace import create_music, material
+    current = folder(request, runtime)
+    selected = material(current, data.get('source', 'latest'), str(data.get('prompt', '')), data.get('use_story', True))
+    return {'job_id': runtime.submit('music', current, lambda progress: create_music(current, data, progress, selected=selected))}
 
 
 def record(current, ident):

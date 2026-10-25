@@ -128,7 +128,7 @@ def music_settings(folder, data, models, *, selected=None):
         value['lyrics']=lyrics['lyrics']
     spec=next((m for m in models if m['id']==value.get('model')),models[0] if models else None)
     if mode!='ambience' and not spec:raise ValueError('Connect a music provider in Connections or choose Simple nature sounds')
-    if mode=='score' and (spec['id']=='minimax-music3' or spec.get('instrumental') is False):raise ValueError('The connected music model makes songs with vocals, not reliable instrumental scores. Choose Song with vocals or Simple nature sounds.')
+    if mode=='score':value['lyrics']=''
     if spec and len(author)+500>spec.get('prompt_max_length',6000):raise ValueError('Shorten the description to fit this music model; your text will not be silently cut off')
     limits=(spec or {}).get('duration',{}) if mode!='ambience' else {}
     seconds=max(int(limits.get('min',5)),min(int(limits.get('max',360)),int(value.get('seconds') or 60)))

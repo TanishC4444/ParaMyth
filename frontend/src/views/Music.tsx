@@ -31,7 +31,7 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
   })
   const busy = submitting || !!pendingJob
   const selectedModel = models.find((m) => m.id === model)
-  const scoreUnavailable = !model || model === "minimax-music3" || selectedModel?.instrumental === false
+  const scoreUnavailable = !model
   const minSeconds=mode==='ambience'?5:selectedModel?.duration?.min || 5
   const maxSeconds=mode==='ambience'?360:selectedModel?.duration?.max || 360
   useEffect(()=>{if(seconds<minSeconds||seconds>maxSeconds)setSeconds(Math.max(minSeconds,Math.min(maxSeconds,seconds)))},[seconds,minSeconds,maxSeconds])
@@ -141,13 +141,13 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
           <details className="workspace-options"><summary>Sound settings{automatic ? " · automatic" : ""}</summary>
           <p className="hint">{automatic ? 'Turn off automatic settings to use your choices below.' : 'Choose the sound type and duration below.'}</p>
           <label className="field">Sound type
-            <select disabled={automatic||busy} value={mode} onChange={(e) => setMode(e.target.value)}>
+            <select disabled={busy} value={mode} onChange={(e) => { setMode(e.target.value); setAutomatic(false) }}>
               <option value="ambience">Ambient soundscape</option>
-              <option value="score" disabled={scoreUnavailable}>Cinematic score{scoreUnavailable ? " · provider needed" : ""}</option>
+              <option value="score">Instrumental · no vocals</option>
               <option value="song">Song with lyrics</option>
             </select>
           </label>
-          {scoreUnavailable && <p className="hint">The connected provider does not support instrumental scores. You can create nature sounds locally or choose a song with lyrics.</p>}
+          {mode === 'score' && <p className="hint">Requests instruments only, with no sung words. The music model may still produce vocal sounds; listen to the result before using it.</p>}
           <label className="field">{mode!=='ambience'&&selectedModel?.duration?.semantics==='max'?'Maximum duration':'Duration'} · {seconds} seconds
             <input disabled={automatic||busy} type="range" min={minSeconds} max={maxSeconds} value={seconds} onChange={(e) => setSeconds(Number(e.target.value))} />
           </label>

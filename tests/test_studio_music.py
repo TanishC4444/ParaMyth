@@ -43,6 +43,29 @@ class MusicTests(StudioTestCase):
         saved = self.client.post(f'/api/studio/music/{track}/save', params=self.query, headers=self.headers).json()
         self.assertEqual(saved['file'], f'soundtracks/{track}.wav')
 
+    def test_local_workspace_submits_and_saves_instrumental_request(self):
+        body={'mode':'score','seconds':30,'model':'minimax-music3','prompt':'Solo piano, no vocals',
+              'use_story':False,'automatic':False,'lyrics':'Old song lyrics'}
+        self.assertEqual(self.client.post('/api/ui/music', params=self.query, json=body).status_code,403)
+        spec={**SPEC,'lyrics':'required','instrumental':False}
+        with patch.dict(os.environ,KEY), patch('paramyth.pipeline.soundtracks.Vultr.json',
+                side_effect=[{'data':[spec]},{'data':[spec]},{'id':JOB,'status':'queued'}]) as provider:
+            started=self.client.post('/api/ui/music',params=self.query,json=body,headers=self.headers)
+            self.assertEqual(started.status_code,202,started.text)
+            self.assertFalse(started.json().get('local',False))
+            job=wait(self.runtime,started.json()['job_id'])
+        self.assertEqual(job['status'],'complete',job)
+        payload=provider.call_args.args[1]
+        self.assertIn('[Instrumental]',payload['lyrics'])
+        self.assertNotIn('Old song lyrics',payload['lyrics'])
+        self.assertIn('No singing, choir, speech or vocals.',payload['prompt'])
+        self.assertNotIn('instrumental',payload)
+        self.assertEqual(job['result']['submission'],payload)
+        self.assertEqual(self.client.get('/api/job/'+job['id'],params=self.query).status_code,200)
+        track=self.client.get('/api/studio/music',params=self.query).json()['tracks'][0]
+        self.assertEqual(track['cue']['mode'],'score')
+        self.assertEqual(track['settings']['lyrics'],'')
+
     def test_score_job_polls_saves_and_streams_from_vultr(self):
         with patch.dict(os.environ, KEY), patch('paramyth.soundtracks.request_json', side_effect=[{'data': [SPEC]}, {'id': JOB, 'status': 'queued'}]):
             job = wait(self.runtime, self.create({'mode': 'score', 'seconds': 30}).json()['job_id'])
