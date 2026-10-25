@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#112635" />
-    <meta name="description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story in the ParaMyth studio." />
+    <meta name="description" content="Story development for creative directors. Explore classic stories, brainstorm concepts, draft treatments, and plan a production direction." />
     <title>ParaMyth · A world of stories</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -13,16 +13,16 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ParaMyth" />
     <meta property="og:title" content="ParaMyth · A world of stories" />
-    <meta property="og:description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story in the ParaMyth studio." />
+    <meta property="og:description" content="Story development for creative directors. Explore classic stories, brainstorm concepts, draft treatments, and plan a production direction." />
     <meta property="og:url" content="https://paramyth.tech/" />
-    <meta property="og:image" content="https://paramyth.tech/brand/paramyth-logo.png" />
+    <meta property="og:image" content="https://paramyth.tech/brand/paramyth-logo.webp" />
     <meta property="og:image:width" content="1280" />
     <meta property="og:image:height" content="720" />
     <meta property="og:image:alt" content="ParaMyth" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ParaMyth · A world of stories" />
     <meta name="twitter:description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story." />
-    <meta name="twitter:image" content="https://paramyth.tech/brand/paramyth-logo.png" />
+    <meta name="twitter:image" content="https://paramyth.tech/brand/paramyth-logo.webp" />
     <style>
       /* Shown until the app's code arrives; React replaces it on first render. */
       html,body{margin:0;background:#112635}
@@ -36,7 +36,24 @@
   </head>
   <body>
     <noscript><p>ParaMyth needs JavaScript to show the story atlas and studio. Turn it on and reload, or browse the source at <a href="https://github.com/TanishC4444/ParaMyth">github.com/TanishC4444/ParaMyth</a>.</p></noscript>
-    <div id="root"><div class="boot" role="status"><svg viewBox="0 0 64 64" fill="none" stroke="#ebc78b" stroke-width="1.6" aria-hidden="true"><circle cx="32" cy="32" r="24"/><path d="M32 12.5 35.6 28.4 51.5 32 35.6 35.6 32 51.5 28.4 35.6 12.5 32 28.4 28.4Z" fill="#ebc78b" fill-opacity=".2"/></svg>Opening a world of stories…</div></div>
+    <div id="root"><div class="boot" role="status"><svg viewBox="0 0 64 64" fill="none" stroke="#ebc78b" stroke-width="1.6" aria-hidden="true"><circle cx="32" cy="32" r="24"/><path d="M32 12.5 35.6 28.4 51.5 32 35.6 35.6 32 51.5 28.4 35.6 12.5 32 28.4 28.4Z" fill="#ebc78b" fill-opacity=".2"/></svg>Loading ParaMyth…</div></div>
+    <script>
+      // React cannot catch a failure to download its own entry module.
+      function offerRecovery() {
+        var boot = document.querySelector('.boot');
+        if (!boot || boot.querySelector('a')) return;
+        var message = document.createElement('p');
+        message.textContent = 'Taking longer than expected. Check your connection and reload.';
+        message.style.cssText = 'max-width:360px;font:13px/1.7 system-ui,sans-serif;margin:0;color:#b6cac0';
+        var retry = document.createElement('a');
+        retry.href = location.href;
+        retry.textContent = 'Reload ParaMyth';
+        retry.style.cssText = 'font:600 13px system-ui,sans-serif;color:#ebc78b;text-underline-offset:5px';
+        boot.appendChild(message); boot.appendChild(retry);
+      }
+      window.addEventListener('error', function(event) { if (event.target && event.target.tagName === 'SCRIPT') offerRecovery(); }, true);
+      setTimeout(offerRecovery, 15000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -11,6 +11,7 @@ import {
   useCallback,
 } from "react"
 import { api as requestApi, currentAccountIdentity, studioHost, projectPath, studioJobs, type Job } from "./api"
+import { resolveRoute } from "./routes"
 import { STATIC_SITE } from "./site"
 import { uid, now, modeOf } from "./data"
 import { errorText } from "./ui"
@@ -22,30 +23,7 @@ import type {
   Store,
   View,
 } from "./types"
-const VIEWS: View[] = [
-  "workflow",
-  "landing",
-  "overview",
-  "projects",
-  "project",
-  "atlas",
-  "runs",
-  "creative",
-  "retrieval",
-  "images",
-  "music",
-  "production",
-  "library",
-  "news",
-  "connections",
-]
-const routeView = (): View => {
-  const v = location.hash.replace(/^#\/?/, "").split("/")[0] as View
-  if (["creative", "images", "music", "production", "project"].includes(v)) return "workflow"
-  if (VIEWS.includes(v)) return v
-  // "#/something" is a route that does not exist; bare "#anchor" links stay on the landing.
-  return location.hash.startsWith("#/") && v ? "notfound" : "landing"
-}
+const routeView = () => resolveRoute(location.hash)
 export const blankProject = (): Project => ({
   id: "",
   title: "Your new story",

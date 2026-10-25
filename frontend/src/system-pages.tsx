@@ -12,6 +12,10 @@ export function PageLoading({ label = "Opening this page…", light = false }: {
   </div>
 }
 
+export function RecoveryPage({ message = "The page could not load. Check your connection and try again." }: { message?: string }) {
+  return <div className="night-page system-page" role="alert"><header className="pm-bar"><Wordmark /></header><main className="system-page-main"><h1>We couldn’t <em>open this page.</em></h1><p className="system-page-lede">{message}</p><div className="system-page-actions"><button className="pm-plate" onClick={() => location.reload()}>Try Again</button><a className="pm-plate ghost" href="/">Back to ParaMyth</a><a className="system-page-link" href={`${REPOSITORY}/issues`} target="_blank" rel="noreferrer">Get Support ↗</a></div></main></div>;
+}
+
 /** Shown for "#/..." routes that do not exist. */
 export function NotFound() {
   const route = location.hash.replace(/^#\/?/, "")
@@ -19,12 +23,12 @@ export function NotFound() {
     <header className="pm-bar"><Wordmark /></header>
     <main className="system-page-main" id="system-main" tabIndex={-1}>
       <p className="pm-kicker"><span>404 · Page not found</span></p>
-      <h1>This chapter <em>isn't written</em> yet.</h1>
+      <h1>Page <em>not found.</em></h1>
       <p className="system-page-lede">
         There is no page at <code>#/{route}</code>. It may have moved, or the link may be mistyped.
       </p>
       <div className="system-page-actions">
-        <a className="pm-plate" href="#/">Back to the beginning <span aria-hidden="true">→</span></a>
+        <a className="pm-plate" href="#/">Back to ParaMyth <span aria-hidden="true">→</span></a>
         <a className="pm-plate ghost" href="#/atlas">Open the story atlas</a>
         {!STATIC_SITE && <a className="pm-plate ghost" href="#/overview">Go to your studio</a>}
       </div>
@@ -72,15 +76,15 @@ export class AppErrorBoundary extends Component<{ children: ReactNode; resetKey?
       <header className="pm-bar"><Wordmark /></header>
       <main className="system-page-main">
         <p className="pm-kicker"><span>{stale ? "A newer version is available" : "Something went wrong"}</span></p>
-        <h1>{stale ? <>The story <em>moved on</em> without this tab.</> : <>This page <em>lost its place.</em></>}</h1>
+        <h1>{stale ? <>A site update <em>is ready.</em></> : <>This page <em>couldn’t load.</em></>}</h1>
         <p className="system-page-lede">
           {stale
             ? "ParaMyth was updated while this page was open. Reload to get the latest version."
-            : "Part of this page failed to load. Your saved work is not affected. Reload to try again, or head back to the beginning."}
+            : "Part of this page failed to load. Reload to try again, or return to ParaMyth."}
         </p>
         <div className="system-page-actions">
           <button className="pm-plate" onClick={() => location.reload()}>Reload <span aria-hidden="true">↻</span></button>
-          <a className="pm-plate ghost" href="#/" onClick={() => this.setState({ error: null })}>Back to the beginning</a>
+          <a className="pm-plate ghost" href="#/" onClick={() => this.setState({ error: null })}>Back to ParaMyth</a>
           <a className="system-page-link" href={`${REPOSITORY}/issues`} target="_blank" rel="noreferrer">Report this problem ↗</a>
         </div>
       </main>

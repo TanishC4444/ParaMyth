@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { backendFetch, setAccountIdentity, studioHost } from './api'
+import { PageLoading, RecoveryPage } from './system-pages'
+import { LEGAL_ROUTES } from './legal-routes'
+import { resolveRoute } from './routes'
 import AccountPage from './AccountPage'
 
 type Account = { id: string; email: string; display_name: string }
@@ -50,12 +53,12 @@ export default function AccountGate({children}: {children:ReactNode}) {
     window.addEventListener('paramyth-sign-in-required',changed)
     return()=>{stopped=true;window.removeEventListener('focus',changed);window.removeEventListener('storage',storage);window.removeEventListener('paramyth-sign-in-required',changed)}
   },[])
-  const publicRoute=route==='' || route==='atlas'
   const authRoute=route==='signin' || route==='signup'
+  const publicRoute=route==='' || route==='atlas' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!authRoute && resolveRoute('#/'+route)==='notfound')
   // The public Atlas must remain usable while account storage is waking up.
   if(publicRoute)return <AccessContext.Provider value={access || {accounts_required:true,shared_keys:true,github_admin:false,authenticated:false}}><div key={account?.id||'local'}>{children}</div></AccessContext.Provider>
-  if(error)return <><p className="account-notice" role="alert">{error} <button onClick={()=>location.reload()}>Retry</button></p><AccountPage signup={route==='signup'} available={false} onSignedIn={async()=>{}} /></>
-  if(!access || account===undefined)return <main className="page"><p>Opening your workspace...</p></main>
+  if(error)return <RecoveryPage message="We couldn’t connect to your Studio. Please check your connection and try again." />
+  if(!access || account===undefined)return <div className="night-page"><PageLoading label="Opening your workspace…" /></div>
   if(authRoute || (!publicRoute && (!studioHost() || access.accounts_required&&!account))) return <AccountPage key={route==='signup'?'signup':'signin'} signup={route==='signup'} available={studioHost()} onSignedIn={()=>checkAccount.current()} />
   return <AccessContext.Provider value={access}><div key={account?.id||'local'}>{account&&<div className="account-status" style={{padding:'8px 24px',display:'flex',gap:16,justifyContent:'flex-end'}}><span>Signed in as {account.display_name}</span><a href="/studio/teams.html">Account & sign out</a></div>}{children}</div></AccessContext.Provider>
 }

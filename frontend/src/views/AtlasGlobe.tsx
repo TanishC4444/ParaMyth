@@ -93,7 +93,7 @@ export default function AtlasGlobe(props: Props) {
     const homeDistance = () => Math.max(3.2, 1.04 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
     const home = () => camera.position.copy(position(25, 25).multiplyScalar(homeDistance()));
     home(); camera.lookAt(0, 0, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setClearColor(0x000000, 0);
     renderer.domElement.setAttribute("aria-label", "Interactive story globe. Drag to rotate, use arrow keys to turn and plus or minus to zoom.");
     renderer.domElement.setAttribute("role", "img");
@@ -108,7 +108,7 @@ export default function AtlasGlobe(props: Props) {
     controls.dampingFactor = .075;
     controls.rotateSpeed = .65;
     controls.minPolarAngle = .12; controls.maxPolarAngle = Math.PI - .12;
-    const geometry = new THREE.SphereGeometry(1, 128, 96);
+    const geometry = new THREE.SphereGeometry(1, 80, 56);
     const material = new THREE.MeshPhongMaterial({ color: "#ffffff", shininess: 32, specular: 0x376b78, bumpScale: .014 });
     scene.add(new THREE.Mesh(geometry, material));
     const atmosphereMaterial = new THREE.ShaderMaterial({
@@ -121,7 +121,8 @@ export default function AtlasGlobe(props: Props) {
     const light = new THREE.DirectionalLight(0xffefd9, 2.4);
     light.position.set(-3, 4, 5); camera.add(light); scene.add(camera);
 
-    let lastFrame = 0;
+    let lastFrame = 0, lastOverlay = 0;
+    const normals = new Map<string, THREE.Vector3>();
     const draw = (time: number) => {
       const dt = Math.min(64, lastFrame ? time - lastFrame : 16.67); lastFrame = time;
       frame = 0;
@@ -144,10 +145,15 @@ export default function AtlasGlobe(props: Props) {
       controls.update();
       camera.updateMatrixWorld();
       renderer.render(scene, camera);
+      // Keep the GPU motion fluid without rebuilding hundreds of DOM markers each frame.
+      if (time - lastOverlay < 60 && (targetPosition || frame)) return;
+      lastOverlay = time;
       const points: Marker[] = [];
       const ids: string[] = [];
       for (const story of latest.current.stories) {
-        const normal = position(story.lat, story.lng);
+        let cached = normals.get(story.id);
+        if (!cached) { cached = position(story.lat, story.lng); normals.set(story.id, cached); }
+        const normal = cached.clone();
         // Perspective horizon test: points on the far side must never be clickable.
         if (normal.dot(camera.position.clone().sub(normal)) <= .04) continue;
         const point = normal.multiplyScalar(1.006).project(camera);

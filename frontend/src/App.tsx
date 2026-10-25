@@ -13,6 +13,8 @@ import { STATIC_SITE } from "./site"
 
 import { AppErrorBoundary, NotFound, PageLoading } from "./system-pages"
 
+const Legal = lazy(() => import("./Legal"))
+
 const StaticStudio = lazy(() => import("./StaticStudio"))
 
 const Workflow = lazy(() => import("./views/Workflow"))
@@ -103,6 +105,7 @@ function Shell() {
   const [mobile, setMobile] = useState(false)
 
   useEffect(() => {
+    if (view === "legal") return
     const title = TITLES[view]
     document.title = title ? `${title} · ParaMyth` : "ParaMyth · A world of stories"
   }, [view])
@@ -115,6 +118,7 @@ function Shell() {
 
   const isLanding = view === "landing" || view === "atlas"
   const missing = view === "notfound"
+  const legal = view === "legal"
   const [visitedLanding, setVisitedLanding] = useState(isLanding)
   if (isLanding && !visitedLanding) setVisitedLanding(true)
 
@@ -122,7 +126,7 @@ function Shell() {
     (r) => r.status === "running" || r.status === "queued",
   ).length
 
-  const pages: Record<Exclude<View, "landing" | "atlas" | "notfound">, ReactElement> = {
+  const pages: Record<Exclude<View, "landing" | "atlas" | "notfound" | "legal">, ReactElement> = {
     workflow: <Workflow />,
     overview: <Overview />,
     projects: <Projects />,
@@ -143,14 +147,15 @@ function Shell() {
     <>
     {visitedLanding && <div hidden={!isLanding} className="workspace-view">
       <AppErrorBoundary resetKey={view}>
-        <Suspense fallback={<div className="landing-loading" role="status" style={{ background: "#111d31", color: "#d1dfcf", minHeight: "100svh", fontFamily: "sans-serif", fontSize: 12 }}>Loading ParaMyth…</div>}>
+        <Suspense fallback={<div className="night-page"><PageLoading label="Loading ParaMyth…" /></div>}>
           <Landing focusAtlas={view === "atlas"} active={isLanding} />
         </Suspense>
       </AppErrorBoundary>
     </div>}
     {missing && <NotFound />}
-    {STATIC_SITE ? !isLanding && !missing && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
-    <div className="app-shell" hidden={isLanding || missing}>
+    {legal && <AppErrorBoundary resetKey={location.hash}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><Legal key={location.hash} /></Suspense></AppErrorBoundary>}
+    {STATIC_SITE ? !isLanding && !missing && !legal && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
+    <div className="app-shell" hidden={isLanding || missing || legal}>
       <aside className={`sidebar ${mobile ? "open" : ""}`}>
         <button
           className="workspace-switch branded-workspace"
@@ -303,8 +308,8 @@ function PageCache({ pages, view }: { pages: Partial<Record<View, ReactElement>>
 
 export default function App() {
   return (
-    <AccountGate><StudioProvider>
+    <AppErrorBoundary><AccountGate><StudioProvider>
       <Shell />
-    </StudioProvider></AccountGate>
+    </StudioProvider></AccountGate></AppErrorBoundary>
   )
 }

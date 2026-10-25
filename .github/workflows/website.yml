@@ -29,6 +29,7 @@ jobs:
           corepack pnpm test:cinematic
           node --test tests/account-entry.test.cjs
           node --test tests/transport.test.cjs
+          corepack pnpm test:site
       - name: Build frontend
         working-directory: frontend
         env:
