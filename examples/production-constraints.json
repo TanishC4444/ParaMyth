@@ -1,0 +1,13 @@
+{
+  "region": "Galveston, Texas",
+  "currency": "USD",
+  "start_date": "2026-11-02",
+  "timezone": "America/Chicago",
+  "day_hours": 10,
+  "contingency": 15,
+  "budget_cap": 25000,
+  "skip_weekends": true,
+  "blackout_dates": [],
+  "cast_unavailable": {},
+  "location_unavailable": {}
+}

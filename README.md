@@ -222,6 +222,33 @@ charges. Scores are forced instrumental. Songs need lyrics when the model
 requires them, and durations must fit the model's limits (5–360 seconds).
 Cues and jobs are recorded under `soundtracks/`. Downloads are capped at 64 MB.
 
+## Production planning
+
+`paramyth.production` turns a story run folder into a draft shoot plan. Muse
+Glimmer on Vultr breaks the story into at most 16 filmable scene units with
+cast, lighting, dependencies, props, risks and estimated budget rows. A local
+scheduler then places them on shoot days, and the budget is recalculated with
+exact decimal arithmetic. Set `VULTR_INFERENCE_API_KEY`; each plan makes two
+model calls and can incur charges.
+
+```sh
+python -m paramyth.production --folder runs/harbor --constraints examples/production-constraints.json
+python -m paramyth.production --folder runs/harbor --image harbor-scene.png
+```
+
+Constraints set the filming `region`, `currency`, `start_date`, `timezone`, workday
+hours, setup and move minutes, contingency percent, an optional `budget_cap`,
+weekend skipping, blackout dates and cast or location unavailability. The
+scheduler respects dependencies and availability, keeps day and night shoots
+apart, adds a meal break by hour five and a 12-hour turnaround, and reports
+scenes it cannot fit. Up to three PNG, JPEG or WebP scene images (5 MB each)
+can guide scouting criteria; they never prove a real address or permission.
+
+Plans are saved under `production/plans/` as drafts. Rates are model estimates,
+not quotes, and unknown costs are left out of totals. Permits, availability and
+legal requirements always need verification. Install the `production` extra for
+time-zone data on systems without it.
+
 ## Meta image generation
 
 The image backend prepares story-aware prompts locally and generates one PNG per
