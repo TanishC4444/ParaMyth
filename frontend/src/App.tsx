@@ -32,6 +32,8 @@ import Library from "./views/Library"
 
 import Connections from "./views/Connections"
 
+import News from "./views/News"
+
 const Landing = lazy(() => import("./views/Landing"))
 
 const NAV: { group: string; items: [View, string, string][] }[] = [
@@ -50,6 +52,7 @@ const NAV: { group: string; items: [View, string, string][] }[] = [
     group: "Develop",
     items: [
       ["retrieval", "retrieval", "Literary retrieval"],
+      ["news", "news", "Industry news"],
     ],
   },
 
@@ -105,6 +108,7 @@ function Shell() {
     music: <Music />,
     production: <Production />,
     library: <Library />,
+    news: <News />,
     connections: <Connections />,
   }
 
@@ -222,7 +226,7 @@ function Shell() {
           </p>
         ) : (
           <>
-            {!["workflow", "projects", "overview", "connections", "retrieval"].includes(
+            {!["workflow", "projects", "overview", "connections", "retrieval", "news"].includes(
               view,
             ) && <Journey />}
             {!project.id &&

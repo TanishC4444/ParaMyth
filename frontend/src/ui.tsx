@@ -10,6 +10,7 @@ const paths: Record<string, ReactNode> = {
   images: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m21 16-5-5-9 9" /></>,
   music: <><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></>,
   production: <><rect x="3" y="9" width="18" height="11" rx="1.5" /><path d="m3 9 3-5 4 5M10 4l4 5M14 4l4 5" /></>,
+  news: <><path d="M5 4h12v16H7a2 2 0 0 1-2-2z" /><path d="M17 8h2v10a2 2 0 0 1-2 2" /><path d="M8 8h6M8 12h6M8 16h4" /></>,
   library: <><path d="M4 4h6l2 3h8v13H4z" /><path d="M9 13h6M9 16h4" /></>,
   connections: <><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0z" /><path d="M12 16v5" /></>,
   atlas: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" /></>,

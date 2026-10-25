@@ -33,6 +33,7 @@ const VIEWS: View[] = [
   "music",
   "production",
   "library",
+  "news",
   "connections",
 ]
 const routeView = (): View => {
