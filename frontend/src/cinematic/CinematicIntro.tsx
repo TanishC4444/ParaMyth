@@ -1,5 +1,4 @@
 import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type RefObject } from "react";
-import { BrandLogo } from "../brand";
 import { Artwork } from "../art";
 import Storybook, { type BookActions } from "./Storybook";
 import { SCENES } from "./scenes";
@@ -132,7 +131,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
   useEffect(() => { if (!active) saveNavigation({ view: root.current?.dataset.finished === "true" ? "atlas" : "book", bookProgress: bookmark.current }); if (active) { if (focusAtlas) controls.current?.enter(); else controls.current?.restore(); } }, [active, focusAtlas]);
   return <section ref={root} tabIndex={-1} className="cinematic-intro" aria-label="Illustrated storybook">
     <div className="cinema-stage">
-      <div className="book-masthead"><h1 className="paramyth-wordmark"><BrandLogo /></h1></div>
+      <div className="book-masthead"><h1 className="paramyth-wordmark" aria-label="ParaMyth">Para<em>Myth</em></h1></div>
       <div className="scene-notes notes-left">
         {SCENES.map((item, i) => <article className="scene-note" key={item.label} aria-hidden={scene !== i} style={{ "--reveal": `var(--scene${i})` } as CSSProperties}>
           <span className="scene-kicker">{String(i + 1).padStart(2, "0")} / {item.label}</span>

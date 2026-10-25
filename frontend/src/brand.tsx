@@ -17,7 +17,10 @@ export function BrandLogo({ className = "" }: { className?: string }) {
 }
 
 export function Wordmark({ href = "#/" }: { href?: string }) {
-  return <a className="pm-wordmark" href={href} aria-label="ParaMyth home"><BrandLogo /></a>
+  return <a className="pm-wordmark" href={href} aria-label="ParaMyth home">
+    <Emblem />
+    <span className="pm-wordmark-name">Para<em>Myth</em></span>
+  </a>
 }
 
 export const STUDIO_STEPS: [string, string][] = [
