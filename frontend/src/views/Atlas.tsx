@@ -333,7 +333,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
             ? "EXPLORE THE WORLD"
             : "BEGIN WITH A TALE"
         }
-        title="Story Atlas"
+        title="Story atlas"
         text=""
       >
         <div className="atlas-mode" aria-label="Atlas display">
@@ -518,7 +518,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                       : "Matches"
                     : listed.length === 1
                       ? "Story"
-                      : "Stories"}
+                      : "Stories"}{!searching && !cluster && <small className="atlas-view-count"> in this view</small>}
                 </h2>
                 <p className="hint">
                   {mode === "globe"

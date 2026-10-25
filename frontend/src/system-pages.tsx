@@ -18,14 +18,14 @@ export function RecoveryPage({ message = "The page could not load. Check your co
 
 /** Shown for "#/..." routes that do not exist. */
 export function NotFound() {
-  const route = location.hash.replace(/^#\/?/, "")
+  const route = location.pathname && !['/','/index.html'].includes(location.pathname) ? location.pathname : location.hash
   return <div className="night-page system-page">
     <header className="pm-bar"><Wordmark /></header>
     <main className="system-page-main" id="system-main" tabIndex={-1}>
       <p className="pm-kicker"><span>404 · Page not found</span></p>
       <h1>Page <em>not found.</em></h1>
       <p className="system-page-lede">
-        There is no page at <code>#/{route}</code>. It may have moved, or the link may be mistyped.
+        There is no page at <code>{route}</code>. It may have moved, or the link may be mistyped.
       </p>
       <div className="system-page-actions">
         <a className="pm-plate" href="#/">Back to ParaMyth <span aria-hidden="true">→</span></a>

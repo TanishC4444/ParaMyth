@@ -139,11 +139,11 @@ function ManuscriptTab() {
       <div className="paper">
         <select className="mobile-scenes" aria-label="Scene" value={scene.id} onChange={(e) => setSceneId(e.target.value)}>{project.scenes.map((s) => <option value={s.id} key={s.id}>Ch. {s.chapter} · {s.title} ({s.state.toLowerCase()})</option>)}</select>
         <div className="scene-meta"><Status>{scene.state}</Status>{scene.acceptedHash && <code title="Acceptance is locked to this exact version of the text">#{scene.acceptedHash}</code>}<span>Ch. {scene.chapter}</span>
-          <input aria-label="Point of view" placeholder="POV" value={scene.pov} onChange={(e) => setScene({ pov: e.target.value })} />
-          <input aria-label="Location" placeholder="Location" value={scene.location} onChange={(e) => setScene({ location: e.target.value })} /></div>
+          <label>Point of view<input placeholder="Add viewpoint" value={scene.pov} onChange={(e) => setScene({ pov: e.target.value })} /></label>
+          <label>Location<input placeholder="Add location" value={scene.location} onChange={(e) => setScene({ location: e.target.value })} /></label></div>
         <input aria-label="Scene title" value={scene.title} onChange={(e) => setScene({ title: e.target.value })} />
         <textarea ref={textRef} aria-label="Scene prose" value={scene.content} placeholder="Start writing, or run a pipeline to draft this scene." onChange={(e) => setScene({ content: e.target.value })} />
-        <div className="wordcount"><span className={n && (n < project.brief.wordMin || n > project.brief.wordMax) ? "off" : ""}>{n} words · target {project.brief.wordMin}–{project.brief.wordMax} ({project.brief.lengthMode.toLowerCase()})</span>{scene.state === "Provisional" && <em>Edited after acceptance, so it needs another review</em>}</div>
+        <div className="wordcount"><span className={n && (n < project.brief.wordMin || n > project.brief.wordMax) ? "off" : ""}>{n} words · target {project.brief.wordMin}–{project.brief.wordMax} ({(project.brief.lengthMode || 'Guided').toLowerCase()})</span>{scene.state === "Provisional" && <em>Edited after acceptance, so it needs another review</em>}</div>
       </div>
     </article>
 
@@ -207,16 +207,16 @@ function CanonTab() {
   };
   const setFact = (id: string, patch: Partial<Fact>) => updateProject(project.id, (p) => ({ canon: p.canon.map((f) => f.id === id ? { ...f, ...patch } : f) }));
   return <div className="page">
-    <div className="canon-stats">{(["Accepted", "Provisional", "Quarantined"] as const).map((s) => <div className="panel" key={s}><b>{project.canon.filter((f) => f.state === s).length}</b><span>{s} facts</span></div>)}<div className="panel"><b>{holders.filter((h) => h !== "Public" && h !== "Reader").length}</b><span>private knowledge holders</span></div></div>
+    <div className="canon-stats">{(["Accepted", "Provisional", "Quarantined"] as const).map((s) => <div className="panel" key={s}><b>{project.canon.filter((f) => f.state === s).length}</b><span>{s} facts</span></div>)}<div className="panel"><b>{holders.filter((h) => h !== "Public" && h !== "Reader").length}</b><span>Private knowledge holders</span></div></div>
     <div className="canon-layout">
       <section>
-        <div className="toolbar"><select aria-label="Fact kind" value={kind} onChange={(e) => setKind(e.target.value as FactKind | "All")}><option>All</option>{FACT_KINDS.map((k) => <option key={k}>{k}</option>)}</select><select aria-label="Knowledge holder" value={holder} onChange={(e) => setHolder(e.target.value)}><option>All</option>{holders.map((h) => <option key={h}>{h}</option>)}</select></div>
+        <div className="toolbar"><label>Fact kind<select value={kind} onChange={(e) => setKind(e.target.value as FactKind | "All")}><option value="All">All kinds</option>{FACT_KINDS.map((k) => <option key={k}>{k}</option>)}</select></label><label>Knowledge holder<select value={holder} onChange={(e) => setHolder(e.target.value)}><option value="All">All holders</option>{holders.map((h) => <option key={h}>{h}</option>)}</select></label></div>
         <div className="ledger">{facts.map((f) => <div className={`fact ${f.state.toLowerCase()}`} key={f.id}>
           <span className="kind">{f.kind}</span>
           <div><p>{f.text}</p><small>Source: {sceneTitle(f.sceneId)} · Known to {f.holders.join(", ")}{f.thread ? ` · Thread ${f.thread.toLowerCase()}` : ""}</small></div>
           <Status>{f.state}</Status>
           {f.state !== "Quarantined" ? <button className="link" onClick={() => setFact(f.id, { state: "Quarantined" })}>Quarantine</button> : <button className="link" onClick={() => setFact(f.id, { state: "Provisional" })}>Restore</button>}
-        </div>)}{!facts.length && <p className="quiet">No facts match.</p>}</div>
+        </div>)}{!facts.length && <p className="canon-empty">No facts match these filters. Choose another kind or knowledge holder.</p>}</div>
         <p className="hint">These author notes are saved with your project. Quarantine facts to keep their history. Original runner canon and review evidence stay available in Project files.</p>
       </section>
       <aside>
@@ -240,5 +240,5 @@ function CanonTab() {
 
 function PipelineTab() {
   const { project, startRun, go, jobs } = useStudio();
-  return <div className="page"><div className="mode-grid">{MODES.map(m=><article className="panel mode-card" key={m.id}><code className="mode-file">{m.workflow}</code><h2>{m.name}</h2><p>{m.summary}</p><ol>{m.stages.map(s=><li key={s}>{s}</li>)}</ol><button className="primary" onClick={()=>startRun(project.id,m.id)}>Configure workflow</button></article>)}</div><section className="panel"><h2>Current studio jobs</h2>{jobs.map(j=><p key={j.id}>{j.kind} · {j.status} · {j.message}</p>)}{!jobs.length&&<p>No studio jobs for this story yet.</p>}<button className="secondary" onClick={()=>go('runs')}>Open GitHub history and all workflows</button></section></div>;
+  return <div className="page"><div className="mode-grid">{MODES.map(m=><article className="panel mode-card" key={m.id}><details className="mode-source"><summary>Workflow details</summary><code>{m.workflow}</code></details><h2>{m.name}</h2><p>{m.summary}</p><ol>{m.stages.map(s=><li key={s}>{s}</li>)}</ol><button className="primary" onClick={()=>startRun(project.id,m.id)}>Configure workflow</button></article>)}</div><section className="panel"><h2>Current studio jobs</h2>{jobs.map(j=><p key={j.id}>{j.kind} · {j.status} · {j.message}</p>)}{!jobs.length&&<p>No studio jobs for this story yet.</p>}<button className="secondary" onClick={()=>go('runs')}>Open GitHub history and all workflows</button></section></div>;
 }

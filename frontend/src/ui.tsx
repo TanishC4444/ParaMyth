@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { requestMessage } from './request-errors';
 
 const paths: Record<string, ReactNode> = {
   chevron: <path d="m8 10 4 4 4-4" />,
@@ -33,7 +34,7 @@ const paths: Record<string, ReactNode> = {
   pin: <><path d="M9 3h6l-1 6 4 4H6l4-4z" /><path d="M12 13v8" /></>,
   pen: <><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
   sparkle: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />,
-  settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-1 .2-2.2-2.6-1.5L13 7.1 11 6 9.4 7.1 6.8 5.8 4.2 7.3 4.4 9.5l-2 1v3l2 1-.2 2.2 2.6 1.5L8.5 17l2 1.1 1.7-1.2 2.6 1.3 2.6-1.5-.2-2.2z" /></>,
+  settings: <><circle cx="12" cy="12" r="3" /><path d="m9 3-.5 2.3-2 .9-2.1-.7-2 3.5 1.7 1.6v2.8L2.4 15l2 3.5 2.1-.7 2 .9L9 21h6l.5-2.3 2-.9 2.1.7 2-3.5-1.7-1.6v-2.8L21.6 9l-2-3.5-2.1.7-2-.9L15 3Z" /></>,
 };
 
 export const Icon = ({ name, size = 19 }: { name: string; size?: number }) => (
@@ -60,7 +61,7 @@ export const Segmented = <T extends string>({ value, options, onChange, label }:
 );
 
 /** Message text for people: drops the "Error:" prefix that String(error) adds. */
-export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+export const errorText = (e: unknown) => requestMessage(e instanceof Error ? e.message : String(e), (e as any)?.status);
 
 export const fmtDate = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
 export const fmtTime = (iso: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));

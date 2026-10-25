@@ -49,9 +49,9 @@ const Landing = lazy(() => import("./views/Landing"))
 
 const TITLES: Partial<Record<View, string>> = {
   atlas: "Story atlas",
-  overview: "Studio overview",
+  overview: "Overview",
   projects: "Projects",
-  workflow: "Project workflow",
+  workflow: "Project workspace",
   runs: "Activity",
   retrieval: "Story atlas",
   library: "Project files",
@@ -87,7 +87,7 @@ function Shell() {
   const content = useRef<HTMLElement>(null)
   useEffect(() => { setMobile(false) }, [view])
   useEffect(() => {
-    const screen = matchMedia("(min-width: 761px)")
+    const screen = matchMedia("(min-width: 1025px)")
     const close = () => { if (screen.matches) setMobile(false) }
     screen.addEventListener("change", close)
     return () => screen.removeEventListener("change", close)

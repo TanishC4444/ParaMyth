@@ -12,7 +12,7 @@ function render(path, { access = {}, studio = {}, props = {} } = {}) {
   const cache = new Map();
   const state = { project:blank, store:{ projects:[] }, jobs:[], go(){}, selectProject(){}, ...studio };
   function load(file) {
-    if (/[\\/]store$/.test(file)) return { useStudio:()=>state, blankProject:()=>blank, useDraftState:(_,initial)=>React.useState(initial) };
+    if (/[\\/]store$/.test(file)) return { useStudio:()=>state, blankProject:()=>blank, useDraftState:(key,initial)=>React.useState(studio.drafts?.[key] ?? initial) };
     if (/[\\/]AccountGate$/.test(file)) return {useAccess:()=>access};
     if (/[\\/]api$/.test(file)) return {};
     if (/[\\/]site$/.test(file)) return {REPOSITORY:'https://github.com/TanishC4444/ParaMyth'};
@@ -54,4 +54,12 @@ test('an account workspace with no jobs gets an honest activity empty state',()=
   const html = render('src/views/Runs.tsx',{access:{github_admin:false}});
   assert.match(html,/A clear view of work in progress/);
   assert.doesNotMatch(html,/Start a writing workflow/);
+});
+
+test('older projects without a scene-length preference still open the manuscript',()=>{
+  const project={...blank,scenes:[{id:'scene',chapter:1,title:'Chapter one',pov:'',location:'',content:'',state:'Draft',findings:[]}],brief:{...blank.brief,wordMin:100,wordMax:200}};
+  const html=render('src/views/ProjectWorkspace.tsx',{studio:{project,drafts:{'project.tab':'manuscript'}},props:{embedded:true}});
+  assert.match(html,/\(guided\)/);
+  assert.match(html,/Point of view/);
+  assert.match(html,/Location/);
 });

@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react"
 
-import { api } from "../api"
+import { api, optionalApi, backendUrl } from "../api"
+import { useBackendPages } from '../backend-pages'
 
 import { errorText, PageTitle, Status } from "../ui"
 import { useAccess } from '../AccountGate'
 
 export default function Connections() {
   const access = useAccess()
+  const pages = useBackendPages(!!access.github_admin || !access.shared_keys)
   const [data, setData] = useState<any>(null),
     [error, setError] = useState(""),
+    [semanticSupported,setSemanticSupported] = useState(true),
     [semantic, setSemantic] = useState(false),
     [key, setKey] = useState("")
 
   useEffect(() => {
-    api("/api/ui/retrieval-connection")
-      .then((v) => setSemantic(v.semantic))
+    optionalApi("/api/ui/retrieval-connection")
+      .then((v) => {setSemantic(!!v?.semantic);setSemanticSupported(!!v)})
       .catch((e) => setError(e.message))
     api("/api/studio/features")
       .then(setData)
@@ -34,7 +37,7 @@ export default function Connections() {
       <PageTitle
         eyebrow="WORKSPACE" title="Connections"
         text="The services that power your writing, visuals and production."
-      >{!access.shared_keys && <a className="secondary" href="/connections" target="_blank" rel="noreferrer">Manage services ↗</a>}</PageTitle>
+      >{!access.shared_keys && pages['/connections'] && <a className="secondary" href={backendUrl('/connections')} target="_blank" rel="noreferrer">Manage services ↗</a>}</PageTitle>
       {error && (
         <p className="live-status error" role="alert">
           {error}
@@ -45,7 +48,7 @@ export default function Connections() {
         <p>
           {access.shared_keys ? 'Your studio owner manages the search connection for this workspace.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
         </p>
-        {access.shared_keys ? <p>Shared service keys stay on the server and are never sent to your browser.</p> : <form
+        {access.shared_keys ? <p>Shared service keys stay on the server and are never sent to your browser.</p> : !semanticSupported ? <p className="hint">Search by meaning isn't available in this studio yet. You can still search by story keywords.</p> : <form
           onSubmit={async (e) => {
             e.preventDefault()
             try {
@@ -89,29 +92,29 @@ export default function Connections() {
           </section>
         ))}
       </div>
-      {access.github_admin && <details className="panel advanced-connections"><summary>Advanced tools & administration</summary>
+      {access.github_admin && Object.values(pages).some(Boolean) && <details className="panel advanced-connections"><summary>Advanced tools & administration</summary>
         <p>
           Developer tools for workflow dispatch, API inspection and diagnostics.
         </p>
         <div className="inline-links">
-          <a href="/workflows" target="_blank" rel="noreferrer">
+          {pages['/workflows'] && <a href={backendUrl('/workflows')} target="_blank" rel="noreferrer">
             All workflows, logs & artifacts
-          </a>
-          <a href="/writing" target="_blank" rel="noreferrer">
+          </a>}
+          {pages['/writing'] && <a href={backendUrl('/writing')} target="_blank" rel="noreferrer">
             Writing runner controls
-          </a>
-          <a href="/testing" target="_blank" rel="noreferrer">
+          </a>}
+          {pages['/testing'] && <a href={backendUrl('/testing')} target="_blank" rel="noreferrer">
             Backend test console
-          </a>
-          <a href="/docs" target="_blank" rel="noreferrer">
+          </a>}
+          {pages['/docs'] && <a href={backendUrl('/docs')} target="_blank" rel="noreferrer">
             Interactive API explorer
-          </a>
-          <a href="/outputs" target="_blank" rel="noreferrer">
+          </a>}
+          {pages['/outputs'] && <a href={backendUrl('/outputs')} target="_blank" rel="noreferrer">
             Complete output browser
-          </a>
+          </a>}
         </div>
         <div className="capability-list">
-          {data?.features.map((f: string) => <span key={f}>{f}</span>)}
+          {data?.features?.map((f: string) => <span key={f}>{f}</span>)}
         </div>
       </details>}
     </div>

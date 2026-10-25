@@ -5,6 +5,7 @@ import { EmptyState, errorText, Icon, PageTitle, Status } from "../ui";
 import { MEDIA, type Brief, type Medium, type Project, type Scene } from "../types";
 import { ProjectCover } from "../brandArt";
 import { useAccess } from '../AccountGate';
+import { useDialogFocus } from '../useDialogFocus';
 
 /** Same keyword detection idea as the backend selector: an explicit medium wins, otherwise premise words decide. */
 const detectMedium = (premise: string): Medium | null => {
@@ -42,24 +43,8 @@ export function CreateProjectDialog({ close }: { close: () => void }) {
   const { createProject, selectProject, notify } = useStudio();
   const [premise, setPremise] = useState(""), [medium, setMedium] = useState<Medium | "Detect">("Detect"), [errors, setErrors] = useState<string[]>([]), [busy,setBusy]=useState(false);
   const dialog = useRef<HTMLFormElement>(null);
-  const closeRef = useRef(close); closeRef.current = close;
-  const busyRef = useRef(busy); busyRef.current = busy;
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    dialog.current?.querySelector<HTMLElement>('input')?.focus();
-    const keydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busyRef.current) { event.preventDefault(); closeRef.current(); }
-      if (event.key === "Tab") {
-        const items = [...(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,textarea') || [])];
-        if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
-        else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
-      }
-    };
-    document.addEventListener("keydown", keydown);
-    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", keydown); previous?.focus(); };
-  }, []);
+  useDialogFocus(dialog,true,close,busy);
+  const [changed,setChanged]=useState(false);
   const detected = detectMedium(premise);
   const go = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -75,10 +60,10 @@ export function CreateProjectDialog({ close }: { close: () => void }) {
     setBusy(true);
     try { const saved = await createProject(project); selectProject(saved.id, "brief"); close(); notify("Project saved to your studio"); } catch (error) { setErrors([errorText(error)]); } finally {setBusy(false)}
   };
-  return <div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="create-project-title"><button className="modal-scrim" disabled={busy} onClick={close} aria-label="Close" />
-    <form ref={dialog} className="modal wide" onSubmit={go}><button type="button" className="modal-close" disabled={busy} onClick={close} aria-label="Close"><Icon name="close" /></button>
+  return <div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="create-project-title"><button className="modal-scrim" tabIndex={-1} disabled={busy} onClick={()=>{if(!changed)close()}} aria-label="Close" />
+    <form ref={dialog} className="modal wide" onChange={()=>setChanged(true)} onSubmit={go}><button type="button" className="modal-close" disabled={busy} onClick={close} aria-label="Close"><Icon name="close" /></button>
       <span className="eyebrow">NEW PROJECT</span><h2 id="create-project-title">Start with a story.</h2><p>Start with the basics. You can add characters, world rules and constraints on the Brief tab later.</p>
-      <label>Title<input name="title" required autoFocus placeholder="e.g. The Ferryman's Ledger" /></label>
+      <label>Title<input name="title" required placeholder="e.g. The Ferryman's Ledger" /></label>
       <label>Premise<textarea required value={premise} onChange={(e) => setPremise(e.target.value)} placeholder="One or two sentences: who wants what, and what stands in the way." /></label>
       <label>Medium<select value={medium} onChange={(e) => setMedium(e.target.value as Medium | "Detect")}><option value="Detect">Detect from premise{detected ? ` (${detected})` : " (Novel)"}</option>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select></label>
       <div className="form-grid"><label>Genre<input name="genre" defaultValue="Literary" /></label><label>Tone<input name="tone" defaultValue="Restrained" /></label>

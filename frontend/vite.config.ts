@@ -25,6 +25,10 @@ export default defineConfig({
         await copyFile(resolve(web, 'js/'+name+'.js'), resolve(output, 'js/'+name+'.js'))
       }
       await copyFile(resolve(web, 'teams.css'), resolve(output, 'teams.css'))
+      const entry = await readFile(resolve('dist/index.html'), 'utf8')
+      const assets = entry.match(/<(?:script\b[^>]*type="module"[^>]*>[\s\S]*?<\/script|link\b[^>]*(?:rel="stylesheet"|rel="modulepreload")[^>]*)>/g) || []
+      const missing = await readFile(resolve('dist/404.html'), 'utf8')
+      await writeFile(resolve('dist/404.html'), missing.replace('<!-- app-entry -->', assets.join('\n')))
     },
   }],
   resolve: {

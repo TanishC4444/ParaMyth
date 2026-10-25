@@ -54,7 +54,7 @@ export default function News() {
     <div className="page news-page">
       <PageTitle
         eyebrow="INDUSTRY NEWS"
-        title="Film and TV news"
+        title="Industry news"
         text="Headlines on film, TV and screenwriting from trade and craft sites. Each one opens the original article, and the list updates about every 15 minutes."
       >
         <button className="secondary" onClick={() => load(true)} disabled={busy || offline}>
@@ -106,9 +106,9 @@ export default function News() {
               ))}
             </select>
           </div>
-          <p className="hint news-meta">
+          {feed.items.length>0 && <p className="hint news-meta">
             {shown.length} headlines · updated {ago(feed.checked)}
-          </p>
+          </p>}
           {shown.length ? (
             <div className="review-list news-list">
               {shown.map((i) => (

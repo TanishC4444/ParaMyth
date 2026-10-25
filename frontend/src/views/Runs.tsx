@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
-import { api, backendUrl } from "../api"
+import { api, optionalApi, backendUrl } from "../api"
+import { useBackendPages } from '../backend-pages'
 
 import { useStudio } from "../store"
 
@@ -21,6 +22,8 @@ function AccountRuns() {
 
 function WorkflowRuns() {
   const { workflow, jobs, flush, refresh, project } = useStudio()
+  const pages=useBackendPages(true)
+  const [unavailable,setUnavailable]=useState(false)
 
   const [catalog, setCatalog] = useState<any[]>([]),
     [repos, setRepos] = useState<string[]>([]),
@@ -38,15 +41,17 @@ function WorkflowRuns() {
   const query = "?repository=" + encodeURIComponent(repo)
 
   const load = async () => {
-    const v = await api("/api/studio/history" + query + "&limit=20")
+    const v = await optionalApi("/api/studio/history" + query + "&limit=20")
+    if(!v){setUnavailable(true);return}
     setHistory(v.workflow_runs)
   }
 
   useEffect(() => {
     let live = true
-    api("/api/studio/workflows" + query + "&remote=true")
+    optionalApi("/api/studio/workflows" + query + "&remote=true")
       .then((v) => {
         if (!live) return
+        if(!v){setUnavailable(true);return}
         setCatalog(v.workflows)
         setRepos(v.repositories)
         if (!repo) setRepo(v.repositories[0] || "")
@@ -57,17 +62,17 @@ function WorkflowRuns() {
               "",
           )
       })
-      .catch((e) => live && setError(e.message))
-    api("/api/studio/history" + query + "&limit=20")
-      .then((v) => live && setHistory(v.workflow_runs))
-      .catch((e) => live && setError(e.message))
+      .catch((e) => {if(live){if(e.status===404)setUnavailable(true);else setError(e.message)}})
+    optionalApi("/api/studio/history" + query + "&limit=20")
+      .then((v) => {if(live){if(v)setHistory(v.workflow_runs);else setUnavailable(true)}})
+      .catch((e) => {if(live){if(e.status===404)setUnavailable(true);else setError(e.message)}})
     return () => {
       live = false
     }
   }, [repo])
 
   useEffect(() => {
-    if (!file) return
+    if (!file || unavailable) return
     let live = true
     setDefinition(null)
     api(
@@ -95,11 +100,11 @@ function WorkflowRuns() {
           ),
         )
       })
-      .catch((e) => live && setError(e.message))
+      .catch((e) => {if(live){if(e.status===404)setUnavailable(true);else setError(e.message)}})
     return () => {
       live = false
     }
-  }, [file, repo, ref])
+  }, [file, repo, ref, unavailable])
 
   const dispatch = async () => {
     setBusy(true)
@@ -192,7 +197,7 @@ function WorkflowRuns() {
           {!jobs.length && <p className="quiet">No jobs yet for this story.</p>}
         </div>
       </section>
-      <section className="panel">
+      {unavailable ? <p className="hint">GitHub workflows aren't set up for this studio yet.</p> : <section className="panel workflow-start">
         <h2>Start a writing workflow</h2>{project.id&&<button className="secondary" disabled={busy} onClick={()=>void publishCurrent()}>Publish this story’s brief to GitHub</button>}
         <p>
           Choose a workflow and its inputs. Publish your brief here or use the full
@@ -208,6 +213,7 @@ function WorkflowRuns() {
                 setFile("")
               }}
             >
+              <option value="" disabled>Choose a repository</option>
               {repos.map((r) => (
                 <option key={r}>{r}</option>
               ))}
@@ -216,6 +222,7 @@ function WorkflowRuns() {
           <label className="field">
             Workflow
             <select value={file} onChange={(e) => setFile(e.target.value)}>
+              <option value="" disabled>Choose a workflow</option>
               {catalog.map((w) => (
                 <option key={w.file} value={w.file}>
                   {w.name}
@@ -308,15 +315,15 @@ function WorkflowRuns() {
           </>
         )}
         <div className="inline-links">
-          <a href="/workflows" target="_blank" rel="noreferrer">
+          {pages['/workflows'] && <a href={backendUrl('/workflows')} target="_blank" rel="noreferrer">
             Full workflow tools & artifact import
-          </a>
-          <a href="/tools" target="_blank" rel="noreferrer">
+          </a>}
+          {pages['/tools'] && <a href={backendUrl('/tools')} target="_blank" rel="noreferrer">
             Publish or import a brief
-          </a>
+          </a>}
         </div>
-      </section>
-      <section className="section">
+      </section>}
+      {!unavailable && <section className="section">
         <div className="section-head">
           <h2>GitHub run history</h2>
           <button
@@ -410,7 +417,7 @@ function WorkflowRuns() {
             </aside>
           )}
         </div>
-      </section>
+      </section>}
     </div>
   )
 }

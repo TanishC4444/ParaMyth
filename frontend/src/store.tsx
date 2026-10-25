@@ -164,6 +164,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setRaw(s)
   }
   const go = (v: View) => {
+    if(v==='atlas')v='retrieval'
     if (["creative", "images", "music", "production", "project"].includes(v)) {
       setDraft(selection.current, "workflow.section", ["images", "music", "production"].includes(v) ? "media" : "writing")
       if (["images", "music", "production"].includes(v)) setDraft(selection.current, "workflow.tool", v)

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useDialogFocus } from './useDialogFocus'
 import { api, projectPath } from './api'
 import { useAccess } from './AccountGate'
 import { useStudio } from './store'
@@ -17,8 +18,11 @@ export function ShareProject(){
   const {project,flush}=useStudio()
   const choices=teams.filter(team=>team.role!=='viewer')
   const [open,setOpen]=useState(false),[team,setTeam]=useState(choices[0]?.id||''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const [changed,setChanged]=useState(false)
+  const dialog=useRef<HTMLFormElement>(null)
+  useDialogFocus(dialog,open,()=>setOpen(false),busy)
   if(studio || !project.id || !choices.length)return null
-  return <><button className="secondary" onClick={()=>setOpen(true)}>Share with team</button>{open&&<div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="share-project-title"><button className="modal-scrim" onClick={()=>!busy&&setOpen(false)} aria-label="Close"/><form className="modal" onSubmit={async event=>{event.preventDefault();setBusy(true);setError('');try{await flush();const result=await api(`/api/ui/projects/${project.id}/share`,{studio_id:team});await openStudio?.(result.studio_id);location.hash='#/workflow?studio='+encodeURIComponent(result.studio_id)}catch(reason){setError(reason instanceof Error?reason.message:'Could not share project')}finally{setBusy(false)}}}><h2 id="share-project-title">Share {project.title}</h2><p>Create a shared copy with its writing, images, soundtracks and production files. Your personal original stays private.</p><label>Team<select required value={team} onChange={event=>setTeam(event.target.value)}>{choices.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{error&&<p role="alert">{error}</p>}<div className="modal-actions"><button type="button" disabled={busy} onClick={()=>setOpen(false)}>Cancel</button><button className="primary" disabled={busy}>{busy?'Sharing…':'Share & open workspace'}</button></div></form></div>}</>
+  return <><button className="secondary" onClick={()=>{setChanged(false);setOpen(true)}}>Share with team</button>{open&&<div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="share-project-title"><button className="modal-scrim" tabIndex={-1} onClick={()=>!busy&&!changed&&setOpen(false)} aria-label="Close"/><form ref={dialog} className="modal" onChange={()=>setChanged(true)} onSubmit={async event=>{event.preventDefault();setBusy(true);setError('');try{await flush();const result=await api(`/api/ui/projects/${project.id}/share`,{studio_id:team});await openStudio?.(result.studio_id);location.hash='#/workflow?studio='+encodeURIComponent(result.studio_id)}catch(reason){setError(reason instanceof Error?reason.message:'Could not share project')}finally{setBusy(false)}}}><h2 id="share-project-title">Share {project.title}</h2><p>Create a shared copy with its writing, images, soundtracks and production files. Your personal original stays private.</p><label>Team<select required value={team} onChange={event=>setTeam(event.target.value)}>{choices.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{error&&<p role="alert">{error}</p>}<div className="modal-actions"><button type="button" disabled={busy} onClick={()=>setOpen(false)}>Cancel</button><button className="primary" disabled={busy}>{busy?'Sharing…':'Share & open workspace'}</button></div></form></div>}</>
 }
 
 type Comment={id:string;body:string;display_name:string;created_at:string}

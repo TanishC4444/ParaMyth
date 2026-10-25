@@ -3,7 +3,7 @@ import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
-import { useMaterials } from "../materials"
+import { useMaterials, projectAssets } from "../materials"
 import { BrandSpot } from "../brandArt"
 export default function Music({ embedded = false }: { embedded?: boolean }) {
   const { project, mediaDirection, flush, refresh, go } = useStudio()
@@ -21,6 +21,8 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
     [status, setStatus] = useState(""),
     [submitting, setSubmitting] = useState(false)
   const [selectedTrack, setSelectedTrack] = useDraftState("music.selectedTrack", "")
+  const [providerUnavailable,setProviderUnavailable]=useState(false)
+  const [audioState,setAudioState]=useState<Record<string,'ready'|'failed'>>({})
   const [pendingJob, setPendingJob] = useSavedJob("music.pendingJob", ["music"], {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async () => { await load(); await refresh(); setStatus("Your soundtrack request is saved below.") },
@@ -30,13 +32,14 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
   const path = (p: string) => projectPath(p, project.id)
   const load = async () => {
     const data = await api(path("/api/studio/music"))
-    setTracks(data.tracks)
+    setTracks(projectAssets(data.tracks || [],project.id))
   }
   useEffect(() => {
     let live = true
     setTracks([])
+    setAudioState({});setProviderUnavailable(false)
     api(path("/api/studio/music"))
-      .then((v) => live && setTracks(v.tracks))
+      .then((v) => live && setTracks(projectAssets(v.tracks || [],project.id)))
       .catch((e) => live && setError(e.message))
     api("/api/studio/music/models")
       .then((v) => {
@@ -46,8 +49,8 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
           setModel((previous) => rows.some((m: any) => m.id === previous) ? previous : rows[0]?.id || "")
         }
       })
-      .catch((e) => live && setError(e.message))
-    const changed = () => { void api(path("/api/studio/music")).then((v) => { if (live) setTracks(v.tracks); }).catch(() => {}); }
+      .catch(() => {if(live)setProviderUnavailable(true)})
+    const changed = () => { void api(path("/api/studio/music")).then((v) => { if (live) setTracks(projectAssets(v.tracks || [],project.id)); }).catch(() => {}); }
     window.addEventListener("studio-refresh", changed)
     window.addEventListener("studio-shared-update", changed)
     return () => { live = false; window.removeEventListener("studio-refresh", changed); window.removeEventListener("studio-shared-update", changed) }
@@ -122,6 +125,7 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
       <PageTitle level={embedded ? "h2" : "h1"} title="Soundtracks" text="Choose a sound. Your story sets the mood." />
       {error && <p className="live-status error" role="alert">{error}</p>}
       {status && <p className="live-status" role="status">{status}</p>}
+      {providerUnavailable && <p className="hint" role="status">Music generation isn't available in this studio yet. Your saved tracks are still available below.</p>}
       <div className="creative-layout">
         <section className="panel composer">
           <h2>Create a soundtrack</h2>
@@ -146,19 +150,20 @@ export default function Music({ embedded = false }: { embedded?: boolean }) {
             <details className="workspace-options"><summary>Sound settings</summary><label className="field">Music model<select value={model} onChange={(e) => setModel(e.target.value)}>{models.map((m) => <option value={m.id} key={m.id}>{m.name || m.id}</option>)}</select></label><p className="hint">Scores and songs use your connected music provider.</p></details>
           </>}
           </details>
-          <button className="primary" disabled={busy || (!useStory && !prompt.trim()) || (!automatic && ((mode !== "ambience" && !model) || (mode === "song" && !lyrics.trim())))} onClick={() => void create()}>{busy ? "Preparing…" : automatic ? "Create soundtrack for me" : "Create soundtrack"}</button>
+          <button className="primary" disabled={busy || providerUnavailable && (automatic || mode!=='ambience') || (!useStory && !prompt.trim()) || (!automatic && ((mode !== "ambience" && !model) || (mode === "song" && !lyrics.trim())))} onClick={() => void create()}>{busy ? "Preparing…" : automatic ? "Create soundtrack for me" : "Create soundtrack"}</button>
           <p className="hint">Your soundtrack uses the selected writing and your prompt. You can keep writing while it generates.</p>
         </section>
         <section className="results" aria-label="Saved soundtracks">
           <div className="workspace-result-head"><h2>Your soundtrack</h2><button className="text-action" onClick={() => void load().catch((e) => setError(e.message))}>Refresh</button></div>
           {tracks.length > 1 && <label className="field history-picker">Saved tracks<select value={shown?.job.id || ""} onChange={(e) => setSelectedTrack(e.target.value)}>{tracks.map((t, i) => <option key={t.job.id} value={t.job.id}>{i === 0 ? "Latest" : `Earlier ${tracks.length - i}`} · {trackName(t)} · {t.job.status}</option>)}</select></label>}
           {(shown ? [shown] : []).map((t) => <article className="panel result" key={t.job.id}>
-            <div className="finding-head"><h3>{trackName(t)}</h3><small>{t.job.status === "completed" ? "Ready to play" : t.job.status}</small></div>
-            {!["failed", "cancelled", "expired"].includes(t.job.status) && <audio controls preload="none" src={path(`/media/music/${t.job.id}/${t.job.status === "completed" ? "content" : "stream"}`)} />}
+            <div className="finding-head"><h3>{trackName(t)}</h3><small role="status">{audioState[t.job.id]==='failed'?"Couldn't load this track":t.job.status === "completed" ? audioState[t.job.id]==='ready'?"Ready to play":"Loading audio…" : t.job.status}</small></div>
+            {!["failed", "cancelled", "expired"].includes(t.job.status) && audioState[t.job.id]!=='failed' && <audio controls preload="metadata" onLoadedMetadata={()=>setAudioState(state=>({...state,[t.job.id]:'ready'}))} onError={()=>setAudioState(state=>({...state,[t.job.id]:'failed'}))} src={path(`/media/music/${t.job.id}/${t.job.status === "completed" ? "content" : "stream"}`)} />}
+            {audioState[t.job.id]==='failed' && <button className="text-action" onClick={()=>setAudioState(state=>{const next={...state};delete next[t.job.id];return next})}>Retry audio</button>}
             <div className="comment-actions">
-              {t.job.status === "completed" ? <><button onClick={() => void action(t.job.id, "save")}>Save audio</button><a href={path(`/media/music/${t.job.id}/content`)} download>Download audio</a></> : !["failed", "cancelled", "expired"].includes(t.job.status) && <button onClick={() => void action(t.job.id, "cancel")}>Cancel generation</button>}
+              {t.job.status === "completed" ? audioState[t.job.id]==='ready' && <><button onClick={() => void action(t.job.id, "save")}>Save audio</button><a href={path(`/media/music/${t.job.id}/content`)} download>Download audio</a></> : !["failed", "cancelled", "expired"].includes(t.job.status) && <button onClick={() => void action(t.job.id, "cancel")}>Cancel generation</button>}
             </div>
-            {t.job.error && <p role="alert">{String(t.job.error.message || t.job.error)}</p>}
+            {t.job.error && <p role="alert">{errorText(t.job.error.message || t.job.error)}</p>}
             <details><summary>Track details</summary><p>{t.cue.prompt}</p><small>{t.settings?.seconds ? `${t.settings.seconds} seconds · ` : ""}{t.source_title ? `${t.source_title} · ` : ""}{t.provider || t.job.model || "Saved audio"} · {t.cue.sources?.join(", ")}</small></details>
           </article>)}
           {!tracks.length && <div className="empty illustrated-empty music-empty"><BrandSpot kind="music" /><div className="empty-copy"><h3>Give your story a sound.</h3><p>Create a soundtrack to listen to it here.</p></div></div>}

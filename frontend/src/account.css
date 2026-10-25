@@ -6,3 +6,8 @@
 @media(max-width:760px){.account-entry{grid-template-columns:1fr}.account-picture{min-height:270px;padding:110px 28px 28px}.account-picture h1{font-size:34px;margin:10px 0}.account-picture p:not(.eyebrow){display:none}.account-home{top:18px;left:28px;font-size:26px}.account-form-panel{padding:32px 28px 48px}.account-tabs{margin-bottom:24px}.account-form-panel h2{font-size:34px}}
 
 .account-home img{display:block;width:120px;height:auto;border-radius:8px}.account-home span{font-size:13px;margin-top:8px}
+
+@font-face{font-family:Fraunces;src:url('/landing/fraunces.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:"Young Serif";src:url('/landing/young-serif.ttf') format('truetype');font-weight:400;font-display:swap}
+.account-entry,.account-home span,.account-form-panel .primary{font-family:Manrope,system-ui,sans-serif}.account-entry :is(h1,h2){font-family:"Young Serif",Georgia,serif;font-weight:400}.account-form-panel input:disabled{background:#eeece5;cursor:not-allowed}.account-form-panel>a:last-child{display:inline-flex;align-items:center;min-height:44px}
+@media(max-width:760px){.account-tabs a{min-height:44px;display:inline-flex;align-items:center;padding-bottom:10px}.account-home{max-width:calc(100% - 56px)}}

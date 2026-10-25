@@ -118,7 +118,7 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing){background:#112635;co
 .cinematic-landing .atlas-list small{display:block;font:400 14px/1.6 ParaMyth Sans,sans-serif;color:#95b3a0;margin-top:4px;overflow-wrap:anywhere}
 .cinematic-landing .atlas-provenance{font:400 14px/1.8 ParaMyth Sans,sans-serif;color:#9eb9a2;border-color:#a8b79529}
 .cinematic-landing .atlas-provenance summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#aac2a9;list-style:none}
-.cinematic-landing .atlas-provenance summary::after{content:'+';margin-left:auto}.cinematic-landing .atlas-provenance[open] summary::after{content:'−'}
+.cinematic-landing .atlas-provenance summary::after{content:'+';margin-left:auto}.cinematic-landing .atlas-provenance[open] summary::after{content:'âˆ’'}
 .cinematic-landing .atlas-detail h2{font-size:31px;margin:10px 0 14px}.cinematic-landing .atlas-detail>.eyebrow{color:#96c6aa!important;font-size:14px;letter-spacing:1px}
 .cinematic-landing .atlas-detail .atlas-back,.cinematic-landing .link,.cinematic-landing .text-action{font-size:14px;color:#b7d5ad;min-height:44px}
 .cinematic-landing .atlas-place{color:#b7d6b4;font-size:14px;font-weight:500;line-height:1.6;overflow-wrap:anywhere}
@@ -134,7 +134,7 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing){background:#112635;co
 .cinematic-landing .secondary{background:#8bbc9c0b;color:#bdd7b5;border:1px solid #8bbc9c40}.cinematic-landing .secondary:hover{background:#8bbc9c19}
 .cinematic-landing .atlas-detail>.hint{font-size:14px;line-height:1.75;color:#8fae99}
 .cinematic-landing .atlas-record-extra{border-top:1px solid #a8b79529;margin-top:18px;padding-top:5px}.cinematic-landing .atlas-record-extra>summary{display:flex;align-items:center;justify-content:space-between;min-height:42px;list-style:none;cursor:pointer;font-size:14px;color:#d6c197}
-.cinematic-landing .atlas-record-extra>summary::after{content:'+'}.cinematic-landing .atlas-record-extra[open]>summary::after{content:'−'}
+.cinematic-landing .atlas-record-extra>summary::after{content:'+'}.cinematic-landing .atlas-record-extra[open]>summary::after{content:'âˆ’'}
 .cinematic-landing .atlas-section{border-color:#a8b79529}.cinematic-landing .atlas-section h3{color:#bec69b!important}.cinematic-landing .atlas-section p,.cinematic-landing .atlas-section li{color:#adc3ac;font-size:14px;line-height:1.8;overflow-wrap:anywhere}
 .cinematic-landing .tag-row span,.cinematic-landing .tag-row em{background:#83b7990e;color:#a5c5a2;border:1px solid #83b79927}
 .cinematic-landing .atlas-idea-tools{margin-top:16px;padding:0;border:0;border-top:1px solid #a8b79529;opacity:var(--controls)}
@@ -244,3 +244,5 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing){background:#112635;co
 .cinematic-landing .atlas-map .leaflet-control-attribution a{color:#ffffff}
 .cinematic-landing .atlas-side h2:focus{outline:3px solid #ffffff;outline-offset:4px}
 
+.book-chapters{width:min(1040px,calc(100% - 48px));gap:12px;box-sizing:border-box}.book-chapters button{flex:1 1 0;min-width:0;gap:8px;min-height:48px}.book-chapters img{flex:0 0 28px}.book-chapters button span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;line-height:1.35}.cinematic-landing .landing-header nav{background:#102331f5;backdrop-filter:blur(18px);box-shadow:0 4px 24px #0004}.cinematic-landing :is(.about-section,.landing-atlas-section,.landing-footer){scroll-margin-top:92px}.cinematic-landing .about-section:focus-within{opacity:1;transform:none}.cinematic-landing .landing-atlas-section{padding-top:96px}.instagram-panel.embed-failed{min-height:0}.instagram-panel.embed-failed .instagram-retry{margin:12px 0}.instagram-panel.embed-failed .instagram-fallback{display:inline-flex;min-height:44px;align-items:center}
+@media(max-width:700px){.book-chapters{width:calc(100% - 28px);gap:5px}.book-chapters button{min-width:0}.book-chapters img{width:100%;max-width:100%}.cinematic-landing .globe-frame .globe-caption{bottom:0;right:0;left:0;text-align:center}.cinematic-landing .globe-controls{bottom:32px}.cinematic-landing .globe-stage,.cinematic-landing .globe-pins,.cinematic-landing .globe-labels{inset:48px 0 108px}.cinematic-landing :is(.site-links a,.footer-contact,.footer-brand,.footer-controls button){min-height:44px;display:inline-flex;align-items:center}.cinematic-landing .about-section{scroll-margin-top:100px}}

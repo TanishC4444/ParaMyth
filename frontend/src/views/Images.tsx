@@ -8,10 +8,9 @@ import { BrandSpot } from "../brandArt"
 export default function Images({ embedded = false }: { embedded?: boolean }) {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
-  const { source, sourceId, signature, streaming } = useMaterials()
+  const { source, sourceId, signature, streaming, images, refreshMaterials: load } = useMaterials()
   const [models, setModels] = useState<any[]>([]),
     [model, setModel] = useDraftState("images.model", ""),
-    [images, setImages] = useState<any[]>([]),
     [kind, setKind] = useDraftState("images.kind", "scene"),
     [subject, setSubject] = useDraftState("images.subject", ""),
     [style, setStyle] = useDraftState("images.style", "Auto - match story"),
@@ -37,13 +36,8 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
   })
   const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
-  const load = async () => setImages((await api(path("/api/images"))).images)
   useEffect(() => {
     let live = true
-    setImages([])
-    api(path("/api/images"))
-      .then((v) => live && setImages(v.images))
-      .catch((e) => live && setError(e.message))
     api("/api/images/models")
       .then((v) => {
         if (live) {
@@ -51,11 +45,8 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           setModel((previous) => v.models.some((m: any) => m.id === previous) ? previous : v.models[0]?.id || "")
         }
       })
-      .catch(() => live && setError("Image generation isn’t connected yet. Check Connections for service availability."))
-    const changed = () => { void api(path("/api/images")).then((v) => { if (live) setImages(v.images); }).catch(() => {}); }
-    window.addEventListener("studio-refresh", changed)
-    window.addEventListener("studio-shared-update", changed)
-    return () => { live = false; window.removeEventListener("studio-refresh", changed); window.removeEventListener("studio-shared-update", changed) }
+      .catch(() => {if(live){setModels([]);setModel('');setError("Image generation isn't available in this studio yet.")}})
+    return () => { live = false }
   }, [project.id])
   const useImage=async(img:any,destination:'prompt'|'production'|'music')=>{
     try{
@@ -240,7 +231,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
           </details>
           <button
             className="primary"
-            disabled={busy || !prompt.trim() || !model}
+            disabled={busy || !prompt.trim() || !models.some(item=>item.id===model)}
             onClick={() => void submit(true)}
           >
             {busy ? "Working…" : "Generate image"}

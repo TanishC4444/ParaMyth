@@ -137,3 +137,6 @@
 /* A marker is a real keyboard/touch target; clustering keeps targets apart. */
 .atlas-page .globe-pin.single,.atlas-page .globe-pin.cluster{width:44px;height:44px}
 .atlas-page .globe-controls button{width:44px;height:44px}
+
+.atlas-page .globe-pin.single{width:44px;height:44px;background:transparent!important;border:0;box-shadow:none}.atlas-page .globe-pin.single::before{content:"";display:block;width:12px;height:12px;border:2px solid white;border-radius:50%;background:var(--navy);box-shadow:0 1px 5px #10233166}.atlas-page .globe-pin.single.selected::before{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:700px){.atlas-page .globe-frame .globe-caption{bottom:0;left:0;right:0;text-align:center}.atlas-page .globe-caption small{font-size:11px}.atlas-page .globe-controls{bottom:30px}.atlas-page .globe-stage,.atlas-page .globe-pins,.atlas-page .globe-labels{inset:48px 0 106px}}

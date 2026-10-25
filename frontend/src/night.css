@@ -80,3 +80,7 @@ header.pm-bar{height:auto;background:transparent;border-bottom:0}
   .static-studio-features{grid-template-columns:1fr}.static-studio-features li,.static-studio-features li+li{padding:20px 0 4px}
 }
 @media(prefers-reduced-motion:reduce){.pm-plate,.pm-emblem,.pm-bar nav>a:after{transition:none}}
+
+@font-face{font-family:"Young Serif";src:url('/landing/young-serif.ttf') format('truetype');font-display:swap;font-weight:400}
+.night-page{--display:"Young Serif",Georgia,serif}
+@media(max-width:760px){.night-page :is(a,button,summary){min-height:44px}.night-page a{display:inline-flex;align-items:center}}

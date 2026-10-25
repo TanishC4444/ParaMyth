@@ -11,7 +11,7 @@ a{color:var(--navy);text-underline-offset:4px}button,input,select,textarea{font:
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 .account-tabs{display:flex;gap:4px;background:#eef0e9;border-radius:10px;padding:4px;margin:0 0 26px}.account-tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:10px}.account-tabs button[aria-pressed=true]{color:var(--navy);background:white;box-shadow:0 2px 6px #2039700a}.inline-link{border:0;background:none!important;color:var(--navy);padding:0;text-decoration:underline;box-shadow:none!important}
 
-/* Account and team administration share the studio’s measured spacing and surfaces. */
+/* Account and team administration share the studioâ€™s measured spacing and surfaces. */
 body:has(#workspace:not([hidden])),body:has(#profile){background:#fff7ea}
 body:has(#workspace:not([hidden])) .top,body:has(#profile) .top{max-width:none;padding:16px max(28px,calc((100vw - 1160px)/2));border-bottom:1px solid #e5dfd3;background:#fffdf8;min-height:96px}
 body:has(#workspace:not([hidden])) .brand>span{display:none}
@@ -26,3 +26,8 @@ body:has(#workspace:not([hidden])) input,body:has(#profile) input{border-color:#
 body:has(#workspace:not([hidden])) button,body:has(#profile) button{border-radius:7px;background:#24427f}
 body:has(#workspace:not([hidden])) button.secondary,body:has(#profile) button.secondary{background:#fffdf8;color:#24427f;border-color:#c9c6bf}
 @media(max-width:750px){body:has(#workspace:not([hidden])) .top,body:has(#profile) .top{padding:14px 20px;gap:16px}.brand img{width:120px}body:has(#workspace:not([hidden])) .teams-layout,body:has(#profile) .teams-layout{padding:0 20px}body:has(#workspace:not([hidden])) .panel,body:has(#profile) .panel{padding:22px}}
+
+@font-face{font-family:"Young Serif";src:url('/landing/young-serif.ttf') format('truetype');font-display:swap;font-weight:400}
+@font-face{font-family:Manrope;src:url('/landing/manrope.woff2') format('woff2');font-display:swap;font-weight:200 800}
+h1,h2,h3,.account-story h1,.account-card h2,body:has(#profile) h1,body:has(#profile) h2{font-family:"Young Serif",Georgia,serif;font-weight:400}body{font-family:Manrope,system-ui,sans-serif}[hidden]{display:none!important}.brand img{width:120px}#message:empty{display:none}
+@media(max-width:760px){a,button,summary{min-height:44px;min-width:44px}a{display:inline-flex;align-items:center}.top-nav{gap:10px;flex-wrap:wrap;justify-content:flex-end}.top{gap:16px}.account-footer{align-items:center}.top-nav .nav-link{font-size:12px}.brand{flex-shrink:0}.account-layout,.account-card,.panel{min-width:0}input[type=checkbox]{min-height:20px;min-width:20px}}

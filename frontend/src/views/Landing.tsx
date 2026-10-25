@@ -44,7 +44,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
     </header>
     <main id="landing-main" className="landing-main" tabIndex={-1}>
       <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} onBookChange={onBookChange} onPrepareAtlas={prepareAtlas} />
-      <section className="about-section" aria-labelledby="purpose-title">
+      <section className="about-section" aria-labelledby="purpose-title" onFocusCapture={prepareAtlas}>
         <div className="about-intro">
           <div><span className="about-eyebrow">About ParaMyth</span><h2 id="purpose-title" tabIndex={-1}>Story Development<br /><em>for Creative Directors</em></h2></div>
           <div className="about-description"><p>Brainstorm concepts, draft treatments, and explore production ideas before committing to a direction. ParaMyth brings classic stories, early writing, and visual planning into one creative workspace.</p><div className="about-actions"><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{!access.authenticated && <a href="#/signin">Sign In</a>}</div></div>

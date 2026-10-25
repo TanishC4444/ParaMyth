@@ -61,10 +61,10 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       section.dataset.progress = p.toFixed(4);
       section.dataset.finished = String(!inBook);
       section.inert = !inBook;
-      atlas.inert = inBook;
-      if (footer) footer.inert = inBook;
-      if (about) about.inert = p < .88;
-      if (inBook) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
+      // Normal-flow content stays in the keyboard order, even before scrolling.
+      atlas.inert = false;
+      if (footer) footer.inert = false;
+      if (about) about.inert = false;
       if (p <= .72) bookmark.current = p;
       const memory = JSON.stringify({ view: inBook ? "book" : "atlas", bookProgress: Math.round(bookmark.current * 1000) / 1000 });
       if (memory !== lastMemory) { lastMemory = memory; pendingMemory = JSON.parse(memory); window.clearTimeout(saveTimer); saveTimer = window.setTimeout(flushMemory, 180); }

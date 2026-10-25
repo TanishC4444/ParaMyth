@@ -149,7 +149,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
           <button className="secondary" onClick={() => { setUseStory(true); setSource("latest"); setShowHistory(false); }}>Use my generated writing</button>
           <label className="inline-suggestion"><input type="checkbox" checked={useStory} onChange={(e) => setUseStory(e.target.checked)} />Use {sourceTitle}</label>
           <label className="inline-suggestion"><input type="checkbox" checked={automaticAssets} onChange={e => setAutomaticAssets(e.target.checked)} />Include latest visuals and soundtracks automatically</label>
-          <details className="workspace-options"><summary>Include generated visuals · {imageIds.length} selected</summary>
+          <details className="workspace-options"><summary>Include generated visuals · {automaticAssets?Math.min(3,availableImages.length):imageIds.filter(id=>availableImages.some(image=>image.id===id)).length} selected</summary>
             <p className="hint">{automaticAssets ? 'The three latest finished visuals will be included. Turn off automatic selection to choose specific ones.' : 'Choose up to three visuals. New images appear here when they finish.'}</p>
             <div className="reference-picker">{availableImages.map((image) => <label key={image.id}>
               <img src={path(`/media/images/${image.id}/0.png`)} alt={image.title} loading="lazy" />
@@ -157,7 +157,7 @@ export default function Production({ embedded = false }: { embedded?: boolean })
             </label>)}</div>
             {!availableImages.length && <p className="hint">Generate an image in Visuals to use it here.</p>}
           </details>
-          <details className="workspace-options"><summary>Include soundtrack direction · {trackIds.length} selected</summary>
+          <details className="workspace-options"><summary>Include soundtrack direction · {automaticAssets?Math.min(3,availableTracks.length):trackIds.filter(id=>availableTracks.some(track=>track.id===id)).length} selected</summary>
             <p className="hint">Bring the mood and sound choices into your plan.</p>
             {availableTracks.map((track) => <label className="toggle" key={track.id}><input type="checkbox" checked={trackIds.includes(track.id)} disabled={!trackIds.includes(track.id) && trackIds.length >= 3} onChange={(e) => setTrackIds((v) => e.target.checked ? [...v, track.id] : v.filter((id) => id !== track.id))} />{track.title} · {track.mode}</label>)}
             {!availableTracks.length && <p className="hint">Finished soundtracks appear here automatically.</p>}

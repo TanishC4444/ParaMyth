@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
-import { api, projectPath, studioJobs, type Job } from "./api"
+import { optionalApi, projectPath, studioJobs, type Job } from "./api"
+import { requestMessage } from './request-errors'
 import { useDraftState, useStudio } from "./store"
 
 type Handle = { id: string; kind: string; local?: boolean }
@@ -32,9 +33,10 @@ export function useSavedJob(
     let timer: ReturnType<typeof setTimeout>
     const poll = async () => {
       try {
-        const job = await api<Job>(projectPath((handle.local ? "/api/ui/jobs/" : "/api/job/") + handle.id, project.id))
+        const job = await optionalApi<Job>(projectPath((handle.local ? "/api/ui/jobs/" : "/api/job/") + handle.id, project.id))
         if (!live) return
-        latest.current.progress(job)
+        if(!job){setHandle(null);return}
+        latest.current.progress({...job,message:job.message?requestMessage(job.message):''})
         if (job.status === "complete") {
           await latest.current.complete(job)
           window.dispatchEvent(new Event("studio-refresh"))
@@ -42,7 +44,7 @@ export function useSavedJob(
           return
         }
         if (["failed", "interrupted", "cancelled"].includes(job.status)) {
-          latest.current.failed(job.message)
+          latest.current.failed(requestMessage(job.message))
           window.dispatchEvent(new Event("studio-refresh"))
           setHandle((current) => current?.id === handle.id ? null : current)
           return

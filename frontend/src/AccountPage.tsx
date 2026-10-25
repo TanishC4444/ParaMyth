@@ -19,10 +19,12 @@ export default function AccountPage({ signup, available, onSignedIn, invitation=
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, ...(signup ? { display_name: name } : {}) }),
       })
-      const value = await response.json()
+      if(!(response.headers.get('content-type') || '').includes('json'))throw Error("We couldn't reach your studio. Try again in a moment.")
+      const value = await response.json().catch(()=>null)
+      if(!value)throw Error("We couldn't reach your studio. Try again in a moment.")
       if (!response.ok) {
         const detail = value?.detail
-        throw Error(typeof detail === 'string' ? detail : 'We couldn’t sign you in. Check your details and try again.')
+        throw Error(response.status===503?"Accounts aren't available in this studio yet.":typeof detail === 'string' ? detail : 'We couldn’t sign you in. Check your details and try again.')
       }
       setPassword('')
       try { localStorage.setItem('paramyth-account-change', String(Date.now())) } catch {}
@@ -45,9 +47,9 @@ export default function AccountPage({ signup, available, onSignedIn, invitation=
       {invitation && <p className="account-notice">Sign in with your invited email address. You’ll join the team and go straight to its projects.</p>}
       {!available && <p className="account-notice" role="status">The online studio isn’t connected yet. You can explore the story atlas while we finish setting it up.</p>}
       <form onSubmit={submit}>
-        {signup && <label className="field">Your name<input autoComplete="name" value={name} onChange={event => setName(event.target.value)} maxLength={100} required /></label>}
-        <label className="field">Email address<input type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} required /></label>
-        <label className="field">Password<input type="password" autoComplete={signup ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} minLength={1} maxLength={128} required /></label>
+        {signup && <label className="field">Your name<input disabled={!available||busy} autoComplete="name" value={name} onChange={event => setName(event.target.value)} maxLength={100} required /></label>}
+        <label className="field">Email address<input disabled={!available||busy} type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} required /></label>
+        <label className="field">Password<input disabled={!available||busy} type="password" autoComplete={signup ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} minLength={1} maxLength={128} required /></label>
         {error && <p className="account-error" role="alert">{error}</p>}
         <button className="primary" disabled={busy || !available}>{busy ? 'Opening your studio…' : signup ? 'Create account' : 'Sign in'}</button>
       </form>

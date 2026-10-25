@@ -3,3 +3,6 @@
 .legal-page .pm-bar{position:relative}
 
 .contact-list{padding-left:18px;font-size:13px;line-height:2;overflow-wrap:anywhere}
+
+.legal-main .art-credits summary{font:inherit;font-size:14px;color:#f4cf91;min-height:44px;display:list-item;padding:10px 0;cursor:pointer}.legal-main .art-credits summary:focus-visible{outline:2px solid #f4cf91;outline-offset:4px}
+@media(max-width:760px){.legal-back,.site-links a{display:inline-flex;align-items:center;min-height:44px}.legal-page .pm-bar{gap:12px;flex-wrap:wrap}.legal-back{font-size:12px}}

@@ -44,15 +44,17 @@ function apiBase(value) {
   return url.href.replace(/\/$/, '').replace(/\/api\/v1$/, '');
 }
 async function api(path, method = 'GET', body) {
-  const response = await fetch(`${base}/api/v1${path}`, {
+  let response;
+  try { response = await fetch(`${base}/api/v1${path}`, {
     method, headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {})},
     body: body === undefined ? undefined : JSON.stringify(body), credentials: 'include', cache: 'no-store',
     signal: AbortSignal.timeout(30000),
-  });
-  const value = response.status === 204 ? null : await response.json();
-  if (!response.ok) {
+  }); } catch { throw new Error("We couldn't reach your studio. Try again in a moment."); }
+  let value = null;
+  if (response.status !== 204 && (response.headers?.get('content-type') || '').includes('json')) try { value = await response.json(); } catch {}
+  if (!response.ok || response.status !== 204 && !value) {
     const detail = value?.detail;
-    const error = new Error(Array.isArray(detail) ? detail.map((x) => `${x.loc.at(-1)}: ${x.msg}`).join('; ') : detail || `Request failed (${response.status})`);
+    const error = new Error(response.status === 503 ? "Accounts aren't available in this studio yet." : response.status === 404 || !value ? "We couldn't reach your studio. Try again in a moment." : Array.isArray(detail) ? detail.map((x) => `${x.loc.at(-1)}: ${x.msg}`).join('; ') : detail || 'Could not complete this request. Try again.');
     error.status = response.status;
     throw error;
   }
@@ -219,7 +221,7 @@ on('logout', 'click', async () => {
     $('account').hidden = true; $('logout').hidden = false;
     $('welcome').textContent = `${user.display_name}'s studios`;
     await loadStudios(); $('workspace').hidden = redirecting;
-  } catch { signedOut(); }
+  } catch (error) { signedOut(); if (error.status !== 401) $('account-message').textContent = error.message; }
 })();
 
 on('create-studio', 'submit', async () => {
