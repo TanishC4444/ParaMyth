@@ -18,6 +18,8 @@ export default function StoryParticles({ progress, running }: { progress: Mutabl
       ctx.clearRect(0, 0, width, height);
       const gather = clamp((p - .12) / .32), scatter = clamp((p - .67) / .28);
       const count = width < 700 ? 64 : 150;
+      const link = clamp((gather - .55) / .45) * (1 - scatter);
+      let lastX = 0, lastY = 0;
       ctx.globalAlpha = (1 - scatter) * .85;
       for (let i = 0; i < count; i++) {
         const seed = ((i * 16807 + 137) % 997) / 997, angle = seed * Math.PI * 2 + t * (.2 + seed * .15);
@@ -26,7 +28,14 @@ export default function StoryParticles({ progress, running }: { progress: Mutabl
         const target = points[i % Math.max(1, points.length)] || { x: width / 2, y: height / 2 };
         const x = originX + (target.x - originX) * gather + Math.cos(angle) * scatter * width * .8;
         const y = originY + (target.y - originY) * gather + Math.sin(angle) * scatter * height * .7;
-        ctx.fillStyle = i % 4 ? "#eed9a5" : "#a8dbcb";
+        // Neighbouring motes join into short engraved strokes as the name forms.
+        if (link > 0 && i && Math.abs(x - lastX) + Math.abs(y - lastY) < 26) {
+          ctx.globalAlpha = link * .32; ctx.strokeStyle = "#e7c47c"; ctx.lineWidth = .6;
+          ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+          ctx.globalAlpha = (1 - scatter) * .85;
+        }
+        lastX = x; lastY = y;
+        ctx.fillStyle = i % 7 === 0 ? "#e2775c" : i % 3 ? "#f1d48e" : "#9fd0bd";
         ctx.beginPath(); ctx.arc(x, y, .8 + seed * 1.6, 0, Math.PI * 2); ctx.fill();
         if (i % 9 === 0) { ctx.globalAlpha *= .24; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = (1 - scatter) * .85; }
       }
@@ -40,7 +49,7 @@ export default function StoryParticles({ progress, running }: { progress: Mutabl
       const pen = stencil.getContext("2d", { willReadFrequently: true });
       points = [];
       if (pen && width && height) {
-        pen.font = `italic ${Math.min(width * .14, 160)}px Georgia`;
+        pen.font = `italic 400 ${Math.min(width * .14, 160)}px Fraunces, Georgia, serif`;
         pen.textAlign = "center"; pen.textBaseline = "middle"; pen.fillText("ParaMyth", width / 2, height * .48);
         const pixels = pen.getImageData(0, 0, stencil.width, stencil.height).data;
         for (let y = 0; y < stencil.height; y += 8) for (let x = 0; x < stencil.width; x += 8) if (pixels[(y * stencil.width + x) * 4 + 3] > 150) points.push({ x, y });
@@ -55,6 +64,8 @@ export default function StoryParticles({ progress, running }: { progress: Mutabl
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; refresh(); }); observer.observe(el);
     const bounds = new ResizeObserver(resize); bounds.observe(el);
     document.addEventListener("visibilitychange", refresh); resize(); refresh();
+    // Re-sample the name once the display face has loaded.
+    document.fonts?.ready.then(() => { if (canvas.current) resize(); });
     return () => { animation.revert(); observer.disconnect(); bounds.disconnect(); document.removeEventListener("visibilitychange", refresh); controls.current = null; ctx.clearRect(0, 0, width, height); };
   }, [progress]);
   useEffect(() => { controls.current?.refresh(); }, [running]);

@@ -8,31 +8,49 @@ import { Icon } from "./ui"
 
 import Journey from "./Journey"
 
-import Workflow from "./views/Workflow"
+import { STATIC_SITE } from "./site"
 
-import Overview from "./views/Overview"
+import { AppErrorBoundary, NotFound, PageLoading } from "./system-pages"
 
-import Projects from "./views/Projects"
+const StaticStudio = lazy(() => import("./StaticStudio"))
 
-import ProjectWorkspace from "./views/ProjectWorkspace"
+const Workflow = lazy(() => import("./views/Workflow"))
 
-import Runs from "./views/Runs"
+const Overview = lazy(() => import("./views/Overview"))
 
-import Creative from "./views/Creative"
+const Projects = lazy(() => import("./views/Projects"))
 
-import Retrieval from "./views/Retrieval"
+const ProjectWorkspace = lazy(() => import("./views/ProjectWorkspace"))
 
-import Images from "./views/Images"
+const Runs = lazy(() => import("./views/Runs"))
 
-import Music from "./views/Music"
+const Creative = lazy(() => import("./views/Creative"))
 
-import Production from "./views/Production"
+const Retrieval = lazy(() => import("./views/Retrieval"))
 
-import Library from "./views/Library"
+const Images = lazy(() => import("./views/Images"))
 
-import Connections from "./views/Connections"
+const Music = lazy(() => import("./views/Music"))
+
+const Production = lazy(() => import("./views/Production"))
+
+const Library = lazy(() => import("./views/Library"))
+
+const Connections = lazy(() => import("./views/Connections"))
 
 const Landing = lazy(() => import("./views/Landing"))
+
+const TITLES: Partial<Record<View, string>> = {
+  atlas: "Story atlas",
+  overview: "Studio overview",
+  projects: "Projects",
+  workflow: "Project workflow",
+  runs: "Pipelines & runs",
+  retrieval: "Literary retrieval",
+  library: "File library",
+  connections: "Connections",
+  notfound: "Page not found",
+}
 
 const NAV: { group: string; items: [View, string, string][] }[] = [
   {
@@ -79,12 +97,18 @@ function Shell() {
   const [mobile, setMobile] = useState(false)
 
   useEffect(() => {
+    const title = TITLES[view]
+    document.title = title ? `${title} · ParaMyth` : "ParaMyth · A world of stories"
+  }, [view])
+
+  useEffect(() => {
     // The landing sequence owns its scroll position, including return visits.
     if (view === "landing" || view === "atlas") return
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [view])
 
   const isLanding = view === "landing" || view === "atlas"
+  const missing = view === "notfound"
   const [visitedLanding, setVisitedLanding] = useState(isLanding)
   if (isLanding && !visitedLanding) setVisitedLanding(true)
 
@@ -92,7 +116,7 @@ function Shell() {
     (r) => r.status === "running" || r.status === "queued",
   ).length
 
-  const pages: Record<Exclude<View, "landing" | "atlas">, ReactElement> = {
+  const pages: Record<Exclude<View, "landing" | "atlas" | "notfound">, ReactElement> = {
     workflow: <Workflow />,
     overview: <Overview />,
     projects: <Projects />,
@@ -111,11 +135,15 @@ function Shell() {
   return (
     <>
     {visitedLanding && <div hidden={!isLanding} className="workspace-view">
-      <Suspense fallback={<div className="landing-loading" role="status">Opening a world of stories…</div>}>
-        <Landing focusAtlas={view === "atlas"} active={isLanding} />
-      </Suspense>
+      <AppErrorBoundary resetKey={view}>
+        <Suspense fallback={<div className="night-page"><PageLoading label="Opening a world of stories…" /></div>}>
+          <Landing focusAtlas={view === "atlas"} active={isLanding} />
+        </Suspense>
+      </AppErrorBoundary>
     </div>}
-    <div className="app-shell" hidden={isLanding}>
+    {missing && <NotFound />}
+    {STATIC_SITE ? !isLanding && !missing && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
+    <div className="app-shell" hidden={isLanding || missing}>
       <aside className={`sidebar ${mobile ? "open" : ""}`}>
         <button
           className="workspace-switch branded-workspace"
@@ -124,9 +152,10 @@ function Shell() {
         >
           <img
             className="brand-logo"
-            src="/brand/paramyth-logo.png"
-            width="1280"
-            height="720"
+            src="/brand/paramyth-logo.webp"
+            width="400"
+            height="225"
+            loading="lazy"
             alt="ParaMyth"
           />
           <small>Back to a world of stories</small>
@@ -187,9 +216,10 @@ function Shell() {
           <a className="mobile-brand" href="#/" aria-label="ParaMyth home">
             <img
               className="brand-logo"
-              src="/brand/paramyth-logo.png"
-              width="1280"
-              height="720"
+              src="/brand/paramyth-logo.webp"
+              width="400"
+              height="225"
+              loading="lazy"
               alt="ParaMyth"
             />
           </a>
@@ -217,9 +247,7 @@ function Shell() {
           </div>
         )}
         {!ready ? (
-          <p className="live-loading" role="status">
-            Opening your saved workspace…
-          </p>
+          <PageLoading label="Opening your saved workspace…" light />
         ) : (
           <>
             {!["workflow", "projects", "overview", "connections", "retrieval"].includes(
@@ -240,12 +268,16 @@ function Shell() {
                 </button>
               </div>
             ) : (
-              <PageCache key={project.id} pages={pages} view={view} />
+              <AppErrorBoundary resetKey={view}>
+                <Suspense fallback={<PageLoading light />}>
+                  <PageCache key={project.id} pages={pages} view={view} />
+                </Suspense>
+              </AppErrorBoundary>
             )}
           </>
         )}
       </main>
-    </div>
+    </div>}
       {toast && (
         <div className="toast" role="status">
           <Icon name="check" />

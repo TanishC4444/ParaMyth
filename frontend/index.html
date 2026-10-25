@@ -3,12 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#203970" />
-    <meta name="description" content="ParaMyth: a studio for story briefs, reviewed writing pipelines, canon memory, images, soundtracks and production planning." />
-    <title>ParaMyth · Creative workspace</title>
+    <meta name="theme-color" content="#081216" />
+    <meta name="description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story in the ParaMyth studio." />
+    <title>ParaMyth · A world of stories</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://paramyth.tech/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ParaMyth" />
+    <meta property="og:title" content="ParaMyth · A world of stories" />
+    <meta property="og:description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story in the ParaMyth studio." />
+    <meta property="og:url" content="https://paramyth.tech/" />
+    <meta property="og:image" content="https://paramyth.tech/brand/paramyth-logo.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:alt" content="ParaMyth" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ParaMyth · A world of stories" />
+    <meta name="twitter:description" content="Explore 385 myths, epics and fairy tales from 11 traditions on an interactive globe, then build your own story." />
+    <meta name="twitter:image" content="https://paramyth.tech/brand/paramyth-logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Instrument+Sans:wght@400..700&family=Manrope:wght@400;500;600;700&display=swap" />
+    <style>
+      /* Shown until the app's code arrives; React replaces it on first render. */
+      html,body{margin:0;background:#081216}
+      .boot{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:20px;color:#c8d5c4;font:italic 400 20px/1.3 Georgia,serif;text-align:center;padding:20px}
+      .boot svg{width:64px;height:64px;animation:boot-turn 5s linear infinite}
+      @keyframes boot-turn{to{transform:rotate(360deg)}}
+      @media(prefers-reduced-motion:reduce){.boot svg{animation:none}}
+      noscript p{margin:0;padding:40px 24px;color:#f5eedb;background:#081216;font:17px/1.6 Georgia,serif;text-align:center}
+      noscript a{color:#f1d48e}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <noscript><p>ParaMyth needs JavaScript to show the story atlas and studio. Turn it on and reload, or browse the source at <a href="https://github.com/TanishC4444/ParaMyth">github.com/TanishC4444/ParaMyth</a>.</p></noscript>
+    <div id="root"><div class="boot" role="status"><svg viewBox="0 0 64 64" fill="none" stroke="#d4aa5c" stroke-width="1.6" aria-hidden="true"><circle cx="32" cy="32" r="24"/><path d="M32 12.5 35.6 28.4 51.5 32 35.6 35.6 32 51.5 28.4 35.6 12.5 32 28.4 28.4Z" fill="#d4aa5c" fill-opacity=".2"/></svg>Opening a world of stories…</div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

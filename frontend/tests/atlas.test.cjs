@@ -9,7 +9,7 @@ const path = resolve(__dirname, '../src/atlas.ts');
 const corpus = JSON.parse(readFileSync(resolve(__dirname, '../public/atlas/stories.json'), 'utf8'));
 function atlas(fetch) {
   // Supply Vite's base URL while executing the actual atlas module in isolation.
-  const source = readFileSync(path, 'utf8').replaceAll('import.meta.env.BASE_URL', '"/"');
+  const source = readFileSync(path, 'utf8').replaceAll('import.meta.env.BASE_URL', '"/"').replaceAll('import.meta.env.VITE_STATIC_SITE', 'undefined');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
   const exports = {};
   vm.runInNewContext(code, { exports, require: createRequire(path), fetch, AbortSignal, localStorage: { getItem: () => null } });

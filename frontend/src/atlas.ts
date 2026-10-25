@@ -15,7 +15,9 @@ const apiBases = () => {
   let stored = "";
   try { stored = (localStorage.getItem("paramyth-api-base") || "").replace(/\/$/, ""); } catch { /* optional */ }
   // Same origin first: the studio launcher serves this app and the API together.
-  return [...new Set(["", stored].filter((b, i) => i === 0 || b))];
+  // Static hosting has no API at its own origin, so only a chosen base is tried.
+  const own = import.meta.env.VITE_STATIC_SITE === "1" ? [] : [""];
+  return [...new Set([...own, stored].filter((b, i) => b || (i === 0 && own.length)))];
 };
 
 let snapshot: Promise<{ corpus: string; regions: string[]; stories: AtlasStory[] }> | null = null;

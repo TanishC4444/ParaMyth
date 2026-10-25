@@ -22,6 +22,7 @@ import {
 import "../atlas.css"
 
 import { api } from "../api"
+import { REPOSITORY, STATIC_SITE } from "../site"
 
 import { uid } from "../data"
 
@@ -43,7 +44,8 @@ import AtlasGlobe from "./AtlasGlobe"
 
 const AtlasMap = lazy(() => import("./AtlasMap"))
 
-const LIST_LIMIT = 80
+// Phones show a short first page; the list is part of the page scroll there.
+const LIST_LIMIT = typeof window !== "undefined" && window.innerWidth <= 760 ? 12 : 80
 
 export default function Atlas({ landing = false }: { landing?: boolean }) {
   const { store, setStore, project, ideate, notify, atlasQuery } = useStudio()
@@ -86,6 +88,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
   const modeChosen = useRef(false)
 
   useEffect(() => {
+    if (STATIC_SITE) return
     let active = true
     api("/api/ui/retrieval-connection").then((r) => {
       if (active && !modeChosen.current) setSearchMode(r.semantic ? "hybrid" : "lexical")
@@ -325,7 +328,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
         )}
       </PageTitle>
 
-      <div className="atlas-concept">
+      {!STATIC_SITE && <div className="atlas-concept">
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -396,7 +399,7 @@ export default function Atlas({ landing = false }: { landing?: boolean }) {
             </div>
           </>
         )}
-      </div>
+      </div>}
         <div className="atlas-layout">
           <section
             className={`atlas-frame ${mode === "globe" ? "globe-frame" : ""}`}
@@ -663,7 +666,10 @@ function StoryDetail({
         <p>{s.instruction}</p>
       </div>
 
-      <div className="atlas-actions">
+      {STATIC_SITE ? <p className="atlas-static-note">
+        Retell this tale or borrow its engine in the ParaMyth studio, which runs on your own machine.{" "}
+        <a href={`${REPOSITORY}#readme`} target="_blank" rel="noreferrer">Set up the studio</a>
+      </p> : <><div className="atlas-actions">
         <button className="primary" onClick={() => onStart(s, "Retelling")}>
           <Icon name="sparkle" size={15} />
           Ideate on this story
@@ -684,7 +690,7 @@ function StoryDetail({
       <p className="hint">
         Both options create a separate project. Ideate develops this tale;
         inspiration uses its story engine for an original premise.
-      </p>
+      </p></>}
 
       {s.summary && (
         <Section title="Why it works">

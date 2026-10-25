@@ -3,6 +3,7 @@ import { createTimeline, stagger } from "animejs";
 import Storybook from "./Storybook";
 import StoryParticles from "./StoryParticles";
 import TitleReveal from "./TitleReveal";
+import Astrolabe from "./Astrolabe";
 import { hasSeenIntro, phaseAt, rememberIntro, scrollProgress, SCROLL_DURATION } from "./motion";
 import "./cinematic.css";
 
@@ -34,6 +35,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     const section = root.current!, atlas = atlasRef.current!;
     let frame = 0, disposed = false, lastPhase = "book", settled = false;
     const find = (selector: string) => section.querySelector<HTMLElement>(selector)!;
+    const rail = find(".cinema-rail-fill");
     const skip = (focus = true) => {
       settle(); rememberIntro();
       scroll.seek(SCROLL_DURATION, true);
@@ -59,9 +61,8 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       opening.add(find(`.book-leaf-${i}`), { rotateY: [0, -177 + i * .7], duration: 1450 + i * 110 }, 2750 + i * 2000)
         .add(find(`.book-leaf-${i}`), { zIndex: [6 - i, i + 1], duration: 1 }, 4210 + i * 2100);
     });
-    opening.add(find(".cinema-world-light"), { backgroundColor: ["#6d9e81", "#61789e"], duration: 1500 }, 2700)
-      .add(find(".cinema-world-light"), { backgroundColor: "#bb9674", duration: 1500 }, 4800)
-      .add(find(".cinema-world-light"), { backgroundColor: "#91b7a0", duration: 1500 }, 6900)
+    opening.add(find(".cinema-astrolabe"), { opacity: [0, 1], duration: 2600, ease: "outCubic" }, 0)
+      .add(section.querySelectorAll(".cinema-opening-copy > *"), { opacity: [0, 1], y: [18, 0], duration: 1100, delay: stagger(180), ease: "outCubic" }, 200)
       .add(section.querySelectorAll(".book-illustration .art-image"), { scale: [1.06, 1], duration: 8500, ease: "linear" }, 0);
 
     const scroll = createTimeline({ autoplay: false, defaults: { ease: "inOutSine" } })
@@ -69,11 +70,14 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       .add(find(".cinema-opening-copy"), { opacity: [1, 0], y: [0, -20], duration: 450 }, 50)
       .add(find(".cinema-scroll-cue"), { opacity: [1, 0], duration: 400 }, 100)
       .add(find(".cinema-title-reveal"), { opacity: [0, 1], duration: 400 }, 950)
-      .add(section.querySelectorAll(".cinema-letter"), { opacity: [0, 1], y: [32, 0], duration: 550, delay: stagger(65), ease: "outCubic" }, 950)
-      .add(find(".cinema-title-reveal"), { opacity: 0, y: [0, -65], duration: 600 }, 2200)
-      .add(find(".cinema-stage"), { backgroundColor: ["#142f37", "#f8f7f2"], duration: 900 }, 2300)
+      .add(section.querySelectorAll(".cinema-letter"), { opacity: [0, 1], y: [48, 0], rotateX: [-70, 0], filter: ["blur(10px)", "blur(0px)"], duration: 650, delay: stagger(60), ease: "outCubic" }, 950)
+      .add(section.querySelectorAll(".cinema-flourish path"), { strokeDashoffset: [1, 0], duration: 700, ease: "inOutQuad" }, 1300)
+      .add(find(".cinema-astrolabe svg"), { rotate: [0, 72], duration: SCROLL_DURATION, ease: "linear" }, 0)
+      .add(find(".cinema-astrolabe"), { scale: [1, 1.35], duration: SCROLL_DURATION, ease: "linear" }, 0)
+      .add(find(".cinema-title-reveal"), { opacity: 0, y: [0, -65], duration: 450 }, 2150)
+      .add(find(".dial-tilt"), { opacity: [1, 0], duration: 500 }, 2200)
       .add(find(".cinema-atmosphere"), { opacity: [1, 0], duration: 900 }, 2300)
-      .add(atlas, { opacity: [0, 1], translateY: [35, 0], scale: [.97, 1], duration: 750 }, 2450);
+      .add(atlas, { opacity: [0, 1], translateY: [35, 0], scale: [.97, 1], duration: 600 }, 2600);
     function settle() {
       if (settled) return;
       opening.seek(opening.duration, true).pause(); settled = true; firstVisit.current = false; setReady(true); rememberIntro();
@@ -86,6 +90,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       const p = scrollProgress(window.scrollY, rect.top + window.scrollY, rect.height, window.innerHeight);
       if (p > .012) settle();
       progress.current = p; scroll.seek(p * SCROLL_DURATION, true);
+      rail.style.transform = `scaleY(${p.toFixed(4)})`;
       atlas.inert = p < .92;
       if (atlas.inert) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
       const nextPhase = phaseAt(p);
@@ -126,16 +131,20 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
 
   return <section ref={root} tabIndex={-1} className={`cinematic-intro${reduced ? " cinematic-static" : ""}`} data-phase={phase} aria-label="Enter the world of ParaMyth">
     <div className="cinema-stage">
-      <div className="cinema-atmosphere" aria-hidden="true"><div className="cinema-world-light" /><div className="cinema-grain" /><div className="cinema-orbit orbit-one" /><div className="cinema-orbit orbit-two" /></div>
-      <div className="cinema-opening-copy"><p className="cinema-eyebrow">A LITTLE WONDER. A WORLD OF POSSIBILITY.</p><p className="cinema-prologue">Every story begins<br /><em>somewhere.</em></p></div>
+      <div className="cinema-atmosphere" aria-hidden="true"><div className="cinema-glow glow-a" /><div className="cinema-glow glow-b" /><div className="cinema-glow glow-c" /><div className="cinema-grain" /></div>
+      <Astrolabe />
+      <div className="cinema-opening-copy"><p className="cinema-eyebrow">385 tales · 11 traditions · one atlas</p><p className="cinema-prologue">Every story begins<br /><em>somewhere.</em></p></div>
       <Storybook />
       {!reduced && <StoryParticles progress={progress} running={active && !paused && phase !== "atlas"} />}
       <TitleReveal />
       <div className="cinema-controls"><button onClick={() => controls.current?.skip()}>Skip intro <span aria-hidden="true">↗</span></button>{!reduced && <button onClick={() => setPaused(!paused)} aria-pressed={paused}>{paused ? "Resume animation" : "Pause animation"}</button>}</div>
       <button className="cinema-scroll-cue" onClick={() => reduced ? controls.current?.skip() : window.scrollTo({ top: (root.current?.getBoundingClientRect().top || 0) + window.scrollY + (root.current!.offsetHeight - window.innerHeight) * .5, behavior: paused ? "instant" : "smooth" })}>
-        <span>{reduced ? "Explore the story atlas" : ready ? "Scroll to open a world" : "Watch the pages. Then follow the story."}</span><i aria-hidden="true">↓</i>
+        <span>{reduced ? "Explore the story atlas" : ready ? "Scroll to open the atlas" : "Watch the pages turn"}</span><i aria-hidden="true"><b /></i>
       </button>
-      <span className="cinema-chapter" aria-hidden="true">{phase === "book" ? "01 / THE BEGINNING" : phase === "title" ? "02 / THE POSSIBILITY" : "03 / YOUR WORLD"}</span>
+      <div className="cinema-rail" aria-hidden="true">
+        <span className="cinema-rail-track"><span className="cinema-rail-fill" /></span>
+        <ol>{[["I", "The opening", "book"], ["II", "The name", "title"], ["III", "The atlas", "transition"]].map(([n, label, key]) => <li key={key} className={phase === key || (key === "transition" && phase === "atlas") ? "on" : ""}><b>{n}</b><span>{label}</span></li>)}</ol>
+      </div>
     </div>
   </section>;
 }
