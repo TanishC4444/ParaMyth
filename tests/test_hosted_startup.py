@@ -51,6 +51,39 @@ class HostedStartupTests(unittest.TestCase):
                 self.assertEqual(client.get('https://stories.example.tech/api/ui/workspace').status_code, 401)
                 authenticate.assert_called_once()
 
+    def test_hosted_errors_keep_cors_for_only_the_configured_frontend(self):
+        origin = 'https://paramyth.tech'
+        backend = 'https://api.example.tech'
+        with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {
+            'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode(),
+            'PARAMYTH_FRONTEND_ORIGIN': origin,
+        }, clear=True):
+            app = create_app(root, frontend=None, public_origin=backend)
+
+            @app.get('/error-probe')
+            def error_probe():
+                raise RuntimeError('private diagnostic')
+
+            with TestClient(app, base_url=backend, raise_server_exceptions=False) as client:
+                for request_origin in (origin, 'https://untrusted.tech'):
+                    headers = {'Origin': request_origin}
+                    with patch('paramyth.studio.hosting.accounts.user', side_effect=RuntimeError('private diagnostic')):
+                        middleware_error = client.get('/api/ui/workspace', headers=headers)
+                    with patch('paramyth.studio.hosting.accounts.user', side_effect=HTTPException(401, 'Sign in')):
+                        unauthorized = client.get('/api/ui/workspace', headers=headers)
+                    route_error = client.get('/error-probe', headers=headers)
+                    oversized = client.post('/api/v1/accounts/login', headers=headers, content=b'x' * (5 * 1024 * 1024 + 1))
+                    for response, status in ((middleware_error, 500), (route_error, 500), (unauthorized, 401), (oversized, 413)):
+                        with self.subTest(origin=request_origin, status=status, path=response.request.url.path):
+                            self.assertEqual(response.status_code, status)
+                            self.assertNotIn('private diagnostic', response.text)
+                            if request_origin == origin:
+                                self.assertEqual(response.headers.get('access-control-allow-origin'), origin)
+                                self.assertEqual(response.headers.get('access-control-allow-credentials'), 'true')
+                                self.assertIn('Origin', response.headers.get('vary', ''))
+                            else:
+                                self.assertNotIn('access-control-allow-origin', response.headers)
+
     def test_github_frontend_has_exact_origin_cors_and_secure_cookie_sessions(self):
         from paramyth.studio.accounts import set_session, clear_session
         origin = 'https://paramyth.tech'
@@ -80,6 +113,10 @@ class HostedStartupTests(unittest.TestCase):
                 self.assertEqual(preflight.status_code, 200)
                 self.assertEqual(preflight.headers['access-control-allow-origin'], origin)
                 self.assertEqual(preflight.headers['access-control-allow-credentials'], 'true')
+                rejected = client.options('/api/ui/workspace', headers={
+                    'Origin': 'https://untrusted.tech', 'Access-Control-Request-Method': 'GET'})
+                self.assertEqual(rejected.status_code, 400)
+                self.assertNotIn('access-control-allow-origin', rejected.headers)
                 response = client.post('/api/v1/accounts/session-probe', headers=headers)
                 self.assertEqual(response.status_code, 200)
                 cookie = response.headers['set-cookie']
