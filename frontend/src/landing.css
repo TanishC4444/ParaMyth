@@ -1,6 +1,8 @@
 /* Night atlas: the landing's story atlas, ribbon and colophon. Scoped so the studio's own atlas keeps its light theme. */
 .cinematic-landing{background:var(--night);color:var(--bone);font-family:var(--sans)}
 .cinematic-landing .skip-link{background:var(--gilt);color:var(--night);font-weight:600}
+.cinematic-landing .landing-header nav>a:not(.pm-plate){color:var(--mist)}
+.cinematic-landing .landing-header nav>a:not(.pm-plate):hover{color:var(--bone);text-decoration:none}
 .cinematic-landing .landing-header nav>a.pm-plate:after{display:none}
 .cinematic-landing .landing-header .pm-plate{padding:12px 18px;font-size:11px}
 
