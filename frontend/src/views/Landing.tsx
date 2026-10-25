@@ -27,7 +27,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
   const [reduceMotion, setReduceMotion] = useState(false);
 
   return <div className="landing-shell cinematic-landing">
-    <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); intro.current?.enter(); }}>Skip to content</a>
+    <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); intro.current?.enter(false); }}>Skip to content</a>
     <header className="landing-header">
       <nav aria-label="Landing navigation">
         <button className="dock-atlas" onClick={() => bookVisible ? intro.current?.enter() : intro.current?.replay()}><Icon name={bookVisible ? "atlas" : "library"} size={16} /><span>{bookVisible ? "Story Atlas" : "The Book"}</span></button>

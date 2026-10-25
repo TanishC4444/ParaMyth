@@ -5,7 +5,7 @@ import { SCENES } from "./scenes";
 import { chapterMotion, readNavigation, saveNavigation, sceneAt, scrollProgress } from "./motion";
 import "./cinematic.css";
 
-export type IntroActions = { replay: () => void; enter: () => void; scene: (index: number) => void; syncWorld: () => void };
+export type IntroActions = { replay: () => void; enter: (animate?: boolean) => void; scene: (index: number) => void; syncWorld: () => void };
 type Controller = IntroActions & { refresh: () => void; restore: () => void; scene: (index: number) => void };
 type Props = { atlasRef: RefObject<HTMLElement | null>; actionsRef: RefObject<IntroActions | null>; active: boolean; focusAtlas: boolean; reduceMotion: boolean; onBookChange?: (visible: boolean) => void; onPrepareAtlas?: () => void };
 
@@ -20,7 +20,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
   const [systemReduced, setSystemReduced] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
   const reduced = systemReduced || reduceMotion;
   const reducedRef = useRef(reduced); reducedRef.current = reduced;
-  useImperativeHandle(actionsRef, () => ({ enter: () => controls.current?.enter(), replay: () => controls.current?.replay(), scene: index => controls.current?.scene(index), syncWorld: () => controls.current?.syncWorld() }), []);
+  useImperativeHandle(actionsRef, () => ({ enter: animate => controls.current?.enter(animate), replay: () => controls.current?.replay(), scene: index => controls.current?.scene(index), syncWorld: () => controls.current?.syncWorld() }), []);
   useEffect(() => {
     const preference = matchMedia("(prefers-reduced-motion: reduce)");
     const change = () => setSystemReduced(preference.matches);
@@ -94,6 +94,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     };
     const finishNavigation = () => {
       if (!focusWorld) return;
+      paint();
       if (progress.current >= .9995) jumpToWorld(); else focusWorld = false;
     };
     const replay = () => place(bookmark.current, true);
