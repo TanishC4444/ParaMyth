@@ -119,3 +119,10 @@ context budget; hierarchical long-book auditing is not implemented.
 
 This run format uses schema version 2. Retain earlier run folders as historical
 checkpoints and start a fresh folder rather than silently reinterpreting older state.
+
+## Role guidance
+
+Role prompts for the architect, writer and reviewers live in `skills/`:
+`story_architect.md`, `design_review.md`, `distinct_writing.md`,
+`story_quality.md`, `rhetoric_quality.md` and `memory_quality.md`. Interface
+copy follows `.claude/skills/site-copy/SKILL.md`.
