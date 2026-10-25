@@ -82,6 +82,7 @@ class TeamWorkspaceTests(unittest.TestCase):
         self.assertEqual(saved.status_code,200,saved.text)
         conflict=self.b.patch(route,json={'changes':{'creative.input':'A different lighthouse'},'versions':{}},headers=self.headers(self.b))
         self.assertEqual(conflict.status_code,409)
+        self.assertEqual(self.b.patch(route,json=data,headers=self.headers(self.b)).status_code,200)
         self.assertEqual(self.b.patch(route,json={'changes':{'music.direction':'Sparse cello'},'versions':{}},headers=self.headers(self.b)).status_code,200)
         state=self.a.get(self.url('/api/ui/workspace')).json()
         self.assertEqual(state['drafts'][ident]['creative.input'],'A shared lighthouse')

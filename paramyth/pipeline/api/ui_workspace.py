@@ -127,7 +127,7 @@ def save_workspace_drafts(ident:str,data:dict=Body(...),runtime=RT):
             from ...studio.team_workspace import field_revision
             for key in data:
                 actual=field_revision(current[key]) if key in current else 'new'
-                if versions.get(key,'new')!=actual:
+                if versions.get(key,'new')!=actual and field_revision(data[key])!=actual:
                     raise HTTPException(409,'A teammate changed this field. Your local edits are kept; reload the latest version before merging them.')
         updated={**current,**data}
         if len(json.dumps(updated,allow_nan=False))>4000000:raise ValueError('Workspace drafts are too large')

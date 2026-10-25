@@ -59,8 +59,8 @@ export default function WritingWorkspace() {
         if (running) { setHandle(running.id); setLive(running); }
       } catch (e) { if (active) setError(errorText(e)); }
     };
-    void load(); window.addEventListener('studio-refresh',load);
-    return () => { active = false; window.removeEventListener('studio-refresh',load); };
+    void load(); window.addEventListener('studio-refresh',load); window.addEventListener('studio-shared-update',load);
+    return () => { active = false; window.removeEventListener('studio-refresh',load); window.removeEventListener('studio-shared-update',load); };
   }, [project.id,ready]);
 
   useEffect(() => {

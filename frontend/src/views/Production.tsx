@@ -64,6 +64,12 @@ export default function Production() {
     setScenes(p.breakdown.scenes)
     setBudget(p.breakdown.budget_items)
   }
+  useEffect(()=>{
+    let live=true
+    const load=()=>api(path('/api/config')).then(c=>{if(live){setIds(c.plans);setGoogle(c.google)}}).catch(()=>{})
+    window.addEventListener('studio-shared-update',load)
+    return()=>{live=false;window.removeEventListener('studio-shared-update',load)}
+  },[project.id])
   useEffect(() => {
     let live = true
     api(path("/api/config"))

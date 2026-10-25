@@ -18,11 +18,13 @@ export function useSavedJob(
     let live = true
     if (!project.id) return
     // Recover work started in another tab, even before its local handle was saved.
-    void studioJobs(project.id).then((jobs) => {
+    const recover = () => studioJobs(project.id).then((jobs) => {
       const active = jobs.find((j) => kinds.includes(j.kind) && ["queued", "running"].includes(j.status))
       if (live && active) setHandle((current) => current || { id: active.id, kind: active.kind, local: active.local })
     }).catch((e) => { if (live) latest.current.failed(String(e)) })
-    return () => { live = false }
+    void recover()
+    window.addEventListener('studio-shared-update',recover)
+    return () => { live = false; window.removeEventListener('studio-shared-update',recover) }
   }, [project.id, kindKey, setHandle])
   useEffect(() => {
     if (!handle) return
