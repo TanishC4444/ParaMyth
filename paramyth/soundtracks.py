@@ -149,12 +149,24 @@ def audio(ident, action='content'):
         raise ProviderError('Cannot reach Vultr inference') from None
 
 
-def download(ident, path):
-    total = 0
+def cancel(ident):
+    request = Request(vultr.BASE + '/music/' + job_id(ident), method='DELETE', headers=vultr.headers())
+    try:
+        with build_opener(NoRedirect()).open(request, timeout=30) as response:
+            response.read()
+    except HTTPError as exc:
+        exc.close()
+        raise ProviderError('Vultr could not cancel this music job') from None
+    except (URLError, TimeoutError, OSError):
+        raise ProviderError('Cannot reach Vultr inference') from None
+
+
+def download(ident, path, limit=None):
+    total, limit = 0, limit or MAX_AUDIO_BYTES
     with audio(ident) as response, open(path, 'wb') as out:
         while block := response.read(65536):
             total += len(block)
-            if total > MAX_AUDIO_BYTES:
+            if total > limit:
                 raise ProviderError('The audio exceeded the size limit')
             out.write(block)
     return total
