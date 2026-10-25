@@ -5,6 +5,7 @@ import re
 from fastapi import APIRouter, Body, HTTPException, Request
 
 from ..storage import load, save
+from ..workspace_notes import validate_notes
 from .author import export_request, project, read, revision, validate_project
 from .deps import LOCAL, PROJECT_COOKIE, RUNTIME, WRITE
 from .runtime import now
@@ -50,9 +51,7 @@ def save_drafts(ident: str, data: dict = Body(...), runtime=RUNTIME):
 
 @router.put('/notes', dependencies=WRITE)
 def notes(data: dict = Body(...), runtime=RUNTIME):
-    if len(json.dumps(data)) > 1_000_000:
-        raise ValueError('Notes are too large')
-    save(notes_path(runtime), {'ideas': data.get('ideas', []), 'pins': data.get('pins', [])})
+    save(notes_path(runtime), validate_notes(data))
     return {'saved': True}
 
 
@@ -95,7 +94,7 @@ def run_request(ident: str, runtime=RUNTIME):
     result = export_request(p, read(runtime.folder(ident) / 'request.json', {}))
     references = {r['record_id']: r for r in result.get('references', []) if isinstance(r, dict) and 'record_id' in r}
     for pin in read(notes_path(runtime), {}).get('pins', []):
-        if pin.get('projectId') == ident:
+        if isinstance(pin, dict) and isinstance(pin.get('recordId'), str) and pin.get('projectId') == ident:
             references[pin['recordId']] = {'record_id': pin['recordId'], 'scope': 'story', 'purpose': pin.get('purpose') or 'Literary inspiration'}
     result['references'] = list(references.values())
     return result

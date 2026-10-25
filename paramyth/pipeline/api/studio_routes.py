@@ -74,7 +74,9 @@ def new_project(request:Request,data:dict=Body(...),runtime=RUNTIME):
 
 @router.post('/api/studio/project/select',tags=['studio projects'],dependencies=[Depends(write)])
 def select_project(data:dict=Body(...),runtime=RUNTIME):
-    runtime.folder(data.get('id'));response=Response(json.dumps({'id':data['id']}),media_type='application/json');response.set_cookie('pm_pipeline_project',data['id'],httponly=True,samesite='strict');return response
+    ident=data.get('id')
+    if not isinstance(ident,str) or not ident:raise ValueError('Choose a project')
+    runtime.folder(ident);response=Response(json.dumps({'id':ident}),media_type='application/json');response.set_cookie('pm_pipeline_project',ident,httponly=True,samesite='strict');return response
 
 
 @router.get('/api/studio/jobs',tags=['studio jobs'],dependencies=[Depends(local)])
@@ -160,8 +162,9 @@ def production(request:Request,data:dict=Body(...),runtime=RUNTIME):
 
 
 def read_plan(current,ident):
-    if not re.fullmatch('[a-f0-9]{24}',ident):raise ValueError('Invalid plan ID')
-    return load(current/'production'/'plans'/(ident+'.json'))
+    if not isinstance(ident,str) or not re.fullmatch('[a-f0-9]{24}',ident):raise ValueError('Invalid plan ID')
+    try:return load(current/'production'/'plans'/(ident+'.json'))
+    except FileNotFoundError:raise HTTPException(404,'Production plan not found in this project') from None
 
 
 @router.get('/api/plan/{ident}',tags=['production planning'],dependencies=[Depends(local)])

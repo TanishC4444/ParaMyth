@@ -56,7 +56,9 @@ class StudioRuntime:
         if not self.projects:raise ValueError('Create a story project first')
         return next(iter(self.projects.values()))
 
-    def project_id(self,path):return next(k for k,v in self.projects.items() if v==Path(path))
+    def project_id(self,path):
+        resolved=Path(path).resolve()
+        return next(k for k,v in self.projects.items() if v==resolved)
 
     def create_project(self,title,text,brief=None):
         if not isinstance(text,str) or not 1<=len(text)<=200000:raise ValueError('Story text must contain 1–200,000 characters')

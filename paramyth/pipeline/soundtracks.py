@@ -10,9 +10,10 @@ import random
 import re
 import struct
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener
 from urllib.error import HTTPError, URLError
 from .storage import save
+from ..providers import NoRedirect
 
 BASE = 'https://api.vultrinference.com/v1'
 
@@ -105,15 +106,24 @@ class Vultr:
         req = Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
                       headers={'Authorization': 'Bearer ' + self.key, 'Content-Type': 'application/json'})
         try:
-            return urlopen(req, timeout=60)
+            return build_opener(NoRedirect()).open(req, timeout=60)
         except HTTPError as exc:
+            exc.close()
             raise ValueError(f'Vultr returned HTTP {exc.code}; check inference key, model capabilities and account access.') from None
-        except URLError:
+        except (URLError, TimeoutError, OSError):
             raise ValueError('Cannot reach Vultr inference.') from None
 
     def json(self, path, payload=None):
         with self.open(path, payload) as response:
-            return json.load(response)
+            raw = response.read(1024 * 1024 + 1)
+        if len(raw) > 1024 * 1024:
+            raise ValueError('Vultr response exceeded the size limit')
+        try:
+            value = json.loads(raw)
+            if not isinstance(value, dict):raise ValueError()
+            return value
+        except (ValueError, UnicodeError):
+            raise ValueError('Vultr returned invalid JSON') from None
 
     def create(self, cue, model, seconds, lyrics=''):
         models = self.json('/music/models')['data']

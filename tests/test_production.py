@@ -28,6 +28,10 @@ def reply(value):
 
 
 class ProductionTests(unittest.TestCase):
+    def test_dedicated_production_key_is_used_without_general_inference_key(self):
+        with patch.dict(os.environ, {'VULTR_PRODUCTION_API_KEY': ' production-key ', 'VULTR_INFERENCE_API_KEY': ''}):
+            self.assertEqual(Muse().headers['Authorization'], 'Bearer production-key')
+
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

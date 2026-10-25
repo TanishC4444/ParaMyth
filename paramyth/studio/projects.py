@@ -30,8 +30,11 @@ def new_project(data: dict = Body(...), runtime=RUNTIME):
 
 @router.post('/api/studio/project/select', dependencies=WRITE)
 def select_project(data: dict = Body(...), runtime=RUNTIME):
-    runtime.folder(data.get('id'))
-    return selected(data['id'], runtime)
+    ident = data.get('id')
+    if not isinstance(ident, str) or not ident:
+        raise ValueError('Choose a project')
+    runtime.folder(ident)
+    return selected(ident, runtime)
 
 
 @router.get('/api/studio/jobs', dependencies=LOCAL)
