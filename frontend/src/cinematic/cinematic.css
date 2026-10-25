@@ -243,3 +243,7 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing){background:#112635;co
 .cinematic-landing .atlas-map .leaflet-control-scale-line{background:#112635;color:#f5f7f4;font-size:12px;line-height:1.5}
 .cinematic-landing .atlas-map .leaflet-control-attribution a{color:#ffffff}
 .cinematic-landing .atlas-side h2:focus{outline:3px solid #ffffff;outline-offset:4px}
+
+.paramyth-wordmark .studio-logo{width:clamp(110px,16vw,200px);height:auto;margin:auto;border-radius:8px}
+.cinematic-landing .footer-brand .studio-logo{width:96px;height:auto;border-radius:6px}
+@media(max-height:600px){.paramyth-wordmark .studio-logo{width:100px}}

@@ -7,15 +7,15 @@ import { ago, Chips, errorText, fmtTime, Icon, Segmented, Status } from "../ui";
 
 const TABS: [ProjectTab, string][] = [["brief", "Brief"], ["manuscript", "Manuscript"], ["canon", "Canon & memory"], ["pipeline", "Pipeline"]];
 
-export default function ProjectWorkspace() {
+export default function ProjectWorkspace({ embedded = false }: { embedded?: boolean }) {
   const { project, go } = useStudio();
   const [tab, setTab] = useDraftState<ProjectTab>("project.tab", "brief");
-  return <div className="workspace">
-    <div className="editor-top">
+  return <div className={`workspace${embedded ? " embedded-workspace" : ""}`}>
+    {!embedded && <div className="editor-top">
       <button className="back" onClick={() => go("projects")}>‹ <span>Projects</span></button>
-      <div><b>{project.title}</b><small>{project.brief.medium} · saved locally {ago(project.updated)}</small></div>
+      <div><b>{project.title}</b><small>{project.brief.medium} · updated {ago(project.updated)}</small></div>
       <div className="tabs" role="tablist">{TABS.map(([id, label]) => <button role="tab" aria-selected={tab === id} key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div>
-    </div>
+    </div>}
     {tab === "brief" && <BriefTab />}
     {tab === "manuscript" && <ManuscriptTab />}
     {tab === "canon" && <CanonTab />}
@@ -184,7 +184,7 @@ function AddFinding({ scene, onAdd }: { scene: Scene; onAdd: (f: Finding) => voi
   if (!openForm) return <button className="text-action add-finding" onClick={() => setOpen(true)}><Icon name="plus" size={15} />Add reviewer finding</button>;
   return <form className="finding-form" onSubmit={submit}>
     <div className="form-grid"><select name="dimension" aria-label="Dimension"><option>Story</option><option>Rhetoric</option><option>Memory</option></select><select name="severity" aria-label="Severity"><option>Minor</option><option>Major</option><option>Blocking</option></select></div>
-    <input name="quote" required placeholder="Exact quote from the scene" /><textarea name="note" required placeholder="What's wrong, and why it matters" />
+    <input name="quote" aria-label="Evidence quote" required placeholder="Exact quote from the scene" /><textarea name="note" aria-label="Finding and explanation" required placeholder="What's wrong, and why it matters" />
     {err && <p className="stale">{err}</p>}
     <div className="comment-actions"><button>Add</button><button type="button" onClick={() => setOpen(false)}>Cancel</button></div>
   </form>;
@@ -223,8 +223,8 @@ function CanonTab() {
         <section className="panel"><h2>Add to ledger</h2>
           <form className="fact-form" onSubmit={add}>
             <select name="kind" aria-label="Kind">{FACT_KINDS.map((k) => <option key={k}>{k}</option>)}</select>
-            <textarea name="text" required placeholder="What is now true, believed or claimed?" />
-            <input name="holders" placeholder="Known to (comma separated, leave blank for Public)" />
+            <textarea name="text" aria-label="Canon fact" required placeholder="What is now true, believed or claimed?" />
+            <input name="holders" aria-label="Knowledge holders" placeholder="Known to (comma separated, leave blank for Public)" />
             <select name="scene" aria-label="Source scene">{project.scenes.map((s) => <option value={s.id} key={s.id}>{s.title}</option>)}</select>
             <button className="primary">Add provisional fact</button>
           </form>

@@ -32,32 +32,18 @@ export default function Connections() {
   return (
     <div className="page">
       <PageTitle
-        title="Connections"
-        text="See which services are ready, manage your account, and explore every backend tool."
-      />
+        eyebrow="WORKSPACE" title="Connections"
+        text="The services that power your writing, visuals and production."
+      >{!access.shared_keys && <a className="secondary" href="/connections" target="_blank" rel="noreferrer">Manage services ↗</a>}</PageTitle>
       {error && (
         <p className="live-status error" role="alert">
           {error}
         </p>
       )}
       <section className="panel">
-        <h2>Your account and team</h2>
-        <p>Manage your account, studio membership and invitations.</p>
-        <div className="account-links">
-          {!access.accounts_required && <a className="primary" href="/studio/teams.html?mode=signup">
-            Create an account
-          </a>}
-          <a className="secondary" href="/studio/account.html">
-            {access.accounts_required ? "Manage account" : "Sign in"}
-          </a>
-        </div>
-      </section>
-      <section className="panel">
-        <h2>
-          {semantic ? "Semantic search connected" : "Enable semantic search"}
-        </h2>
+        <div className="service-heading"><h2>Story search</h2><Status>{semantic ? "Connected" : "Keywords available"}</Status></div>
         <p>
-          {access.shared_keys ? 'Search services are configured by the studio owner.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
+          {access.shared_keys ? 'Your studio owner manages the search connection for this workspace.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
         </p>
         {access.shared_keys ? <p>Shared service keys stay on the server and are never sent to your browser.</p> : <form
           onSubmit={async (e) => {
@@ -100,18 +86,12 @@ export default function Connections() {
                 ? "Available through your studio service."
                 : access.shared_keys ? "The studio owner needs to configure this service." : "Add the connection to enable this tool."}
             </p>
-            {!access.shared_keys && <a href="/connections" target="_blank" rel="noreferrer">
-              Manage connection
-            </a>}
           </section>
         ))}
       </div>
-      {access.github_admin && <section className="panel">
-        <h2>Explore the full studio</h2>
+      {access.github_admin && <details className="panel advanced-connections"><summary>Advanced tools & administration</summary>
         <p>
-          The main workspace gives you a guided path. These advanced views
-          expose runner graphs, individual API operations, configuration and
-          full output details for testing.
+          Developer tools for workflow dispatch, API inspection and diagnostics.
         </p>
         <div className="inline-links">
           <a href="/workflows" target="_blank" rel="noreferrer">
@@ -133,7 +113,7 @@ export default function Connections() {
         <div className="capability-list">
           {data?.features.map((f: string) => <span key={f}>{f}</span>)}
         </div>
-      </section>}
+      </details>}
     </div>
   )
 }

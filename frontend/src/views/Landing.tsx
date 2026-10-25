@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { BrandLogo } from "../brand";
 import { Artwork } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
@@ -66,7 +67,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
       })}</div>
     </section>
     <footer className="landing-footer">
-      <a className="footer-brand" href="#/">ParaMyth</a>
+      <a className="footer-brand" href="#/" aria-label="ParaMyth home"><BrandLogo /></a>
       <div className="footer-controls"><button aria-pressed={reduceMotion} onClick={() => setReduceMotion(!reduceMotion)}>Reduce Motion</button></div>
       <SiteLinks />
       <a className="footer-contact" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>

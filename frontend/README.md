@@ -92,3 +92,11 @@ from the same origin, then from the API base saved on Connections. Without a
 reachable API it falls back to `public/atlas/stories.json`, a bundled export of
 the literary corpus. Anchors are approximate, model-authored traditional
 locations, not verified geography.
+
+## Studio interface
+
+The authoring workspace uses a shared design system in `src/brand.css`: navy navigation, warm ivory surfaces, teal feedback, and gold selection accents. The overview reports saved project and scene counts. Project brief, manuscript, canon, and pipeline tools share one navigation row; media keeps its own source selector and tabs. Account actions live in the top bar, while team administration remains in the sidebar.
+
+The supplied image-only logo is `public/brand/studio-symbol.png`. It replaces visible wordmarks in the workspace, account pages, and landing masthead; accessible image descriptions and page titles still identify the product. The mobile navigation and project dialog contain keyboard focus and support Escape. File previews retain their download paths and use readable document labels.
+
+Run `pnpm test:site` for public-page and studio presentation checks, in addition to the type check and other frontend tests. Test projects used for browser verification belong in an isolated local workspace, never a live user account.

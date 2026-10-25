@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { api, backendFetch, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
-import { PageTitle } from "../ui"
-export default function Library() {
+import { EmptyState, Icon, PageTitle } from "../ui"
+export default function Library({ embedded = false }: { embedded?: boolean }) {
   const { project } = useStudio()
+  const preview = useRef<HTMLElement>(null)
+  const lastFile = useRef<HTMLButtonElement>(null)
   const [files, setFiles] = useState<any[]>([]),
     [q, setQ] = useDraftState("library.query", ""),
     [selected, setSelected] = useDraftState<any>("library.selected", null),
     [body, setBody] = useState(""),
     [error, setError] = useState("")
+  useEffect(() => {
+    if (!selected) return
+    preview.current?.focus({ preventScroll:true })
+    if (matchMedia("(max-width: 1100px)").matches) preview.current?.scrollIntoView({behavior:"instant",block:"start"})
+  }, [selected?.path])
   const [revision,setRevision]=useState(0)
   useEffect(()=>{const changed=()=>setRevision(value=>value+1);window.addEventListener('studio-shared-update',changed);return()=>window.removeEventListener('studio-shared-update',changed)},[])
   const url = (f: any, download = false) =>
@@ -42,15 +49,20 @@ export default function Library() {
       live = false
     }
   }, [selected, project.id,revision])
+  const fileTitle = (path: string) => {
+    const titles: Record<string,string> = {"author-draft.txt":"Working manuscript","story.txt":"Saved story","author-original-request.json":"Original brief","author-workspace.json":"Project workspace","request.json":"Generation brief","workspace-drafts.json":"Workspace drafts"}
+    return path.startsWith("author-revisions/") ? "Manuscript checkpoint" : titles[path] || path.split("/").pop()
+  }
+  const filtered = files.filter(f => f.path.toLowerCase().includes(q.toLowerCase()))
   return (
     <div className="page">
-      <PageTitle
-        title="Project files"
-        text="Actual writing, images, soundtracks, research, review evidence and exports saved by your studio."
+      <PageTitle level={embedded ? "h2" : "h1"}
+        eyebrow="WORKSPACE" title="Project files"
+        text="Writing, media and exports saved with this project."
       />
       {error && <p role="alert">{error}</p>}
       <div className="toolbar">
-        <label>
+        <label><Icon name="search" size={17} />
           <input
             aria-label="Find a file"
             value={q}
@@ -58,22 +70,21 @@ export default function Library() {
             placeholder="Find a file or output"
           />
         </label>
-        <span>{files.length} saved files</span>
+        <span>{filtered.length} {filtered.length === 1 ? "file" : "files"}</span>
       </div>
       <div className="runs-layout">
-        <div className="review-list">
-          {files
-            .filter((f) => f.path.toLowerCase().includes(q.toLowerCase()))
-            .map((f) => (
+        {filtered.length ? <div className="review-list">
+          {filtered.map((f) => (
               <button
-                className="review-item file-row"
+                className={`review-item file-row${selected?.path === f.path ? " selected" : ""}`}
+                aria-pressed={selected?.path === f.path}
                 key={f.path}
-                onClick={() => setSelected(f)}
+                onClick={event => { lastFile.current = event.currentTarget; setSelected(f) }}
               >
                 <span className="kind">{f.type.slice(1)}</span>
                 <div>
-                  <h3>{f.path.split("/").pop()}</h3>
-                  <p>{f.path}</p>
+                  <h3>{fileTitle(f.path)}</h3>
+                  {fileTitle(f.path) !== f.path && <p>{f.path}</p>}
                   <small>
                     {(f.bytes / 1024).toFixed(1)} KB ·{" "}
                     {new Date(f.modified * 1000).toLocaleString()}
@@ -81,10 +92,10 @@ export default function Library() {
                 </div>
               </button>
             ))}
-        </div>
+        </div> : <EmptyState icon={files.length ? "search" : "library"} title={files.length ? "No files match your search" : "Everything you make, collected"} text={files.length ? "Try another file name or clear your search." : "Saved manuscripts, visuals, soundtracks and production exports will appear here as you create them."} action={q ? <button className="secondary" onClick={() => setQ("")}>Clear search</button> : undefined} />}
         {selected && (
-          <aside className="panel run-detail">
-            <h2>{selected.path.split("/").pop()}</h2>
+          <aside ref={preview} className="panel run-detail file-preview" tabIndex={-1} aria-label="File preview">
+            <div className="section-head"><h2>{fileTitle(selected.path)}</h2><button className="icon-button" onClick={() => { setSelected(null); lastFile.current?.focus() }} aria-label="Close file preview"><Icon name="close" size={16} /></button></div>
             {/\.(png|jpe?g|webp)$/.test(selected.path) ? (
               <img
                 className="preview-image"
@@ -94,7 +105,7 @@ export default function Library() {
             ) : /\.(wav|mp3|flac|opus)$/.test(selected.path) ? (
               <audio controls src={url(selected)} />
             ) : body ? (
-              <pre className="real-output">{body}</pre>
+              <pre className="real-output">{body.trimEnd()}</pre>
             ) : (
               <p>Download this file to open it.</p>
             )}

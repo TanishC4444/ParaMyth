@@ -8,7 +8,7 @@ import JoinTeam from './JoinTeam'
 
 type Account = { id: string; email: string; display_name: string }
 export type Team = { id: string; name: string; role: 'owner'|'admin'|'editor'|'viewer' }
-type Access = { accounts_required: boolean; shared_keys: boolean; github_admin: boolean; authenticated?: boolean; teams?:Team[]; studio?:Team; openStudio?:(id:string)=>Promise<void> }
+type Access = { account?: Account; accounts_required: boolean; shared_keys: boolean; github_admin: boolean; authenticated?: boolean; teams?:Team[]; studio?:Team; openStudio?:(id:string)=>Promise<void> }
 const localAccess: Access = {accounts_required:false, shared_keys:false, github_admin:true}
 const AccessContext = createContext<Access>(localAccess)
 export const useAccess = () => useContext(AccessContext)
@@ -69,10 +69,10 @@ export default function AccountGate({children}: {children:ReactNode}) {
           if(id && !chosen)throw Error('You no longer have access to this team.')
           if(stopped || currentAccountIdentity()!==signedIn.id)return
           remember(signedIn.id,id);setStudioIdentity(id)
-          setAccess({...value,authenticated:true,teams:available,studio:chosen,openStudio})
+          setAccess({...value,authenticated:true,account:signedIn,teams:available,studio:chosen,openStudio})
           location.hash='#/projects?studio='+encodeURIComponent(id || 'personal')
         }
-        setAccount(signedIn);setAccess({...value,authenticated:!!signedIn,teams,studio,openStudio});setError('')
+        setAccount(signedIn);setAccess({...value,authenticated:!!signedIn,account:signedIn || undefined,teams,studio,openStudio});setError('')
       }catch(e){if(!stopped && request===generation)setError(e instanceof Error?e.message:'Could not check your sign-in')}
     }
     checkAccount.current=check
@@ -91,5 +91,5 @@ export default function AccountGate({children}: {children:ReactNode}) {
   if(!access || account===undefined)return <div className="night-page"><PageLoading label="Opening your workspace…" /></div>
   if(authRoute || (!publicRoute && (!studioHost() || access.accounts_required&&!account))) return <AccountPage key={route==='signup'?'signup':'signin'} invitation={invitation} signup={route==='signup'} available={studioHost()} onSignedIn={()=>checkAccount.current()} />
   if(joining)return <AccessContext.Provider value={access}><JoinTeam token={invitation} accountId={account?.id || ''} /></AccessContext.Provider>
-  return <AccessContext.Provider value={access}><div key={(account?.id||'local')+':'+(access.studio?.id||'personal')+':'+(access.studio?.role||'owner')}>{account&&<div className="account-status" style={{padding:'8px 24px',display:'flex',gap:16,justifyContent:'flex-end'}}><span>Signed in as {account.display_name}</span><a href="/studio/account.html">Account & sign out</a></div>}{children}</div></AccessContext.Provider>
+  return <AccessContext.Provider value={access}><div key={(account?.id||'local')+':'+(access.studio?.id||'personal')+':'+(access.studio?.role||'owner')}>{children}</div></AccessContext.Provider>
 }

@@ -5,7 +5,7 @@ import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
 import { BrandSpot } from "../brandArt"
-export default function Music() {
+export default function Music({ embedded = false }: { embedded?: boolean }) {
   const { project, mediaDirection, flush, refresh, go } = useStudio()
   const { source, sourceTitle, signature, streaming } = useMaterials()
   const [prompt, setPrompt] = useDraftState("music.prompt", "")
@@ -119,7 +119,7 @@ export default function Music() {
     <div className="page simple-workspace">
       {streaming && <p className="hint" role="status">Following the live draft. New soundtracks use its current mood and story details.</p>}
       {shown?.writing_signature && shown.writing_signature !== signature && <p className="source-changed">Your writing has changed since this soundtrack. <button disabled={busy} onClick={()=>void create()}>Create an updated soundtrack</button></p>}
-      <PageTitle title="Soundtracks" text="Choose a sound. Your story sets the mood." />
+      <PageTitle level={embedded ? "h2" : "h1"} title="Soundtracks" text="Choose a sound. Your story sets the mood." />
       {error && <p className="live-status error" role="alert">{error}</p>}
       {status && <p className="live-status" role="status">{status}</p>}
       <div className="creative-layout">
