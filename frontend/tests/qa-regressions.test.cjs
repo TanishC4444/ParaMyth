@@ -15,6 +15,24 @@ function moduleFor(file, mocks = {}, globals = {}, extra = '') {
   return module.exports;
 }
 
+test('instrumental mode is selectable with MiniMax and automatic settings',()=>{
+  const Music=moduleFor('src/views/Music.tsx',{
+    '../useSavedJob':{useSavedJob:()=>[null,()=>{}]},
+    '../api':{api:async()=>({}),projectPath:p=>p},
+    '../store':{useStudio:()=>({project:{id:'project'}}),useDraftState:(key,fallback)=>[key==='music.model'?'minimax-music3':key==='music.mode'?'score':fallback,()=>{}]},
+    '../materials':{useMaterials:()=>({images:[],tracks:[],sourceTitle:'your writing'}),projectAssets:items=>items},
+    '../ui':{PageTitle:()=>null,errorText:String},
+    '../brandArt':{BrandSpot:()=>null},
+    '../Guide':{HelpTip:()=>null},
+  }).default;
+  const html=renderToStaticMarkup(React.createElement(Music));
+  const option=html.match(/<option[^>]*value="score"[^>]*>/)[0];
+  assert.doesNotMatch(option,/disabled/);
+  assert.match(html,/Instrumental · no vocals/);
+  assert.match(html,/model may still produce vocal sounds/);
+  assert.doesNotMatch(html,/<select disabled=""[^>]*><option value="ambience"/);
+});
+
 test('service diagnostics become useful messages without exposing key names',()=>{
   const {requestMessage}=moduleFor('src/request-errors.ts');
   assert.match(requestMessage('Set MUSE_IMAGE_API_KEY or MODEL_API_KEY in the environment'),/Image generation isn't available/);

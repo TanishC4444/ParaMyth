@@ -58,6 +58,16 @@ class MediaWorkspaceTests(unittest.TestCase):
         self.assertIn(prompt,settings['cue']['prompt'])
         self.assertNotIn('Ksenia',settings['cue']['prompt'])
 
+    def test_instrumental_request_keeps_mode_and_discards_saved_song_lyrics(self):
+        model={'id':'minimax-music3','instrumental':False,'lyrics':'required','duration':{'min':30,'max':360}}
+        with patch.object(media,'Muse') as muse:
+            settings=media.music_settings(self.root,{'mode':'score','seconds':30,'automatic':False,
+                'lyrics':'Old song lyrics','prompt':'Solo piano, no vocals','use_story':False},[model])
+        muse.assert_not_called()
+        self.assertEqual(settings['mode'],'score')
+        self.assertEqual(settings['lyrics'],'')
+        self.assertEqual(settings['model'],model['id'])
+
     def test_legacy_transport_preserves_instrumental_intent_and_full_prompt(self):
         prompt='Solo piano. '+('Gentle sustained notes. '*30)+'No percussion or brass.'
         def remote(path,data=None,project_id=None):

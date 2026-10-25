@@ -120,6 +120,8 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         app.include_router(workspace.router)
         app.include_router(writing.router)
     app.include_router(music.router)
+    if not app.state.account_workspaces:
+        app.include_router(music.local_router)
     app.include_router(images.router)
     app.include_router(planning.router)
     app.include_router(library.router)
