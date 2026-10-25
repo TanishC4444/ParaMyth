@@ -1,0 +1,14 @@
+{
+  "name": "ParaMyth",
+  "short_name": "ParaMyth",
+  "description": "Explore myths, epics and fairy tales on an interactive globe, then build your own story.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#081216",
+  "theme_color": "#081216",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
