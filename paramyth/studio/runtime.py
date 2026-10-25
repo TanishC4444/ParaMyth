@@ -140,7 +140,7 @@ class Runtime:
                 break
             if not path.is_file() or path.is_symlink() or path.name.startswith('.') or path.suffix.lower() not in OUTPUT_TYPES:
                 continue
-            if SKIPPED_DIRS & set(path.relative_to(folder).parts):
+            if SKIPPED_DIRS & set(path.relative_to(folder).parts) or any(p.startswith('.') for p in path.relative_to(folder).parts):
                 continue
             stat = path.stat()
             rows.append({'path': path.relative_to(folder).as_posix(), 'bytes': stat.st_size, 'modified': stat.st_mtime, 'type': path.suffix.lower()})

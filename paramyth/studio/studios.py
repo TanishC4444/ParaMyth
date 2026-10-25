@@ -4,10 +4,11 @@ from uuid import UUID
 import re
 import secrets
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .studio_db import connection
+from .accounts import authorization as request_authorization, set_session, clear_session, same_origin
 from .studio_security import (DUMMY_HASH, current_user, digest, new_session,
                               password_hash, password_matches, rate_limit)
 
@@ -101,9 +102,11 @@ class CommentInput(Input):
         return value.strip()
 
 
-def context(authorization: Annotated[str | None, Header()] = None):
+def context(request: Request):
+    if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        same_origin(request)
     with connection() as conn:
-        yield conn, current_user(conn, authorization)
+        yield conn, current_user(conn, request_authorization(request))
 
 
 # Commit or roll back before sending a successful response to the caller.
@@ -148,7 +151,8 @@ def auth_limits(request, email):
 
 
 @router.post('/accounts/signup', status_code=201)
-def signup(body: Signup, request: Request):
+def signup(body: Signup, request: Request, response: Response):
+    same_origin(request)
     auth_limits(request, body.email)
     encoded = password_hash(body.password)
     with connection() as conn:
@@ -157,11 +161,14 @@ def signup(body: Signup, request: Request):
             (body.email, body.display_name, encoded)).fetchone()
         if not user:
             raise HTTPException(409, 'Unable to create this account. Try signing in.')
-        return new_session(conn, user)
+        session = new_session(conn, user)
+    set_session(response, request, session)
+    return session
 
 
 @router.post('/accounts/login')
-def login(body: Credentials, request: Request):
+def login(body: Credentials, request: Request, response: Response):
+    same_origin(request)
     auth_limits(request, body.email)
     with connection() as conn:
         user = conn.execute('SELECT id, email, display_name, password_hash FROM paramyth.users WHERE email = %s',
@@ -175,7 +182,9 @@ def login(body: Credentials, request: Request):
         if active['password_hash'] != user['password_hash']:
             raise HTTPException(401, 'Email or password is incorrect')
         del user['password_hash']
-        return new_session(conn, user)
+        session = new_session(conn, user)
+    set_session(response, request, session)
+    return session
 
 
 @router.get('/accounts/me')
@@ -184,12 +193,13 @@ def me(ctx: Context):
 
 
 @router.post('/accounts/logout', status_code=204)
-def logout(ctx: Context, authorization: Annotated[str, Header()]):
-    ctx[0].execute('DELETE FROM paramyth.sessions WHERE token_hash = %s', (digest(authorization.partition(' ')[2]),))
+def logout(request: Request, response: Response, ctx: Context):
+    ctx[0].execute('DELETE FROM paramyth.sessions WHERE token_hash = %s', (digest(request_authorization(request).partition(' ')[2]),))
+    clear_session(response)
 
 
 @router.post('/accounts/password', status_code=204)
-def change_password(body: PasswordInput, ctx: Context):
+def change_password(body: PasswordInput, response: Response, ctx: Context):
     conn, user = ctx
     rate_limit('password', str(user['id']), 10)
     row = conn.execute('SELECT password_hash FROM paramyth.users WHERE id = %s FOR UPDATE', (user['id'],)).fetchone()
@@ -198,6 +208,7 @@ def change_password(body: PasswordInput, ctx: Context):
     conn.execute('UPDATE paramyth.users SET password_hash = %s WHERE id = %s',
                  (password_hash(body.new_password), user['id']))
     conn.execute('DELETE FROM paramyth.sessions WHERE user_id = %s', (user['id'],))
+    clear_session(response)
 
 
 @router.get('/studios')

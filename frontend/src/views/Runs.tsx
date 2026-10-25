@@ -5,8 +5,21 @@ import { api } from "../api"
 import { useStudio } from "../store"
 
 import { PageTitle } from "../ui"
+import { useAccess } from '../AccountGate'
 
 export default function Runs() {
+  const access = useAccess()
+  return access.github_admin ? <WorkflowRuns /> : <AccountRuns />
+}
+
+function AccountRuns() {
+  const { jobs, project } = useStudio()
+  return <div className="page"><PageTitle eyebrow="YOUR SAVED WORK" title="Runs" text={`Generation history for ${project.title}.`} />
+    {jobs.length ? jobs.map(job => <section className="panel" key={job.id}><h2>{job.kind}</h2><p>{job.status}: {job.message}</p></section>) : <p>No generation jobs saved for this project yet.</p>}
+  </div>
+}
+
+function WorkflowRuns() {
   const { workflow, jobs, flush, refresh, project } = useStudio()
 
   const [catalog, setCatalog] = useState<any[]>([]),

@@ -28,7 +28,8 @@ def read_plan(current, ident):
 
 
 def callback_url(request):
-    return str(request.base_url).rstrip('/') + '/google/callback'
+    from .accounts import origin
+    return origin(request) + '/google/callback'
 
 
 @router.get('/api/config')

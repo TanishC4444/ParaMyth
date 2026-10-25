@@ -2,6 +2,9 @@
 
 File-backed storytelling, creative tools, production planning and shared studios.
 
+For sign-in, account-owned saved work and deployment to your own HTTPS domain,
+see [Public hosting and persistent workspaces](docs/HOSTING.md).
+
 ## Advanced pipelines
 
 The complete orchestration engine lives in `paramyth.pipeline`: sequential and

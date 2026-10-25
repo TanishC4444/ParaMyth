@@ -98,7 +98,7 @@ def session(response:Response,runtime=RT):
 def workspace(request:Request,runtime=RT):
     items=[project(runtime,x['id']) for x in runtime.project_list()]
     items=[p for p in items if p is not None]
-    current=request.cookies.get('pm_pipeline_project')
+    current=getattr(runtime,'selected',None) or request.cookies.get('pm_pipeline_project')
     if current not in {p['id'] for p in items}:current=items[0]['id'] if items else ''
     meta=read(runtime.root/'runs'/'paramyth-workspace.json',{})
     return {'projects':items,'current':current,'ideas':meta.get('ideas',[]),'pins':meta.get('pins',[]),'drafts':{p['id']:read(runtime.folder(p['id'])/'workspace-drafts.json',{}) for p in items}}

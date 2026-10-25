@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from .. import soundtracks, vultr
 from ..storage import load, save
 from .deps import LOCAL, RUNTIME, WRITE, folder
+from .music_archive import guard as archive_guard
 
 router = APIRouter(tags=['soundtracks'], dependencies=LOCAL)
 TRACK_ID = re.compile(r'(music|local)_[a-f0-9]{24}')
@@ -76,13 +77,14 @@ def tracks(request: Request, runtime=RUNTIME):
 
 @router.get('/api/studio/music/{ident}')
 def status(ident: str, request: Request, runtime=RUNTIME):
-    current = folder(request, runtime)
-    value = record(current, ident)
-    # Poll the provider at most every five seconds per track.
-    if ident.startswith('music_') and value['job'].get('status') not in DONE and time.time() - value.get('last_check', 0) > 5:
-        value.update(job=soundtracks.status(ident), last_check=time.time())
-        save(current / 'soundtracks' / (ident + '.json'), value)
-    return value
+    with archive_guard:
+        current = folder(request, runtime)
+        value = record(current, ident)
+        # Poll the provider at most every five seconds per track.
+        if ident.startswith('music_') and value['job'].get('status') not in DONE and time.time() - value.get('last_check', 0) > 5:
+            value.update(job=soundtracks.status(ident), last_check=time.time())
+            save(current / 'soundtracks' / (ident + '.json'), value)
+        return value
 
 
 @router.get('/media/music/{ident}/{action}')
@@ -108,32 +110,34 @@ def media(ident: str, action: str, request: Request, runtime=RUNTIME):
 
 @router.post('/api/studio/music/{ident}/save', dependencies=WRITE)
 def keep(ident: str, request: Request, runtime=RUNTIME):
-    current = folder(request, runtime)
-    value = record(current, ident)
-    if value['job'].get('status') != 'completed':
-        raise ValueError('Wait for generation to complete before saving')
-    if ident.startswith('local_'):
-        return {'file': 'soundtracks/' + value['file']}
-    target = current / 'soundtracks' / (ident + '.mp3')
-    if not target.exists():
-        temporary = target.with_suffix('.mp3.tmp')
-        try:
-            soundtracks.download(ident, temporary, limit=MAX_SAVE_BYTES)
-            os.replace(temporary, target)
-        finally:
-            temporary.unlink(missing_ok=True)
-    value['file'] = target.name
-    save(current / 'soundtracks' / (ident + '.json'), value)
-    return {'file': 'soundtracks/' + target.name}
+    with archive_guard:
+        current = folder(request, runtime)
+        value = record(current, ident)
+        if value['job'].get('status') != 'completed':
+            raise ValueError('Wait for generation to complete before saving')
+        if ident.startswith('local_'):
+            return {'file': 'soundtracks/' + value['file']}
+        target = current / 'soundtracks' / (ident + '.mp3')
+        if not target.exists():
+            temporary = target.with_suffix('.mp3.tmp')
+            try:
+                soundtracks.download(ident, temporary, limit=MAX_SAVE_BYTES)
+                os.replace(temporary, target)
+            finally:
+                temporary.unlink(missing_ok=True)
+        value['file'] = target.name
+        save(current / 'soundtracks' / (ident + '.json'), value)
+        return {'file': 'soundtracks/' + target.name}
 
 
 @router.post('/api/studio/music/{ident}/cancel', dependencies=WRITE)
 def cancel(ident: str, request: Request, runtime=RUNTIME):
-    current = folder(request, runtime)
-    value = record(current, ident)
-    if ident.startswith('local_'):
-        raise ValueError('Local ambience is already complete')
-    soundtracks.cancel(ident)
-    value['job']['status'] = 'cancelled'
-    save(current / 'soundtracks' / (ident + '.json'), value)
-    return {'cancelled': True}
+    with archive_guard:
+        current = folder(request, runtime)
+        value = record(current, ident)
+        if ident.startswith('local_'):
+            raise ValueError('Local ambience is already complete')
+        soundtracks.cancel(ident)
+        value['job']['status'] = 'cancelled'
+        save(current / 'soundtracks' / (ident + '.json'), value)
+        return {'cancelled': True}

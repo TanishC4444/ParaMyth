@@ -1,5 +1,6 @@
 """Assemble the studio API. Run it with `python -m paramyth.studio.serve`."""
 import os
+import mimetypes
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -9,7 +10,7 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.staticfiles import StaticFiles
 
 from . import images, library, music, planning, projects, search, workspace, writing
-from .deps import TOKEN_HEADER, local
+from .deps import TOKEN_HEADER, get_runtime, local, write
 from .runtime import Runtime
 from .studios import router as accounts_router
 from .studio_http import StudioHTTPMiddleware, studio_path
@@ -19,12 +20,36 @@ ACCOUNTS_UI = Path(__file__).resolve().parents[2] / 'web'
 PUBLIC_ASSETS = Path(__file__).resolve().parents[2] / 'frontend' / 'public'
 
 
-def create_app(root=None, frontend=FRONTEND):
+def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_origin=None):
     """Build the app for a workspace folder (PARAMYTH_WORKSPACE, or the current directory).
     A built frontend, when present, is served at / from the same local origin."""
     app = FastAPI(title='ParaMyth studio', version='0.1.0')
-    app.state.runtime = Runtime(root or os.getenv('PARAMYTH_WORKSPACE') or Path.cwd())
-    app.router.on_shutdown.append(app.state.runtime.close)
+    # Slim Linux images may omit the system MIME database used by StaticFiles.
+    mimetypes.add_type('image/webp', '.webp')
+    public_origin = public_origin if public_origin is not None else os.getenv('PARAMYTH_PUBLIC_ORIGIN', '')
+    account_workspaces = account_workspaces if account_workspaces is not None else os.getenv('PARAMYTH_ACCOUNT_WORKSPACES') == '1'
+    app.state.account_workspaces = bool(account_workspaces or public_origin)
+    app.state.public_origin = ''
+    if public_origin:
+        from .hosting import validate_origin
+        app.state.public_origin = validate_origin(public_origin)
+        if not (root or os.getenv('PARAMYTH_WORKSPACE')):
+            raise ValueError('Hosted mode requires PARAMYTH_WORKSPACE on a persistent volume')
+    root = root or os.getenv('PARAMYTH_WORKSPACE') or Path.cwd()
+    if app.state.account_workspaces:
+        from cryptography.fernet import Fernet
+        from .hosting import HostedRequests
+        from .user_workspaces import Workspaces
+        key = os.getenv('PARAMYTH_ENCRYPTION_KEY', '')
+        if not key:
+            raise ValueError('Set a persistent PARAMYTH_ENCRYPTION_KEY before enabling account workspaces')
+        Fernet(key)  # Fail before accepting requests if the encryption key is invalid.
+        app.state.workspaces = Workspaces(root, key)
+        app.router.on_shutdown.append(app.state.workspaces.close)
+        app.add_middleware(HostedRequests)
+    else:
+        app.state.runtime = Runtime(root)
+        app.router.on_shutdown.append(app.state.runtime.close)
     app.add_middleware(StudioHTTPMiddleware)
 
     @app.exception_handler(RequestValidationError)
@@ -46,12 +71,31 @@ def create_app(root=None, frontend=FRONTEND):
     @app.get('/api/ui/session', tags=['studio configuration'])
     def session(request: Request):
         local(request)
-        return JSONResponse({'csrf': app.state.runtime.token, 'header': TOKEN_HEADER, 'mode': 'live'},
+        from .accounts import csrf, user
+        runtime = get_runtime(request)
+        account = user(request) if app.state.account_workspaces else None
+        return JSONResponse({'csrf': csrf(request) if account else runtime.token, 'header': TOKEN_HEADER,
+                             'mode': 'live', 'user_id': str(account['id']) if account else None},
                             headers={'Cache-Control': 'no-store'})
 
+    @app.get('/api/ui/public-config', tags=['studio configuration'])
+    def public_config():
+        return {'accounts_required': app.state.account_workspaces,
+                'shared_keys': app.state.account_workspaces, 'github_admin': not app.state.account_workspaces}
+
     app.include_router(projects.router)
-    app.include_router(workspace.router)
-    app.include_router(writing.router)
+    if app.state.account_workspaces:
+        # Full author/media workspace, with every dependency using the signed-in
+        # user's runtime. Do not expose the shared GitHub administration router.
+        from ..pipeline.api import ui_workspace, studio_routes, atlas
+        app.dependency_overrides[studio_routes.get_runtime] = get_runtime
+        app.dependency_overrides[studio_routes.local] = local
+        app.dependency_overrides[studio_routes.write] = write
+        app.include_router(ui_workspace.router)
+        app.include_router(atlas.router)
+    else:
+        app.include_router(workspace.router)
+        app.include_router(writing.router)
     app.include_router(music.router)
     app.include_router(images.router)
     app.include_router(planning.router)

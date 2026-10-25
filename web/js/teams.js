@@ -46,7 +46,7 @@ function apiBase(value) {
 async function api(path, method = 'GET', body) {
   const response = await fetch(`${base}/api/v1${path}`, {
     method, headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {})},
-    body: body === undefined ? undefined : JSON.stringify(body), credentials: 'omit', cache: 'no-store',
+    body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin', cache: 'no-store',
     signal: AbortSignal.timeout(30000),
   });
   const value = response.status === 204 ? null : await response.json();
@@ -190,6 +190,7 @@ on('account-form', 'submit', async (ev) => {
     throw error;
   }
   token = result.token; user = result.user; $('password').value = '';
+  try { localStorage.setItem('paramyth-account-change', String(Date.now())); } catch {}
   try { localStorage.setItem('sf.api', base); } catch { /* storage is optional */ }
   $('account').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
   $('welcome').textContent = `${user.display_name}'s studios`;
@@ -199,8 +200,21 @@ on('logout', 'click', async () => {
   if (!discardDraft()) return;
   try { await api('/accounts/logout', 'POST'); }
   finally { signedOut(); }
+  try { localStorage.setItem('paramyth-account-change', String(Date.now())); } catch {}
   message('Signed out.');
 });
+// Restore the HttpOnly session after refresh; no bearer token goes into browser storage.
+(async () => {
+  if (!location.pathname.startsWith('/studio/')) return;
+  base = location.origin;
+  try {
+    user = await api('/accounts/me');
+    $('account').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
+    $('welcome').textContent = `${user.display_name}'s studios`;
+    await loadStudios();
+  } catch { signedOut(); }
+})();
+
 on('create-studio', 'submit', async () => {
   if (!discardDraft()) return;
   const studio = await api('/studios', 'POST', {name: $('studio-name').value.trim()});
