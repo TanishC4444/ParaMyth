@@ -84,8 +84,26 @@ class ImageTests(unittest.TestCase):
         for raw in ([], {'kind': []}, {'subject': {}}, {'use_story': 'false'}, {'natural_finish': 1}):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 studio.input_spec(raw)
-        with self.assertRaisesRegex(ValueError, 'enhancement'):
-            studio.prepare_prompt(self.root, {}, enhance=True)
+        with patch.dict('os.environ', {'VULTR_INFERENCE_API_KEY': ''}), patch('paramyth.vultr.request_json') as provider:
+            with self.assertRaisesRegex(ProviderError, 'VULTR_INFERENCE_API_KEY'):
+                studio.prepare_prompt(self.root, {}, enhance=True)
+        provider.assert_not_called()
+
+    def test_enhanced_prompt_comes_from_vultr_with_story_evidence(self):
+        reply = {'choices': [{'message': {'content': json.dumps({'prompt': 'A smith at a bronze forge, dusk light', 'title': 'The forge',
+                                                                 'assumptions': ['Dusk light is invented']})}, 'finish_reason': 'stop'}],
+                 'usage': {'total_tokens': 30}}
+        with patch.dict('os.environ', {'VULTR_INFERENCE_API_KEY': 'test-key'}), patch('paramyth.vultr.request_json', return_value=reply) as provider:
+            result = studio.prepare_prompt(self.root, {'subject': 'forge'}, enhance=True)
+        sent = json.loads(provider.call_args.args[1]['messages'][1]['content'])
+        self.assertEqual(sent['request']['subject'], 'forge')
+        self.assertTrue(sent['story_excerpts'])
+        self.assertEqual((result['prompt'], result['prompt_provider']), ('A smith at a bronze forge, dusk light', 'Vultr Muse Glimmer'))
+        self.assertEqual(result['model_calls'][0]['usage'], {'total_tokens': 30})
+        bad = {'choices': [{'message': {'content': '{"prompt": ""}'}, 'finish_reason': 'stop'}]}
+        with patch.dict('os.environ', {'VULTR_INFERENCE_API_KEY': 'test-key'}), patch('paramyth.vultr.request_json', return_value=bad):
+            with self.assertRaisesRegex(ProviderError, 'invalid visual prompt'):
+                studio.prepare_prompt(self.root, {'subject': 'forge'}, enhance=True)
 
     def test_catalog_uses_meta_only_and_no_silent_alias(self):
         self.assertEqual(studio.CATALOG.list()[0]['id'], 'muse-image-1.0')

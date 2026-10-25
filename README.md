@@ -177,6 +177,104 @@ context budget; hierarchical long-book auditing is not implemented.
 This run format uses schema version 2. Retain earlier run folders as historical
 checkpoints and start a fresh folder rather than silently reinterpreting older state.
 
+## Creative studio
+
+`paramyth.creative` develops ideas, drafts prose, reviews it and revises it with
+Vultr Serverless Inference (`muse-glimmer-30b`). Set `VULTR_INFERENCE_API_KEY` in
+the process environment. Each call can incur provider charges.
+
+```sh
+python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json
+python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json --stream
+```
+
+A request picks one `operation`: `ideas`, `draft`, `review`, `revise` or `loop`.
+`loop` drafts (or starts from `text`), then reviews and revises for up to `rounds`
+(1–3) and stops early when the critic passes. `words` sets the target length
+(100–3000). With `use_story` (default true) the first three story artifacts from
+the run folder are sent as context. `guidance_mode` is `suggest` (keep the idea and
+offer up to three optional improvements) or `use_idea` (develop it as written).
+
+Records are saved under `creative/` with every step, its output and token usage.
+With `--stream`, partial text is saved as it arrives, so a dropped connection
+keeps the words already received. Failed attempts are recorded as failed and are
+not retried automatically. Inferred details stay editable proposals, never
+accepted canon.
+
+## Soundtracks
+
+`paramyth.soundtracks` builds a sound cue from the run folder's story, characters
+and world, then either renders it locally or asks Vultr for music.
+
+```sh
+python -m paramyth.soundtracks --folder runs/harbor plan --mode ambience
+python -m paramyth.soundtracks --folder runs/harbor ambience --seconds 60 --out harbor.wav
+python -m paramyth.soundtracks --folder runs/harbor create --mode score --model minimax-music3 --seconds 60
+python -m paramyth.soundtracks --folder runs/harbor status music_<id>
+python -m paramyth.soundtracks --folder runs/harbor download music_<id> --out harbor.mp3
+```
+
+`ambience` and the local drone `score` are synthesized on your machine as 16 kHz
+mono WAV (wind, water, rumble and fire layers chosen from the story). They make
+no provider calls, and the same cue always sounds the same. `create` starts a
+Vultr score or song job and needs `VULTR_INFERENCE_API_KEY`; it can incur
+charges. Scores are forced instrumental. Songs need lyrics when the model
+requires them, and durations must fit the model's limits (5–360 seconds).
+Cues and jobs are recorded under `soundtracks/`. Downloads are capped at 64 MB.
+
+## Production planning
+
+`paramyth.production` turns a story run folder into a draft shoot plan. Muse
+Glimmer on Vultr breaks the story into at most 16 filmable scene units with
+cast, lighting, dependencies, props, risks and estimated budget rows. A local
+scheduler then places them on shoot days, and the budget is recalculated with
+exact decimal arithmetic. Set `VULTR_INFERENCE_API_KEY`; each plan makes two
+model calls and can incur charges.
+
+```sh
+python -m paramyth.production --folder runs/harbor --constraints examples/production-constraints.json
+python -m paramyth.production --folder runs/harbor --image harbor-scene.png
+```
+
+Constraints set the filming `region`, `currency`, `start_date`, `timezone`, workday
+hours, setup and move minutes, contingency percent, an optional `budget_cap`,
+weekend skipping, blackout dates and cast or location unavailability. The
+scheduler respects dependencies and availability, keeps day and night shoots
+apart, adds a meal break by hour five and a 12-hour turnaround, and reports
+scenes it cannot fit. Up to three PNG, JPEG or WebP scene images (5 MB each)
+can guide scouting criteria; they never prove a real address or permission.
+
+With a filming `region` and `SERPAPI_API_KEY` set, up to `search_limit` (0–3)
+targeted web searches look for film offices, location libraries and permit
+rules. Results are cached in `production/search-cache.sqlite` (24 hours, 6 for
+legal), capped at `PARAMYTH_SEARCH_DAILY_LIMIT` searches a day (default 10), and
+can fail over to comma-separated `SERPAPI_BACKUP_KEYS`. Keys are never stored.
+Recommendations may name a real place only when a search result supports it,
+and every cited result stays a lead to verify.
+
+Export a saved plan as a tentative calendar, sheets or call sheets:
+
+```sh
+python -m paramyth.production_exports --plan runs/harbor/production/plans/<id>.json --kind calendar.ics --out harbor.ics
+```
+
+Kinds are `calendar.ics`, `schedule.csv`, `budget.csv`, `tasks.csv`,
+`call-sheets.txt` and `plan.json`. Calendar events are marked tentative, and CSV
+cells that start with `=`, `+`, `-` or `@` are quoted so spreadsheets don't run them.
+
+`paramyth.calendar_sync.GoogleCalendar` adds a plan's shoot days to Google
+Calendar only when asked. Events are private and tentative, with no attendees.
+Their IDs come from the plan, so syncing again skips events already there.
+Overlapping busy events are reported instead of booked over, and a failure
+partway keeps the IDs already created. It reads `GOOGLE_CALENDAR_ACCESS_TOKEN`,
+or refreshes with `GOOGLE_CALENDAR_REFRESH_TOKEN`, `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET`. Tokens stay in memory and are never written to plans.
+
+Plans are saved under `production/plans/` as drafts. Rates are model estimates,
+not quotes, and unknown costs are left out of totals. Permits, availability and
+legal requirements always need verification. Install the `production` extra for
+time-zone data on systems without it.
+
 ## Meta image generation
 
 The image backend prepares story-aware prompts locally and generates one PNG per
@@ -213,8 +311,10 @@ saved. A timeout may leave billing uncertain; there are no automatic retries or
 provider fallbacks. Interrupted processes may leave a generating record for
 manual inspection.
 
-This phase exposes Python functions and a CLI. Studio HTTP routes, prompt
-enhancement, and Vultr integration are separate work. Tests use synthetic PNGs
+Add `--enhance` to `prepare` to have Muse Glimmer on Vultr write the prompt from
+the selected story passages and art direction instead of the local template. It
+needs `VULTR_INFERENCE_API_KEY`, makes one model call and records its token usage
+and any invented visual choices as assumptions. Tests use synthetic PNGs
 and mocked provider responses; they do not establish live account access or
 image quality.
 
