@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +16,7 @@ from .studio_http import StudioHTTPMiddleware, studio_path
 
 FRONTEND = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
 ACCOUNTS_UI = Path(__file__).resolve().parents[2] / 'web'
+PUBLIC_ASSETS = Path(__file__).resolve().parents[2] / 'frontend' / 'public'
 
 
 def create_app(root=None, frontend=FRONTEND):
@@ -60,6 +61,23 @@ def create_app(root=None, frontend=FRONTEND):
     # Register before the frontend catch-all so its account links resolve.
     if ACCOUNTS_UI.is_dir():
         app.mount('/studio', StaticFiles(directory=ACCOUNTS_UI, html=True), name='accounts-ui')
+    # Account-page artwork must also work when only the API has been started.
+    # Prefer built assets when a frontend is supplied, with source assets as fallback.
+    for asset in ('art', 'brand'):
+        built = Path(frontend) / asset if frontend else None
+        directory = built if built and built.is_dir() else PUBLIC_ASSETS / asset
+        if directory.is_dir():
+            app.mount('/' + asset, StaticFiles(directory=directory), name=asset)
+    built_icon = Path(frontend) / 'favicon.svg' if frontend else None
+    icon = built_icon if built_icon and built_icon.is_file() else PUBLIC_ASSETS / 'favicon.svg'
+    if icon.is_file():
+        @app.get('/favicon.svg', include_in_schema=False)
+        def favicon():
+            return FileResponse(icon, media_type='image/svg+xml')
+
+        @app.get('/favicon.ico', include_in_schema=False)
+        def favicon_alias():
+            return RedirectResponse('/favicon.svg')
     if frontend and (Path(frontend) / 'index.html').is_file():
         app.mount('/', StaticFiles(directory=frontend, html=True), name='frontend')
     return app

@@ -23,10 +23,23 @@ class ServeTests(StudioTestCase):
             self.assertEqual(page.status_code, 200)
             self.assertIn('id="account-form"', page.text)
             self.assertEqual(client.get('/studio/js/teams.js').status_code, 200)
+            self.check_account_assets(client)
 
     def test_account_page_is_available_without_frontend_build(self):
         self.assertEqual(self.client.get('/studio/teams.html?mode=signup').status_code, 200)
         self.assertIn('/accounts/${mode}', self.client.get('/studio/js/teams.js').text)
+        self.check_account_assets(self.client)
+
+    def check_account_assets(self, client):
+        for path, media_type in [('/art/castle.webp', 'image/webp'),
+                                 ('/art/paper.webp', 'image/webp'),
+                                 ('/brand/paramyth-logo.png', 'image/png'),
+                                 ('/favicon.ico', 'image/svg+xml')]:
+            with self.subTest(path=path):
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.headers['content-type'], media_type)
+                self.assertTrue(response.content)
 
     def test_without_a_build_only_the_api_answers(self):
         self.assertEqual(self.client.get('/').status_code, 404)
