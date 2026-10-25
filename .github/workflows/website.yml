@@ -27,6 +27,7 @@ jobs:
           corepack pnpm exec tsc --noEmit
           corepack pnpm test:atlas
           corepack pnpm test:cinematic
+          node --test tests/account-entry.test.cjs
       - name: Build frontend
         working-directory: frontend
         run: corepack pnpm build

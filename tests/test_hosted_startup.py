@@ -1,0 +1,54 @@
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+from cryptography.fernet import Fernet
+from fastapi.testclient import TestClient
+from fastapi import HTTPException
+
+from paramyth.studio.server_settings import load_server_environment
+from paramyth.studio.hosted import settings
+from paramyth.studio.app import create_app
+
+
+class HostedStartupTests(unittest.TestCase):
+    def test_owner_file_loads_keys_without_overwriting_platform_secrets(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'server.env'
+            path.write_text('VULTR_PRODUCTION_API_KEY=file-key\nGEMINI_API_KEY=file-gemini\n')
+            with patch.dict(os.environ, {'PARAMYTH_ENV_FILE': str(path), 'GEMINI_API_KEY': 'platform-key'}, clear=True):
+                load_server_environment()
+                self.assertEqual(os.environ['VULTR_PRODUCTION_API_KEY'], 'file-key')
+                self.assertEqual(os.environ['GEMINI_API_KEY'], 'platform-key')
+
+    def test_railway_port_and_hostname_are_used_and_missing_volume_is_rejected(self):
+        with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {
+            'PORT': '9123', 'RAILWAY_PUBLIC_DOMAIN': 'paramyth-test.up.railway.app',
+            'PARAMYTH_WORKSPACE': root,
+        }, clear=True):
+            port, workspace = settings()
+            self.assertEqual(port, 9123)
+            self.assertEqual(workspace, Path(root).resolve())
+            self.assertEqual(os.environ['PARAMYTH_PUBLIC_ORIGIN'], 'https://paramyth-test.up.railway.app')
+            os.environ.pop('PARAMYTH_WORKSPACE')
+            with self.assertRaisesRegex(ValueError, 'persistent volume'):
+                settings()
+
+    def test_railway_health_hostname_cannot_access_private_routes(self):
+        with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {
+            'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode(),
+            'RAILWAY_PROJECT_ID': 'test-project',
+        }, clear=True):
+            app = create_app(root, frontend=None, public_origin='https://stories.example.tech')
+            with TestClient(app) as client, patch('paramyth.studio.hosting.accounts.user', side_effect=HTTPException(401, 'Sign in')) as authenticate:
+                self.assertEqual(client.get('https://healthcheck.railway.app/api/v1/health').status_code, 200)
+                self.assertEqual(client.get('https://healthcheck.railway.app/api/ui/workspace').status_code, 400)
+                self.assertEqual(client.get('https://unrelated.example/api/v1/health').status_code, 400)
+                self.assertEqual(client.get('https://stories.example.tech/api/ui/workspace').status_code, 401)
+                authenticate.assert_called_once()
+
+
+if __name__ == '__main__':
+    unittest.main()

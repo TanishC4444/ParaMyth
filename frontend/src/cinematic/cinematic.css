@@ -459,3 +459,5 @@ body:has(.workspace-view:not([hidden]) .cinematic-landing){background:#111d31}
 .cinematic-landing .secondary{background:#79c6aa12;border-color:#79c6aa55;color:#c4e5c8}
 .cinematic-landing .atlas-list button:hover{background:#9ccca50d}
 .cinematic-landing .footer-brand{color:#edc88e}
+
+.cinematic-landing .landing-header nav>a{display:flex;align-items:center;justify-content:center;min-height:38px;padding:0 16px;border-radius:30px;color:#f7e5c8;text-decoration:none;font:600 10px/1 ParaMyth Sans,sans-serif;white-space:nowrap}.cinematic-landing .landing-header nav>a:hover{background:#ffffff14}.cinematic-landing .landing-header nav .dock-create{background:#e4bb7955;border:1px solid #e4bb7980;color:#fff0d4}@media(max-width:700px){.cinematic-landing .landing-header nav>a{font-size:9px;padding:0 10px;min-height:36px}.cinematic-landing .landing-header nav>button{padding:0 9px}}

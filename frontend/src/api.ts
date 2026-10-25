@@ -1,7 +1,7 @@
 /** All product actions use the same-origin live server. No fixture fallback. */
 // Static exports stay offline; a live hosted server marks its own HTML.
 export const studioHost = () => ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname) || document.querySelector('meta[name="paramyth-studio"]')?.getAttribute("content") === "live"
-const offline = "Studio tools run on your own computer. Start the studio there to use them."
+const offline = "The online studio is not connected yet. You can still explore the story atlas."
 let csrf: Promise<string> | undefined
 let accountIdentity = 'local'
 export const currentAccountIdentity = () => accountIdentity

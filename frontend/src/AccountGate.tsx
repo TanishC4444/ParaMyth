@@ -1,24 +1,34 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { setAccountIdentity, studioHost } from './api'
+import AccountPage from './AccountPage'
 
 type Account = { id: string; email: string; display_name: string }
-type Access = { accounts_required: boolean; shared_keys: boolean; github_admin: boolean }
-const AccessContext = createContext<Access>({accounts_required:false, shared_keys:false, github_admin:true})
+type Access = { accounts_required: boolean; shared_keys: boolean; github_admin: boolean; authenticated?: boolean }
+const localAccess: Access = {accounts_required:false, shared_keys:false, github_admin:true}
+const AccessContext = createContext<Access>(localAccess)
 export const useAccess = () => useContext(AccessContext)
+const routeName = () => location.hash.replace(/^#\/?/, '').split(/[/?]/)[0]
 
 export default function AccountGate({children}: {children:ReactNode}) {
   const [access,setAccess] = useState<Access>()
   const [account,setAccount] = useState<Account|null>()
   const [error,setError] = useState('')
+  const [route,setRoute] = useState(routeName)
+  const checkAccount = useRef<() => Promise<void>>(async () => {})
+  useEffect(() => {
+    const changed=()=>setRoute(routeName())
+    window.addEventListener('hashchange',changed)
+    return()=>window.removeEventListener('hashchange',changed)
+  },[])
   useEffect(() => {
     if (!studioHost()) {
-      setAccount(null);setAccess({accounts_required:false,shared_keys:false,github_admin:true});return
+      setAccount(null);setAccess(localAccess);return
     }
     let stopped=false
     const check=async () => {
       try {
         const config=await fetch('/api/ui/public-config',{cache:'no-store'})
-        const value:Access=config.status===404 ? {accounts_required:false,shared_keys:false,github_admin:true} : await config.json()
+        const value:Access=config.status===404 ? localAccess : await config.json()
         if (!config.ok && config.status!==404) throw Error('Could not check your sign-in. Please retry.')
         let signedIn:Account|null=null
         if(value.accounts_required){
@@ -28,9 +38,10 @@ export default function AccountGate({children}: {children:ReactNode}) {
         }
         if(stopped)return
         setAccountIdentity(signedIn?.id || 'local')
-        setAccount(signedIn);setAccess(value);setError('')
+        setAccount(signedIn);setAccess({...value,authenticated:!!signedIn});setError('')
       }catch(e){if(!stopped)setError(e instanceof Error?e.message:'Could not check your sign-in')}
     }
+    checkAccount.current=check
     const changed=()=>{void check()}
     const storage=(e:StorageEvent)=>{if(e.key==='paramyth-account-change'){setAccount(undefined);changed()}}
     void check()
@@ -39,8 +50,12 @@ export default function AccountGate({children}: {children:ReactNode}) {
     window.addEventListener('paramyth-sign-in-required',changed)
     return()=>{stopped=true;window.removeEventListener('focus',changed);window.removeEventListener('storage',storage);window.removeEventListener('paramyth-sign-in-required',changed)}
   },[])
-  if(error)return <main className="page"><h1>We couldn’t open your workspace</h1><p role="alert">{error}</p><button onClick={()=>location.reload()}>Retry</button></main>
-  if(!access || account===undefined)return <main className="page"><p>Opening your workspace…</p></main>
-  if(access.accounts_required&&!account)return <main className="page"><h1>Your stories, saved for you.</h1><p>Sign in to return to your projects, drafts, images, music, and production plans.</p><div className="inline-links"><a className="primary" style={{color:"#fff"}} href="/studio/teams.html">Sign in</a><a className="secondary" href="/studio/teams.html?mode=signup">Create account</a></div></main>
+  const publicRoute=route==='' || route==='atlas'
+  const authRoute=route==='signin' || route==='signup'
+  // The public Atlas must remain usable while account storage is waking up.
+  if(publicRoute)return <AccessContext.Provider value={access || {accounts_required:true,shared_keys:true,github_admin:false,authenticated:false}}><div key={account?.id||'local'}>{children}</div></AccessContext.Provider>
+  if(error)return <><p className="account-notice" role="alert">{error} <button onClick={()=>location.reload()}>Retry</button></p><AccountPage signup={route==='signup'} available={false} onSignedIn={async()=>{}} /></>
+  if(!access || account===undefined)return <main className="page"><p>Opening your workspace...</p></main>
+  if(authRoute || (!publicRoute && (!studioHost() || access.accounts_required&&!account))) return <AccountPage key={route==='signup'?'signup':'signin'} signup={route==='signup'} available={studioHost()} onSignedIn={()=>checkAccount.current()} />
   return <AccessContext.Provider value={access}><div key={account?.id||'local'}>{account&&<div className="account-status" style={{padding:'8px 24px',display:'flex',gap:16,justifyContent:'flex-end'}}><span>Signed in as {account.display_name}</span><a href="/studio/teams.html">Account & sign out</a></div>}{children}</div></AccessContext.Provider>
 }

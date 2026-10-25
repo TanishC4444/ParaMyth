@@ -1,5 +1,7 @@
 """Same-origin hosting guards; public access never disables account isolation."""
 from urllib.parse import urlsplit
+import os
+import ipaddress
 
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
@@ -24,8 +26,16 @@ def validate_origin(value):
 class HostedRequests(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         public = getattr(request.app.state, 'public_origin', '')
-        if public and request.url.netloc.lower() != urlsplit(public).netloc.lower():
+        railway = bool(os.getenv('RAILWAY_PROJECT_ID'))
+        health_probe = railway and request.method in ('GET', 'HEAD') and request.url.path == '/api/v1/health' and request.url.hostname == 'healthcheck.railway.app'
+        if public and request.url.netloc.lower() != urlsplit(public).netloc.lower() and not health_probe:
             return JSONResponse({'detail': 'Host rejected'}, status_code=400)
+        if railway and request.headers.get('x-real-ip'):
+            try:
+                address = str(ipaddress.ip_address(request.headers['x-real-ip']))
+                request.scope['client'] = (address, request.client.port if request.client else 0)
+            except ValueError:
+                return JSONResponse({'detail': 'Client address rejected'}, status_code=400)
         path = request.url.path
         private = path.startswith(('/api/', '/media/', '/export/', '/google/')) and path not in PUBLIC_APIS
         try:

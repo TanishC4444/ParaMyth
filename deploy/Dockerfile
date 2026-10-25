@@ -18,4 +18,4 @@ COPY --from=frontend /build/dist/ ./frontend/dist/
 RUN useradd --uid 10001 --create-home paramyth && mkdir -p /data && chown 10001:10001 /data
 USER 10001
 EXPOSE 8000
-CMD ["uvicorn", "paramyth.studio.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "172.30.0.2"]
+CMD ["python", "-m", "paramyth.studio.hosted"]

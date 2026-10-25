@@ -210,8 +210,8 @@ function Shell() {
             >
               <Icon name="settings" />
             </button>
-            <a className="text-action" href="/studio/teams.html">{access.accounts_required ? "Account" : "Sign in"}</a>
-            {!access.accounts_required && <a className="text-action" href="/studio/teams.html?mode=signup">Create account</a>}
+            <a className="text-action" href={access.authenticated ? "/studio/teams.html" : "#/signin"}>{access.authenticated ? "Account" : "Sign in"}</a>
+            {!access.authenticated && <a className="text-action" href="#/signup">Create account</a>}
           </div>
         </header>
         {error && (

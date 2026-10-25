@@ -8,6 +8,7 @@ services:
       PARAMYTH_ACCOUNT_WORKSPACES: '1'
       PARAMYTH_PUBLIC_ORIGIN: https://${PARAMYTH_DOMAIN:?Set PARAMYTH_DOMAIN}
       PARAMYTH_WORKSPACE: /data
+      PARAMYTH_TRUSTED_PROXIES: '172.30.0.2'
     volumes:
       - workspaces:/data
     networks:

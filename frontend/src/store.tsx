@@ -1,3 +1,4 @@
+import { useAccess } from './AccountGate'
 import {
   createContext,
   type ReactNode,
@@ -9,7 +10,7 @@ import {
   useState,
   useCallback,
 } from "react"
-import { api as requestApi, currentAccountIdentity, projectPath, studioJobs, type Job } from "./api"
+import { api as requestApi, currentAccountIdentity, studioHost, projectPath, studioJobs, type Job } from "./api"
 import { uid, now, modeOf } from "./data"
 import { errorText } from "./ui"
 import type {
@@ -135,6 +136,7 @@ export function useDraftState<T>(key: string, initial: T | (() => T)): [T, Dispa
   return [value, setValue]
 }
 export function StudioProvider({ children }: { children: ReactNode }) {
+  const access = useAccess()
   const account = useRef(currentAccountIdentity()).current
   const active = useRef(true)
   async function api<T = any>(path: string, body?: unknown, method?: string): Promise<T> {
@@ -243,6 +245,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     return queue.current
   }, [])
   const refresh = useCallback(async () => {
+    if (access.accounts_required && !access.authenticated) { setReady(true); return }
     try {
       const value = await api<{
         projects: Project[]
@@ -285,7 +288,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setError(e instanceof Error ? e.message : "Live studio unavailable")
       setReady(true)
     }
-  }, [flush])
+  }, [flush, access.accounts_required, access.authenticated])
   useEffect(() => {
     void refresh()
     const changed = () => {
@@ -414,6 +417,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     toast,
     seed,
     ideate: (s) => {
+      if (!studioHost() || access.accounts_required && !access.authenticated) { location.hash = '#/signup'; return }
       if (startingAtlas.current) return
       startingAtlas.current = true
       void (async () => {

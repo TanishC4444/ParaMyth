@@ -23,6 +23,8 @@ PUBLIC_ASSETS = Path(__file__).resolve().parents[2] / 'frontend' / 'public'
 def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_origin=None):
     """Build the app for a workspace folder (PARAMYTH_WORKSPACE, or the current directory).
     A built frontend, when present, is served at / from the same local origin."""
+    from .server_settings import load_server_environment
+    load_server_environment()
     app = FastAPI(title='ParaMyth studio', version='0.1.0')
     # Slim Linux images may omit the system MIME database used by StaticFiles.
     mimetypes.add_type('image/webp', '.webp')

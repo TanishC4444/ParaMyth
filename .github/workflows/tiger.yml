@@ -52,3 +52,4 @@ jobs:
           python -m unittest discover -s tests -p test_account_workspaces.py -v
       - run: python -m unittest discover -s tests -p test_tiger_db.py -v
       - run: python -m unittest discover -s tests -p test_studio_serve.py -v
+      - run: python -m unittest discover -s tests -p test_hosted_startup.py -v

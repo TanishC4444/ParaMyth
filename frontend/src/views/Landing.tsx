@@ -2,12 +2,14 @@ import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { ArtCredits } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
+import { useAccess } from "../AccountGate";
 import CinematicIntro, { type IntroActions } from "../cinematic/CinematicIntro";
 
 const Atlas = lazy(() => import("./Atlas"));
 
 export default function Landing({ focusAtlas, active = true }: { focusAtlas: boolean; active?: boolean }) {
   const { go } = useStudio();
+  const access = useAccess();
   const atlas = useRef<HTMLElement>(null);
   const intro = useRef<IntroActions>(null);
   const [bookVisible, setBookVisible] = useState(!focusAtlas);
@@ -20,6 +22,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
     <header className="landing-header">
       <nav aria-label="Landing navigation">
         <button className="dock-atlas" onClick={() => bookVisible ? intro.current?.enter() : intro.current?.replay()}><Icon name={bookVisible ? "atlas" : "library"} size={16} /><span>{bookVisible ? "Story Atlas" : "The Book"}</span></button>
+        {!access.authenticated && <><a className="dock-account" href="#/signin">Sign in</a><a className="dock-create" href="#/signup">Create account</a></>}
         <button className="dock-studio" onClick={() => go("overview")}>Open Studio <Icon name="arrow" size={14} /></button>
       </nav>
     </header>
