@@ -82,17 +82,29 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       const page = atlas.querySelector<HTMLElement>(".atlas-page");
       if (!page) return;
       window.scrollTo({ top: page.getBoundingClientRect().top + scrollY - 78, behavior: "instant" });
-      paint(); atlas.focus({ preventScroll: true }); focusWorld = false;
+      focusWorld = false; paint(); atlas.focus({ preventScroll: true });
     };
-    const enter = () => { focusWorld = true; place(1, true); jumpToWorld(); };
+    const enter = (animate = true) => {
+      focusWorld = true;
+      if (!animate || reducedRef.current || progress.current >= .9995) { place(1, true); jumpToWorld(); return; }
+      // An explicit Atlas click traverses the reveal. Returning visits skip it.
+      if (progress.current < .70) place(.70, false);
+      const { top, height } = bounds();
+      window.scrollTo({ top: top + height - innerHeight, behavior: "smooth" });
+    };
+    const finishNavigation = () => {
+      if (!focusWorld) return;
+      if (progress.current >= .9995) jumpToWorld(); else focusWorld = false;
+    };
     const replay = () => place(bookmark.current, true);
     const restore = () => {
       const memory = readNavigation();
-      if (focusAtlas || memory?.view === "atlas") enter(); else place(memory?.bookProgress ?? 0, false);
+      if (focusAtlas || memory?.view === "atlas") enter(false); else place(memory?.bookProgress ?? 0, false);
     };
-    controls.current = { enter, replay, refresh, restore, syncWorld: () => { measure(); if (focusWorld) jumpToWorld(); refresh(); }, scene: index => place(Math.min(.72, index * .12 + .025), false) };
+    controls.current = { enter, replay, refresh, restore, syncWorld: () => { measure(); if (focusWorld && progress.current >= .9995) jumpToWorld(); refresh(); }, scene: index => place(Math.min(.72, index * .12 + .025), false) };
     window.addEventListener("scroll", refresh, { passive: true });
     window.addEventListener("pagehide", flushMemory);
+    window.addEventListener("scrollend", finishNavigation);
     const resize = () => {
       const inAtlas = shell.dataset.intro === "false";
       const pastBook = Math.max(0, scrollY - geometry.top - geometry.height + geometry.viewport);
@@ -106,7 +118,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     window.addEventListener("resize", resize);
     restore();
     return () => {
-      flushMemory(); window.removeEventListener("pagehide", flushMemory); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("scroll", refresh); window.removeEventListener("resize", resize);
+      flushMemory(); window.removeEventListener("scrollend", finishNavigation); window.removeEventListener("pagehide", flushMemory); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("scroll", refresh); window.removeEventListener("resize", resize);
       history.scrollRestoration = previousRestoration;
       atlas.inert = false; atlas.removeAttribute("aria-hidden"); if (footer) footer.inert = false;
       controls.current = null;
