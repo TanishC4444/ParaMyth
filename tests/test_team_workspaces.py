@@ -74,6 +74,21 @@ class TeamWorkspaceTests(unittest.TestCase):
         again=self.a.post(f'/api/ui/projects/{personal["id"]}/share',json={'studio_id':self.sid},headers=self.headers(self.a))
         self.assertEqual(again.json()['project_id'],ident)
 
+    def test_reference_images_follow_team_read_and_write_permissions(self):
+        from test_images import png
+        project=self.shared(self.a)
+        route=self.url('/api/images/references',project_id=project['id'],name='portrait.png')
+        uploaded=self.b.post(route,content=png(),headers={**self.headers(self.b),'Content-Type':'image/png'})
+        self.assertEqual(uploaded.status_code,201,uploaded.text)
+        reference=uploaded.json()
+        preview=self.url('/media/image-references/'+reference['id'],project_id=project['id'])
+        for client in (self.a,self.b,self.v):
+            self.assertEqual(client.get(preview).status_code,200)
+            self.assertEqual(client.get(self.url('/api/images/references',project_id=project['id'])).json()['references'],[reference])
+        self.assertEqual(self.v.post(route,content=png(),headers=self.headers(self.v)).status_code,403)
+        self.assertEqual(self.o.get(preview).status_code,404)
+        self.assertEqual(self.a.get('/media/image-references/'+reference['id'],params={'project_id':project['id']}).status_code,404)
+
     def test_shared_creation_drafts_conflicts_and_manuscript_versions(self):
         p=self.shared(self.b)
         ident=p['id'];route=self.url(f'/api/ui/projects/{ident}/workspace')

@@ -15,6 +15,7 @@ from . import vultr
 from .providers import ProviderError, request_json
 from .story_context import context
 from .storage import save
+from .image_references import muse_input, validate_references
 from .visual_direction import art_direction
 
 
@@ -247,6 +248,8 @@ def generate(folder, raw, progress=lambda message: None):
         raise ValueError('Image settings must be an object')
     model = CATALOG.get(raw.get('model'))
     body = generation_settings(raw, model)
+    references = validate_references(folder, raw)
+    image_input = muse_input(folder, raw, body['prompt'])
     kind = raw.get('kind', 'custom')
     if not isinstance(kind, str) or kind not in KINDS:
         raise ValueError('Invalid image kind')
@@ -260,7 +263,7 @@ def generate(folder, raw, progress=lambda message: None):
     record = {'schema_version': 1, 'id': ident, 'title': title[:150], 'kind': kind,
         'provider': 'Meta Model API', 'model': body['model'],
         'created_at': datetime.now(timezone.utc).isoformat(), 'status': 'generating',
-        'request': body, 'images': []}
+        'request': body, 'reference_ids': [r['id'] for r in references], 'images': []}
     root = Path(folder) / 'images'
     root.mkdir(parents=True, exist_ok=True)
     save(record_path(folder, ident), record)
@@ -268,7 +271,7 @@ def generate(folder, raw, progress=lambda message: None):
     temporary = target.with_suffix('.png.tmp')
     try:
         progress('Muse Image is rendering your image')
-        payload = {'model': body['model'], 'input': body['prompt'], 'store': False,
+        payload = {'model': body['model'], 'input': image_input, 'store': False,
             'tools': [{'type': 'image_generation', 'size': body['size'], 'output_format': 'png'}]}
         response = request_json(META_BASE + '/responses', payload,
             {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'},

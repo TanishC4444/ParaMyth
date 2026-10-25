@@ -15,6 +15,41 @@ function moduleFor(file, mocks = {}, globals = {}, extra = '') {
   return module.exports;
 }
 
+test('image uploads keep binary bytes and the existing account and CSRF guards',async()=>{
+  const file=new Blob(['image-bytes'],{type:'image/png'});
+  const calls=[];
+  const errors=moduleFor('src/request-errors.ts');
+  const {api,setAccountIdentity}=moduleFor('src/api.ts',{'./request-errors':errors,'./transport':{
+    studioHost:()=>true,currentStudioIdentity:()=> 'team',backendUrl:p=>p,
+    backendFetch:async(path,options)=>{calls.push({path,options});return {ok:true,status:200,headers:{get:()=> 'application/json'},json:async()=>path==='/api/ui/session'?{csrf:'csrf-token'}:{id:'reference-id'}}}
+  }},{Blob});
+  setAccountIdentity('account');
+  assert.equal((await api('/api/images/references?project_id=project',file)).id,'reference-id');
+  const sent=calls.at(-1).options;
+  assert.equal(sent.body,file);
+  assert.equal(sent.headers['Content-Type'],'image/png');
+  assert.equal(sent.headers['X-ParaMyth-Token'],'csrf-token');
+  assert.equal(sent.headers['X-ParaMyth-Account'],'account');
+});
+
+test('visual editing exposes upload previews and requires an edit instruction',()=>{
+  const Images=moduleFor('src/views/Images.tsx',{
+    '../useSavedJob':{useSavedJob:()=>[null,()=>{}]},
+    '../api':{api:async()=>({}),projectPath:p=>p,currentWorkspaceIdentity:()=> 'account:team'},
+    '../store':{useStudio:()=>({project:{id:'project'}}),useDraftState:(key,fallback)=>[key==='images.referenceIds'?['a'.repeat(24)]:fallback,()=>{}]},
+    '../materials':{useMaterials:()=>({images:[]})},
+    '../ui':{PageTitle:()=>null,errorText:String},
+    '../brandArt':{BrandSpot:()=>null},
+    '../Guide':{HelpTip:()=>null},
+  }).default;
+  const html=renderToStaticMarkup(React.createElement(Images));
+  assert.match(html,/type="file"/);
+  assert.match(html,/image\/png,image\/jpeg,image\/webp/);
+  assert.match(html,/How should Muse use these images/);
+  assert.match(html,/sent to Meta/);
+  assert.match(html,/<button[^>]*disabled=""[^>]*>Generate edit<\/button>/);
+});
+
 test('instrumental mode is selectable with MiniMax and automatic settings',()=>{
   const Music=moduleFor('src/views/Music.tsx',{
     '../useSavedJob':{useSavedJob:()=>[null,()=>{}]},

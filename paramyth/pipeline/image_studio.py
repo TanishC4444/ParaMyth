@@ -16,6 +16,7 @@ from .production_research import ProviderError, request_json
 from .soundtracks import context
 from .storage import load, save
 from .visual_direction import art_direction
+from ..image_references import muse_input, validate_references
 
 BASE='https://api.vultrinference.com/v1'
 META_BASE='https://api.meta.ai/v1'
@@ -219,6 +220,8 @@ def generate(folder, raw, progress=lambda message:None):
     if not isinstance(raw,dict):raise ValueError('Image settings must be an object')
     model=CATALOG.get(raw.get('model'))
     body=generation_settings(raw,model)
+    references=validate_references(folder,raw)
+    image_input=muse_input(folder,raw,body['prompt'])
     meta=body['model']=='muse-image-1.0'
     key=muse_key() if meta else os.getenv('VULTR_INFERENCE_API_KEY','')
     if not key:raise ProviderError('Configure the selected image provider on the server')
@@ -229,13 +232,13 @@ def generate(folder, raw, progress=lambda message:None):
     record={'schema_version':1,'id':ident,'title':str(raw.get('title',kind.title()))[:150],
             'kind':kind,'provider':'Meta Model API' if meta else 'Vultr Serverless Inference','model':body['model'],
             'created_at':datetime.now(timezone.utc).isoformat(),'status':'generating',
-            'request':body,'images':[]}
+            'request':body,'reference_ids':[r['id'] for r in references],'images':[]}
     root=Path(folder)/'images';root.mkdir(parents=True,exist_ok=True)
     save(record_path(folder,ident),record)
     progress(model.get('name',body['model'])+' is rendering your image')
     try:
         if meta:
-            payload={'model':body['model'],'input':body['prompt'],'store':False,
+            payload={'model':body['model'],'input':image_input,'store':False,
                      'tools':[{'type':'image_generation','size':body['size'],'output_format':'png'}]}
             response=request_json(META_BASE+'/responses',payload,{'Authorization':'Bearer '+key,'Content-Type':'application/json'},timeout=300,max_bytes=64*1024*1024)
             if response.get('status')!='completed':raise ProviderError('Muse Image did not complete the request')
@@ -266,7 +269,7 @@ def generate(folder, raw, progress=lambda message:None):
     except (ValueError,OSError,KeyError,TypeError):
         record.update(status='failed',error='The image request did not finish successfully. A timeout can leave billing uncertain; this app does not retry automatically.')
         save(record_path(folder,ident),record)
-        if meta and raw.get('allow_backup',True):
+        if meta and not references and raw.get('allow_backup',True):
             available=CATALOG.vultr_list() if os.getenv('VULTR_INFERENCE_API_KEY') else []
             backup=next((m for m in available if m['id']=='moss-image'),available[0] if available else None)
             if backup:
