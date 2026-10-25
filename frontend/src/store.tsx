@@ -388,9 +388,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         await api("/api/studio/project/select", { id })
         selection.current = id
         setSelected(id)
-        if (t) setDraft(id, "project.tab", t)
+        if (t) setDraft(id, "project.tab", t === 'brief' ? 'manuscript' : t)
           setDraft(id, "workflow.section", "writing")
-          setDraft(id, "workflow.writing", t === "brief" ? "brief" : t ? "manuscript" : "creative")
+          setDraft(id, "workflow.writing", t ? "manuscript" : "creative")
         go("workflow")
         await refresh()
       } catch (e) {
@@ -444,8 +444,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setStore,
     view,
     go,
-    tab: drafts[project.id]?.["project.tab"] || "brief",
-    setTab: (t) => setDraft(project.id, "project.tab", t),
+    tab: drafts[project.id]?.["project.tab"] === 'brief' ? 'manuscript' : drafts[project.id]?.["project.tab"] || "manuscript",
+    setTab: (t) => setDraft(project.id, "project.tab", t === 'brief' ? 'manuscript' : t),
     project,
     selectProject,
     createProject,

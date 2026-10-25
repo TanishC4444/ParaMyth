@@ -58,7 +58,7 @@ export function CreateProjectDialog({ close }: { close: () => void }) {
     const scenes: Scene[] = Array.from({ length: chapters * per }, (_, i) => ({ id: uid(), chapter: Math.floor(i / per) + 1, title: `Scene ${i + 1}`, pov: "", location: "", content: "", state: "Draft", findings: [], minutes: 4, night: false }));
     const project: Project = { id: uid(), title: String(d.get("title")), owner: "You", color: ["mint", "peach", "gold"][Math.floor(Math.random() * 3)], updated: now(), brief, scenes, canon: [], versions: [] };
     setBusy(true);
-    try { const saved = await createProject(project); selectProject(saved.id, "brief"); close(); notify("Project saved to your studio"); } catch (error) { setErrors([errorText(error)]); } finally {setBusy(false)}
+    try { const saved = await createProject(project); selectProject(saved.id, "manuscript"); close(); notify("Project saved to your studio"); } catch (error) { setErrors([errorText(error)]); } finally {setBusy(false)}
   };
   return <div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="create-project-title"><button className="modal-scrim" tabIndex={-1} disabled={busy} onClick={()=>{if(!changed)close()}} aria-label="Close" />
     <form ref={dialog} className="modal wide" onChange={()=>setChanged(true)} onSubmit={go}><button type="button" className="modal-close" disabled={busy} onClick={close} aria-label="Close"><Icon name="close" /></button>

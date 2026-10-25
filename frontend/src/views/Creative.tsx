@@ -178,7 +178,7 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
     try {
       const result = await api<{ id: string }>(projectPath(`/api/ui/creative/${r.id}/use-as-project`, id), { text: r.result?.text });
       await refresh();
-      if (mounted.current && currentProject.current === id) { selectProject(result.id, "brief"); notify("Your idea is now a project. You can edit every detail in its brief."); }
+      if (mounted.current && currentProject.current === id) { selectProject(result.id, "manuscript"); notify("Your idea is now a project. Continue in the manuscript."); }
     } catch (e) { if (mounted.current && currentProject.current === id) setError(message(e)); }
     finally { if (mounted.current && currentProject.current === id) setAdopting(""); }
   };
