@@ -17,6 +17,7 @@ class Executor:
 
     def call(self, role, packet, validator=None):
         error = ''
+        event_offset = len(getattr(self.transport, 'events', []))
         for attempt in range(self.req['max_stage_retries'] + 1):
             started = time.monotonic()
             report = {'role': role, 'attempt': attempt + 1, 'cached': False,
@@ -58,6 +59,8 @@ class Executor:
                 report['error'] = 'Transport raised ' + type(exc).__name__
                 raise
             finally:
+                report['provider_attempts'] = getattr(self.transport, 'events', [])[event_offset:]
+                event_offset = len(getattr(self.transport, 'events', []))
                 report['elapsed_seconds'] = time.monotonic() - started
                 save(self.folder / 'attempts' / (uuid.uuid4().hex + '.json'), report)
         raise ContractError(role + ' failed after bounded retries: ' + error)

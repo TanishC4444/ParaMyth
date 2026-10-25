@@ -88,3 +88,19 @@ def delta(value, prose, ids):
         if m['kind'] == 'belief':
             require(m.get('holder') in ids and m['holder'] in m['known_by'], 'Belief needs holder')
     return value
+
+
+def assessed_review(value, prose, categories):
+    review(value, prose)
+    require(value['pass'] or bool(value['issues']), 'Failed review requires actionable issues')
+    checks = value.get('checks', [])
+    require(isinstance(checks, list), 'Review requires checks')
+    covered = set()
+    for check in checks:
+        require(isinstance(check, dict), 'Invalid review check')
+        require(isinstance(check.get('reason'), str) and bool(check['reason'].strip()), 'Check needs reason')
+        require(isinstance(check.get('quote'), str) and bool(check['quote']) and check['quote'] in prose, 'Check must quote current prose')
+        require(isinstance(check.get('category'), str), 'Check needs category')
+        covered.add(check['category'])
+    require(set(categories) <= covered, 'Review missing required assessments')
+    return value

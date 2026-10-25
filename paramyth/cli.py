@@ -13,12 +13,15 @@ def main():
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--approve-plan', action='store_true')
     parser.add_argument('--stop-after', type=int)
+    parser.add_argument('--backend', choices=['fixture', 'live'], default='fixture')
     args = parser.parse_args()
     source = args.out / 'request.json' if args.resume else args.request
     if source is None:
         parser.error('--request is required for a new run')
     try:
-        state = run(load(source), args.out, stop_after=args.stop_after,
+        from .live import ChatTransport
+        transport = ChatTransport.from_env() if args.backend == 'live' else None
+        state = run(load(source), args.out, backend=args.backend, transport=transport, stop_after=args.stop_after,
                     approve_plan=args.approve_plan)
         print(json.dumps({'accepted_scenes': len(state['accepted']),
                           'complete': state.get('complete', False),

@@ -13,7 +13,10 @@ def respond(role, packet, req):
                                'obstacle': 'access requires cooperation', 'intended_change': 'a practical decision changes the inspection'})
         return json.dumps({'title': req.get('title'), 'threads': ['bell repair', 'trust'], 'technique_stack': ['consequential choice'], 'scenes': scenes})
     if role in {'story_quality', 'memory_quality', 'chapter_quality'}:
-        return json.dumps({'pass': True, 'issues': []})
+        prose = packet.get('current_prose', packet.get('prose', 'Mara checked the tower latch.'))
+        categories = ['evidence', 'knowledge'] if role == 'memory_quality' else ['continuity', 'viewpoint', 'scene_change']
+        return json.dumps({'pass': True, 'issues': [], 'checks': [
+            {'category': c, 'reason': 'Deterministic fixture assessment only.', 'quote': prose[:28]} for c in categories]})
     if role == 'memory':
         return json.dumps({'memories': [{'kind': 'event', 'text': 'Mara checked the tower latch.', 'evidence': 'Mara checked the tower latch.', 'known_by': ['mara']} ]})
     if role == 'character':

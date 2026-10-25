@@ -25,6 +25,7 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
     contracts.require(type(approve_plan) is bool, 'approve_plan must be boolean')
     contracts.require(backend == 'fixture' or transport is not None,
                       'A custom backend requires an explicit transport')
+    identity = getattr(transport, 'identity', None)
     folder = Path(folder)
     fingerprint = hashlib.sha256(json.dumps(req, sort_keys=True).encode()).hexdigest()
     with lock(folder):
@@ -33,8 +34,9 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             state = load(path)
             contracts.require(state['request_hash'] == fingerprint, 'Request changed; use a new run folder')
             contracts.require(state['backend'] == backend, 'Cannot mix backends when resuming')
+            contracts.require(state.get('transport_identity') == identity, 'Provider settings changed; use a new run folder')
         else:
-            state = {'version': 0, 'backend': backend, 'request_hash': fingerprint,
+            state = {'transport_identity': identity, 'version': 0, 'backend': backend, 'request_hash': fingerprint,
                      'accepted': [], 'memories': copy.deepcopy(req['initial_facts'])}
             save(folder / 'request.json', req)
             save(path, state)
@@ -61,13 +63,25 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             packet = {'scene': card, 'premise': req['premise'], 'world_rules': req['world_rules'],
                       'pov_visible_memory': visible(state['memories'], card['pov']),
                       'target_words': req['words_per_scene']}
+            proposals = []
+            for character in req['characters']:
+                if character['id'] in card['participants']:
+                    actor_packet = {'character': character, 'location': card['location'], 'time': card['time'],
+                                    'visible_memory': visible(state['memories'], character['id'])}
+                    proposals.append({'character_id': character['id'],
+                                      'proposal': executor.call('character', actor_packet)})
+            cast = [{k: c[k] for k in ('id', 'name', 'role', 'public_identity') if k in c} for c in req['characters']]
+            direction = executor.call('director', {'scene': card, 'cast': cast, 'proposals': [p for p in proposals if p['character_id'] == card['pov']],
+                                                   'accepted_memory': visible(state['memories'], card['pov'])})
+            packet.update(direction=direction, cast=cast)
+            save(work / 'direction.json', {'proposals': proposals, 'direction': direction})
             draft = executor.call('writer', packet)
             save(work / 'draft.txt', draft)
             accepted = None
             for repair in range(req['max_repairs'] + 1):
                 prose = executor.call('humanizer', {'context': packet, 'prose': draft})
-                verdict = executor.call('story_quality', {'scene': card, 'current_prose': prose},
-                                         lambda x: contracts.review(x, prose))
+                verdict = executor.call('story_quality', {'scene': card, 'cast': cast, 'known_facts': packet['pov_visible_memory'], 'current_prose': prose},
+                                         lambda x: contracts.assessed_review(x, prose, ['continuity', 'viewpoint', 'scene_change']))
                 save(work / ('review-' + str(repair) + '.json'), verdict)
                 if verdict['pass']:
                     accepted = prose
@@ -78,15 +92,15 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             contracts.require(accepted is not None, 'Scene review blocked acceptance')
             memory = executor.call('memory', {'scene': card, 'prose': accepted},
                                    lambda x: contracts.delta(x, accepted, [c['id'] for c in req['characters']]))
-            memory_verdict = executor.call('memory_quality', {'prose': accepted, 'memory': memory},
-                                           lambda x: contracts.review(x, accepted))
+            memory_verdict = executor.call('memory_quality', {'prose': accepted, 'memory': memory, 'cast': cast, 'scene': card},
+                                           lambda x: contracts.assessed_review(x, accepted, ['evidence', 'knowledge']))
             save(work / 'memory.json', memory)
             contracts.require(memory_verdict['pass'], 'Memory review blocked acceptance')
             if card['id'] == state['plan']['scenes'][card['chapter'] * req['scenes_per_chapter'] - 1]['id']:
                 chapter = '\n\n'.join([s['prose'] for s in state['accepted']
                                        if s['chapter'] == card['chapter']] + [accepted])
-                chapter_verdict = executor.call('chapter_quality', {'current_prose': chapter},
-                                                lambda x: contracts.review(x, chapter))
+                chapter_verdict = executor.call('chapter_quality', {'current_prose': chapter, 'cast': cast},
+                                                lambda x: contracts.assessed_review(x, chapter, ['continuity', 'viewpoint', 'scene_change']))
                 contracts.require(chapter_verdict['pass'], 'Chapter review blocked acceptance')
             next_state = copy.deepcopy(state)
             next_state['version'] += 1
