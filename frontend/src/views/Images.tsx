@@ -36,7 +36,7 @@ export default function Images({ embedded = false }: { embedded?: boolean }) {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async (j) => {
       if (j.kind === "image") {
-        if (provenance?.source_id && j.result?.id) await api(path(`/api/ui/images/${j.result.id}/source`), { source: provenance.source_id });
+        if (!j.result?.reference_ids?.length && provenance?.source_id && j.result?.id) await api(path(`/api/ui/images/${j.result.id}/source`), { source: provenance.source_id });
         await load(); setStatus("Your image is ready.") }
       else { setPrompt(j.result.prompt); setProvenance(j.result); setStatus("Your prompt is ready to review.") }
       await refresh()
