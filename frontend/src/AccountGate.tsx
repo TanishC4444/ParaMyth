@@ -38,6 +38,6 @@ export default function AccountGate({children}: {children:ReactNode}) {
   },[])
   if(error)return <main className="page"><h1>We couldn’t open your workspace</h1><p role="alert">{error}</p><button onClick={()=>location.reload()}>Retry</button></main>
   if(!access || account===undefined)return <main className="page"><p>Opening your workspace…</p></main>
-  if(access.accounts_required&&!account)return <main className="page"><h1>Your stories, saved for you.</h1><p>Sign in to return to your projects, drafts, images, music, and production plans.</p><div className="inline-links"><a className="primary" href="/studio/teams.html">Sign in</a><a className="secondary" href="/studio/teams.html?mode=signup">Create account</a></div></main>
+  if(access.accounts_required&&!account)return <main className="page"><h1>Your stories, saved for you.</h1><p>Sign in to return to your projects, drafts, images, music, and production plans.</p><div className="inline-links"><a className="primary" style={{color:"#fff"}} href="/studio/teams.html">Sign in</a><a className="secondary" href="/studio/teams.html?mode=signup">Create account</a></div></main>
   return <AccessContext.Provider value={access}><div key={account?.id||'local'}>{account&&<div className="account-status" style={{padding:'8px 24px',display:'flex',gap:16,justifyContent:'flex-end'}}><span>Signed in as {account.display_name}</span><a href="/studio/teams.html">Account & sign out</a></div>}{children}</div></AccessContext.Provider>
 }
