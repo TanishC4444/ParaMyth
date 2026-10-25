@@ -1,0 +1,64 @@
+name: Continuity demos / matched plain LLM comparison
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        type: string
+        default: '["secret","resource","consequence"]'
+        description: JSON array of case names; resume only unfinished cases to conserve usage
+      resume_run:
+        type: string
+        default: ""
+        description: Reuse matching drafts from this demo run; never regenerate completed baseline chapters
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: story-universe-provider-budget
+  cancel-in-progress: false
+jobs:
+  compare:
+    name: Compare ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        case: ${{ fromJSON(inputs.cases || '["secret","resource","consequence"]') }}
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      GEMINI_DISTINCT_PROJECTS: 'true'
+      PYTHONUNBUFFERED: '1'
+      STORY_BATCH: ${{ matrix.case }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download prior matching demo drafts
+        if: inputs.resume_run != ''
+        uses: actions/download-artifact@v4
+        with:
+          pattern: continuity-demo-*
+          merge-multiple: true
+          path: resume
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+      - name: Compare three chapters with the same writing model
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: |
+          if [ -n "$RESUME_RUN" ]; then
+            python -m scripts.continuity_demo --case '${{ matrix.case }}' --out 'out/${{ matrix.case }}' --resume-root resume
+          else
+            python -m scripts.continuity_demo --case '${{ matrix.case }}' --out 'out/${{ matrix.case }}'
+          fi
+      - name: Save every draft, memory receipt, verdict and usage record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: continuity-demo-${{ matrix.case }}
+          path: out/
+          retention-days: 30

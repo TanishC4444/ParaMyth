@@ -1,0 +1,16 @@
+* text=auto
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+vendor/gh-inference/** text eol=lf
+*.db binary
+*.png binary
+*.webp binary
+*.jpg binary
+*.mp3 binary
+*.wav binary
+# Keep evidence-bound story fixtures exactly as recorded.
+outputs/** whitespace=-blank-at-eol
+paramyth/pipeline/api/demo_data/** whitespace=-blank-at-eol
+tests/fixtures/** whitespace=-blank-at-eol

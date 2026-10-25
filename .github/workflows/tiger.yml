@@ -1,9 +1,9 @@
 name: Tiger accounts and teams
 on:
   push:
-    paths: ['paramyth/studio/**', 'tests/test_studios.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
+    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
   pull_request:
-    paths: ['paramyth/studio/**', 'tests/test_studios.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
+    paths: ['paramyth/studio/**', 'paramyth/pipeline/api/**', 'tests/test_studios.py', 'tests/test_advanced_studios.py', 'pyproject.toml', '.github/workflows/tiger.yml', 'tests/test_tiger_db.py']
 permissions:
   contents: read
 jobs:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install -e '.[studio,tiger]'
+      - run: python -m pip install -e '.[studio,tiger,api,test]'
       - name: Migrate isolated database
         env:
           PARAMYTH_MIGRATION_DATABASE_URL: postgresql://postgres:local-ci-only@localhost:5432/studio_test
@@ -42,5 +42,7 @@ jobs:
       - name: Test accounts, authorization and concurrent edits
         env:
           PARAMYTH_TEST_DATABASE_URL: postgresql://studio_ci:local-app-only@localhost:5432/studio_test
-        run: python -m unittest discover -s tests -p test_studios.py -v
+        run: |
+          python -m unittest discover -s tests -p test_studios.py -v
+          python -m unittest discover -s tests -p test_advanced_studios.py -v
       - run: python -m unittest discover -s tests -p test_tiger_db.py -v

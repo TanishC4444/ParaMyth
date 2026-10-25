@@ -12,10 +12,16 @@ dependencies = []
 [project.optional-dependencies]
 rag = ["numpy>=2,<3", "python-dotenv>=1,<2"]
 production = ["tzdata>=2024.1"]
+test = ["PyYAML==6.0.2"]
+docx = ["python-docx>=1.1,<2"]
+api = ["PyYAML==6.0.2", "fastapi>=0.121,<1", "uvicorn[standard]>=0.30,<1", "httpx>=0.27,<1"]
 studio = ["fastapi>=0.121,<1", "uvicorn[standard]>=0.30,<1", "httpx>=0.27,<1", "tzdata>=2024.1"]
 tiger = ["psycopg[binary]>=3.2,<4", "certifi>=2024.2"]
 
 [project.scripts]
+paramyth-pipeline = "paramyth.pipeline.cli:main"
+paramyth-pipeline-studio = "paramyth.pipeline.studio:main"
+paramyth-pipeline-production = "paramyth.pipeline.production_web:main"
 paramyth-creative = "paramyth.creative:main"
 paramyth-images = "paramyth.image_studio:main"
 paramyth-production = "paramyth.production:main"
@@ -30,3 +36,5 @@ include = ["paramyth*"]
 
 [tool.setuptools.package-data]
 "paramyth.studio" = ["migrations/*.sql"]
+"paramyth.pipeline" = ["production_ui.html", "image_ui.html", "studio_ui.html"]
+"paramyth.pipeline.api" = ["demo_data/**/*"]

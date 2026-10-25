@@ -1,0 +1,63 @@
+name: Troy API retelling / third person
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: troy-api-retell
+  cancel-in-progress: false
+jobs:
+  retell:
+    name: Hosted roles with shared quota pacing and CPU fallback
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Start shared six-hour job budget
+        run: echo "STORY_JOB_DEADLINE=$(( $(date +%s) + 21300 ))" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-worker
+        with:
+          backend: live
+      - name: Verify contracts and provider fallback before generation
+        run: |
+          python -m pip install -e '.[test,api,rag,production]' -q
+          python -m unittest discover -s tests -p test_advanced_*.py -q
+      - name: Load literary retrieval from completed run
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: s04_accept
+          run-id: 39552359292
+          github-token: ${{ github.token }}
+          path: inputs
+      - name: Refine, outline, draft, compare revisions and verify final story
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          PYTHONUNBUFFERED: '1'
+        run: python -m paramyth.pipeline.retell --out runs/troy-third-person-api --source inputs/snapshot.json
+      - name: Save observed API and CPU usage
+        if: always()
+        run: python -m paramyth.pipeline.usage --source runs/troy-third-person-api --out runs/usage-summary
+      - name: Retain usage reports for 90 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: usage-${{ github.run_id }}
+          path: runs/usage-summary/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Download this artifact for the final story
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FINAL_STORY
+          path: runs/troy-third-person-api/FINAL_STORY.txt
+          if-no-files-found: error
+      - name: Preserve comparisons, reviews and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retelling-diagnostics
+          path: runs/troy-third-person-api/

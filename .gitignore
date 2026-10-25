@@ -11,3 +11,8 @@ runs/
 *.db
 *.db-wal
 *.db-shm
+!data/literary_rag.db
+.pytest_cache/
+model_cache/
+recovered/
+search-cache.sqlite*

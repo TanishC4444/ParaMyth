@@ -1,0 +1,2702 @@
+{
+ "schema_version": 1,
+ "title": "Story atlas places",
+ "notes": "Approximate map anchor for each enabled top-level corpus work. basis=setting places the pin where the story takes place; basis=origin places it where the tradition was told, collected or composed. region names the tradition region used for filtering. Model-authored from general knowledge; locations of legendary events and attributed tellers are traditional, not verified. Kept separate from literary_rag.db because the indexed location field is part of the embedded document text.",
+ "places": {
+  "work_001": {
+   "place": "Kassel, Hesse — told by Dortchen Wild",
+   "lat": 51.31,
+   "lng": 9.49,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_002": {
+   "place": "Schwalm, Hesse — red-cap costume country",
+   "lat": 50.93,
+   "lng": 9.21,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_003": {
+   "place": "Trendelburg, Hesse — the Rapunzel tower",
+   "lat": 51.57,
+   "lng": 9.42,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_004": {
+   "place": "Kassel, Hesse — Wild family tellers",
+   "lat": 51.33,
+   "lng": 9.52,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_005": {
+   "place": "Marburg, Hesse",
+   "lat": 50.81,
+   "lng": 8.77,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_006": {
+   "place": "Lohr am Main, Franconia",
+   "lat": 49.99,
+   "lng": 9.58,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_007": {
+   "place": "Sababurg, Reinhardswald",
+   "lat": 51.55,
+   "lng": 9.53,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_008": {
+   "place": "Hofgeismar, Hesse",
+   "lat": 51.49,
+   "lng": 9.38,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_009": {
+   "place": "Strasbourg — Montanus's Wegkürzer",
+   "lat": 48.58,
+   "lng": 7.75,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_010": {
+   "place": "Bremen",
+   "lat": 53.08,
+   "lng": 8.8,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_011": {
+   "place": "Bökendorf, Westphalia — Haxthausen tellers",
+   "lat": 51.73,
+   "lng": 9.15,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_012": {
+   "place": "Göttingen, Lower Saxony",
+   "lat": 51.54,
+   "lng": 9.93,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_013": {
+   "place": "Niederzwehren, Kassel — Dorothea Viehmann",
+   "lat": 51.28,
+   "lng": 9.46,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_014": {
+   "place": "Pomeranian coast — Philipp Otto Runge",
+   "lat": 54.05,
+   "lng": 13.77,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_015": {
+   "place": "Niederzwehren, Kassel — Dorothea Viehmann",
+   "lat": 51.28,
+   "lng": 9.45,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_016": {
+   "place": "Greifswald, Pomerania — Runge's Low German text",
+   "lat": 54.09,
+   "lng": 13.38,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_017": {
+   "place": "Siegerland — Jung-Stilling's memoir",
+   "lat": 50.87,
+   "lng": 8.02,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_018": {
+   "place": "Niederzwehren, Kassel",
+   "lat": 51.29,
+   "lng": 9.47,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_019": {
+   "place": "Kassel, Hesse",
+   "lat": 51.3,
+   "lng": 9.5,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_020": {
+   "place": "Baunatal, Hesse",
+   "lat": 51.26,
+   "lng": 9.42,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_021": {
+   "place": "Melsungen, Hesse",
+   "lat": 51.13,
+   "lng": 9.55,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_022": {
+   "place": "Kassel, Hesse",
+   "lat": 51.32,
+   "lng": 9.47,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_023": {
+   "place": "Hanau, Hesse",
+   "lat": 50.13,
+   "lng": 8.92,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_024": {
+   "place": "Fritzlar, Hesse",
+   "lat": 51.13,
+   "lng": 9.27,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_025": {
+   "place": "Fulda, Hesse",
+   "lat": 50.55,
+   "lng": 9.68,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_026": {
+   "place": "Steinau an der Straße, Hesse",
+   "lat": 50.31,
+   "lng": 9.46,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_027": {
+   "place": "Paderborn, Westphalia",
+   "lat": 51.72,
+   "lng": 8.75,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_028": {
+   "place": "Bad Hersfeld, Hesse",
+   "lat": 50.87,
+   "lng": 9.71,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_029": {
+   "place": "Eschwege, Hesse",
+   "lat": 51.19,
+   "lng": 10.05,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_030": {
+   "place": "Höxter, Westphalia",
+   "lat": 51.77,
+   "lng": 9.38,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_031": {
+   "place": "Witzenhausen, Hesse",
+   "lat": 51.34,
+   "lng": 9.86,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_032": {
+   "place": "Bad Arolsen, Hesse",
+   "lat": 51.38,
+   "lng": 9.02,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_033": {
+   "place": "Alsfeld, Hesse",
+   "lat": 50.75,
+   "lng": 9.27,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_034": {
+   "place": "Bad Karlshafen, Hesse",
+   "lat": 51.64,
+   "lng": 9.45,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_035": {
+   "place": "Hoher Meißner — Frau Holle's mountain",
+   "lat": 51.21,
+   "lng": 9.85,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_036": {
+   "place": "Homberg (Efze), Hesse",
+   "lat": 51.03,
+   "lng": 9.4,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_037": {
+   "place": "Hann. Münden, Lower Saxony",
+   "lat": 51.42,
+   "lng": 9.65,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_038": {
+   "place": "Strasbourg — Moscherosch",
+   "lat": 48.57,
+   "lng": 7.76,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_039": {
+   "place": "Ziegenhain, Hesse",
+   "lat": 50.92,
+   "lng": 9.25,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_040": {
+   "place": "Wolfhagen, Hesse",
+   "lat": 51.33,
+   "lng": 9.17,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_041": {
+   "place": "Bad Wildungen, Hesse",
+   "lat": 51.12,
+   "lng": 9.12,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_042": {
+   "place": "Marburg, Hesse",
+   "lat": 50.8,
+   "lng": 8.76,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_043": {
+   "place": "Bökendorf, Westphalia",
+   "lat": 51.74,
+   "lng": 9.13,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_044": {
+   "place": "Kassel, Hesse",
+   "lat": 51.31,
+   "lng": 9.51,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_045": {
+   "place": "Niederzwehren, Kassel — Dorothea Viehmann",
+   "lat": 51.28,
+   "lng": 9.44,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_046": {
+   "place": "Paderborn, Westphalia",
+   "lat": 51.71,
+   "lng": 8.77,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_047": {
+   "place": "Brakel, Westphalia",
+   "lat": 51.72,
+   "lng": 9.18,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_048": {
+   "place": "Göttingen — Wernicke's Wünschelruthe",
+   "lat": 51.53,
+   "lng": 9.94,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_049": {
+   "place": "Spangenberg, Hesse",
+   "lat": 51.12,
+   "lng": 9.66,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_050": {
+   "place": "Kassel-Wilhelmshöhe, Hesse",
+   "lat": 51.31,
+   "lng": 9.4,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_051": {
+   "place": "Rotenburg an der Fulda, Hesse",
+   "lat": 50.99,
+   "lng": 9.73,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_052": {
+   "place": "Paderborn, Westphalia",
+   "lat": 51.73,
+   "lng": 8.74,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_053": {
+   "place": "Schauenburg, Hesse",
+   "lat": 51.28,
+   "lng": 9.35,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_054": {
+   "place": "Bad Sooden-Allendorf, Hesse",
+   "lat": 51.27,
+   "lng": 9.97,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_055": {
+   "place": "Gudensberg, Hesse",
+   "lat": 51.18,
+   "lng": 9.37,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_056": {
+   "place": "Frankenberg (Eder), Hesse",
+   "lat": 51.06,
+   "lng": 8.8,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_057": {
+   "place": "Niederzwehren, Kassel",
+   "lat": 51.27,
+   "lng": 9.46,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_058": {
+   "place": "Warburg, Westphalia",
+   "lat": 51.49,
+   "lng": 9.14,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_059": {
+   "place": "Kassel, Hesse",
+   "lat": 51.32,
+   "lng": 9.49,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_060": {
+   "place": "Stralsund, Baltic coast",
+   "lat": 54.31,
+   "lng": 13.09,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_061": {
+   "place": "Niederzwehren, Kassel",
+   "lat": 51.29,
+   "lng": 9.43,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_062": {
+   "place": "Copenhagen harbour",
+   "lat": 55.69,
+   "lng": 12.6,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_063": {
+   "place": "Gisselfeld, Zealand",
+   "lat": 55.37,
+   "lng": 11.88,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_064": {
+   "place": "Copenhagen garrets, then Lapland",
+   "lat": 55.68,
+   "lng": 12.57,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_065": {
+   "place": "Odense, Funen — heard in childhood",
+   "lat": 55.4,
+   "lng": 10.39,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_066": {
+   "place": "Copenhagen",
+   "lat": 55.68,
+   "lng": 12.58,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_067": {
+   "place": "Copenhagen — after Don Juan Manuel",
+   "lat": 55.67,
+   "lng": 12.56,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_068": {
+   "place": "Copenhagen",
+   "lat": 55.68,
+   "lng": 12.55,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_069": {
+   "place": "Copenhagen on New Year's Eve",
+   "lat": 55.68,
+   "lng": 12.59,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_070": {
+   "place": "Copenhagen — set in imperial China",
+   "lat": 55.69,
+   "lng": 12.56,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_071": {
+   "place": "Odense, Funen",
+   "lat": 55.4,
+   "lng": 10.38,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_072": {
+   "place": "Odense, Funen",
+   "lat": 55.39,
+   "lng": 10.4,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_073": {
+   "place": "Odense, Funen",
+   "lat": 55.41,
+   "lng": 10.39,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_074": {
+   "place": "Copenhagen",
+   "lat": 55.69,
+   "lng": 12.57,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_075": {
+   "place": "Copenhagen",
+   "lat": 55.67,
+   "lng": 12.58,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_076": {
+   "place": "Store Vildmose bog, North Jutland",
+   "lat": 57.2,
+   "lng": 9.95,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_077": {
+   "place": "Copenhagen",
+   "lat": 55.67,
+   "lng": 12.57,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_078": {
+   "place": "Copenhagen",
+   "lat": 55.68,
+   "lng": 12.56,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_079": {
+   "place": "Copenhagen — a hot southern city in the tale",
+   "lat": 55.68,
+   "lng": 12.57,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_080": {
+   "place": "Holsteinborg, Zealand",
+   "lat": 55.23,
+   "lng": 11.48,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_081": {
+   "place": "Copenhagen",
+   "lat": 55.69,
+   "lng": 12.58,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_082": {
+   "place": "Basnæs manor, Zealand",
+   "lat": 55.18,
+   "lng": 11.27,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_083": {
+   "place": "Ribe, Jutland — stork town",
+   "lat": 55.33,
+   "lng": 8.77,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_084": {
+   "place": "Copenhagen",
+   "lat": 55.67,
+   "lng": 12.59,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_085": {
+   "place": "Château d'Oiron — Marquis de Carabas legend",
+   "lat": 46.95,
+   "lng": -0.08,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_086": {
+   "place": "Tiffauges, Vendée — Gilles de Rais legend",
+   "lat": 46.98,
+   "lng": -1.11,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_087": {
+   "place": "Paris — Perrault's Contes",
+   "lat": 48.86,
+   "lng": 2.35,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_088": {
+   "place": "Paris — Perrault's Contes",
+   "lat": 48.86,
+   "lng": 2.34,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_089": {
+   "place": "Versailles — Perrault's verse tale",
+   "lat": 48.8,
+   "lng": 2.13,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_090": {
+   "place": "Paris — Perrault's Contes",
+   "lat": 48.85,
+   "lng": 2.35,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_091": {
+   "place": "Paris — Villeneuve and Beaumont",
+   "lat": 48.85,
+   "lng": 2.34,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_092": {
+   "place": "Paris — Mme d'Aulnoy's salon",
+   "lat": 48.86,
+   "lng": 2.33,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_093": {
+   "place": "Paris — Mme d'Aulnoy's salon",
+   "lat": 48.87,
+   "lng": 2.34,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_094": {
+   "place": "Paris — Mme d'Aulnoy's salon",
+   "lat": 48.86,
+   "lng": 2.36,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_095": {
+   "place": "London — Tabart's chapbook",
+   "lat": 51.51,
+   "lng": -0.13,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_096": {
+   "place": "St Michael's Mount, Cornwall",
+   "lat": 50.12,
+   "lng": -5.48,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_097": {
+   "place": "Keswick, Lake District — Robert Southey",
+   "lat": 54.6,
+   "lng": -3.13,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_098": {
+   "place": "York — Halliwell's nursery rhymes",
+   "lat": 53.96,
+   "lng": -1.08,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_099": {
+   "place": "London — Joseph Jacobs",
+   "lat": 51.5,
+   "lng": -0.12,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_100": {
+   "place": "Scottish Borders — Elfland's dark tower",
+   "lat": 55.55,
+   "lng": -2.8,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_101": {
+   "place": "City of London",
+   "lat": 51.51,
+   "lng": -0.09,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_102": {
+   "place": "Naples — Basile's Pentamerone",
+   "lat": 40.85,
+   "lng": 14.25,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_103": {
+   "place": "Naples — Basile's Pentamerone",
+   "lat": 40.85,
+   "lng": 14.26,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_104": {
+   "place": "Naples — Basile's Pentamerone",
+   "lat": 40.84,
+   "lng": 14.25,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_105": {
+   "place": "Naples — Basile's Pentamerone",
+   "lat": 40.85,
+   "lng": 14.24,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_106": {
+   "place": "Venice — Straparola's Facetious Nights",
+   "lat": 45.44,
+   "lng": 12.33,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_107": {
+   "place": "Carterhaugh, Selkirk",
+   "lat": 55.55,
+   "lng": -2.88,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_108": {
+   "place": "Scottish Borders",
+   "lat": 55.48,
+   "lng": -2.55,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_109": {
+   "place": "Aberdeenshire",
+   "lat": 57.15,
+   "lng": -2.4,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_110": {
+   "place": "Stirling — the bonny mill-dams o' Binnorie",
+   "lat": 56.12,
+   "lng": -3.94,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_111": {
+   "place": "Edinburgh",
+   "lat": 55.95,
+   "lng": -3.19,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_112": {
+   "place": "Dunfermline, Fife",
+   "lat": 56.07,
+   "lng": -3.46,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_113": {
+   "place": "Carlisle — Anglo-Scottish border",
+   "lat": 54.89,
+   "lng": -2.93,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_114": {
+   "place": "Northumberland",
+   "lat": 55.2,
+   "lng": -2.1,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_115": {
+   "place": "Ayrshire, Scotland",
+   "lat": 55.46,
+   "lng": -4.63,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_116": {
+   "place": "Glasgow",
+   "lat": 55.86,
+   "lng": -4.25,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_117": {
+   "place": "Nether Stowey, Somerset — composed",
+   "lat": 51.15,
+   "lng": -3.15,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_118": {
+   "place": "Weimar — Goethe",
+   "lat": 50.98,
+   "lng": 11.33,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_119": {
+   "place": "Somersby, Lincolnshire — Tennyson",
+   "lat": 53.23,
+   "lng": 0.03,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_120": {
+   "place": "Chichester — Keats",
+   "lat": 50.84,
+   "lng": -0.78,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_121": {
+   "place": "Paris — Browning, 1852",
+   "lat": 48.85,
+   "lng": 2.36,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_122": {
+   "place": "Bagshot Heath, Surrey",
+   "lat": 51.36,
+   "lng": -0.69,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_123": {
+   "place": "Vladimir, Central Russia — Afanasyev",
+   "lat": 56.13,
+   "lng": 40.41,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_124": {
+   "place": "Moscow — Afanasyev",
+   "lat": 55.76,
+   "lng": 37.6,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_125": {
+   "place": "Novgorod",
+   "lat": 58.52,
+   "lng": 31.27,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_126": {
+   "place": "Tula, Central Russia",
+   "lat": 54.19,
+   "lng": 37.62,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_127": {
+   "place": "Arkhangelsk — the White Sea frost",
+   "lat": 64.54,
+   "lng": 40.54,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_128": {
+   "place": "Vyatka (Kirov)",
+   "lat": 58.6,
+   "lng": 49.66,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_129": {
+   "place": "Ryazan",
+   "lat": 54.63,
+   "lng": 39.74,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_130": {
+   "place": "Yaroslavl",
+   "lat": 57.63,
+   "lng": 39.87,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_131": {
+   "place": "Olonets Karelia (Petrozavodsk)",
+   "lat": 61.79,
+   "lng": 34.36,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_132": {
+   "place": "Bohemia — Božena Němcová",
+   "lat": 49.95,
+   "lng": 15.27,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_133": {
+   "place": "Tsarskoye Selo — Pushkin, 1831",
+   "lat": 59.72,
+   "lng": 30.4,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_134": {
+   "place": "Boldino — Pushkin",
+   "lat": 55.0,
+   "lng": 45.31,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_135": {
+   "place": "Boldino — Pushkin",
+   "lat": 54.99,
+   "lng": 45.33,
+   "basis": "origin",
+   "region": "Slavic Europe"
+  },
+  "work_136": {
+   "place": "Troy (Hisarlik)",
+   "lat": 39.957,
+   "lng": 26.239,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_137": {
+   "place": "Ithaca",
+   "lat": 38.43,
+   "lng": 20.68,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_138": {
+   "place": "Latium — Lavinium and Rome",
+   "lat": 41.66,
+   "lng": 12.45,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_139": {
+   "place": "Iolcos (Volos), Thessaly",
+   "lat": 39.36,
+   "lng": 22.94,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_140": {
+   "place": "Thebes, Boeotia",
+   "lat": 38.32,
+   "lng": 23.32,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_141": {
+   "place": "Skyros",
+   "lat": 38.88,
+   "lng": 24.55,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_142": {
+   "place": "Ascra, Boeotia — Hesiod's farm",
+   "lat": 38.36,
+   "lng": 23.08,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_143": {
+   "place": "Mount Helicon",
+   "lat": 38.35,
+   "lng": 22.85,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_144": {
+   "place": "Eleusis",
+   "lat": 38.04,
+   "lng": 23.54,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_145": {
+   "place": "Delos",
+   "lat": 37.4,
+   "lng": 25.27,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_146": {
+   "place": "Mount Cyllene, Arcadia",
+   "lat": 37.94,
+   "lng": 22.4,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_147": {
+   "place": "Mount Ida, Troad",
+   "lat": 39.71,
+   "lng": 26.85,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_148": {
+   "place": "The Caucasus — Prometheus's rock",
+   "lat": 42.7,
+   "lng": 44.52,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_149": {
+   "place": "Mycenae",
+   "lat": 37.73,
+   "lng": 22.76,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_150": {
+   "place": "Thebes, Boeotia",
+   "lat": 38.33,
+   "lng": 23.31,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_151": {
+   "place": "Colonus, Athens",
+   "lat": 37.99,
+   "lng": 23.71,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_152": {
+   "place": "Thebes, Boeotia",
+   "lat": 38.32,
+   "lng": 23.33,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_153": {
+   "place": "Corinth",
+   "lat": 37.91,
+   "lng": 22.88,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_154": {
+   "place": "Thebes, Boeotia",
+   "lat": 38.31,
+   "lng": 23.32,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_155": {
+   "place": "Troezen",
+   "lat": 37.5,
+   "lng": 23.36,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_156": {
+   "place": "Rome — Ovid",
+   "lat": 41.89,
+   "lng": 12.49,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_157": {
+   "place": "Mount Parnassus",
+   "lat": 38.53,
+   "lng": 22.62,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_158": {
+   "place": "Vale of Tempe, river Peneus",
+   "lat": 39.89,
+   "lng": 22.58,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_159": {
+   "place": "The Eridanus (Po delta)",
+   "lat": 44.95,
+   "lng": 12.4,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_160": {
+   "place": "Thespiae, Boeotia",
+   "lat": 38.3,
+   "lng": 23.15,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_161": {
+   "place": "Babylon",
+   "lat": 32.54,
+   "lng": 44.42,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_162": {
+   "place": "Joppa (Jaffa)",
+   "lat": 32.05,
+   "lng": 34.75,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_163": {
+   "place": "Enna and Lake Pergusa, Sicily",
+   "lat": 37.52,
+   "lng": 14.3,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_164": {
+   "place": "Knossos, Crete",
+   "lat": 35.3,
+   "lng": 25.16,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_165": {
+   "place": "Phrygia",
+   "lat": 38.9,
+   "lng": 30.9,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_166": {
+   "place": "Rhodope Mountains, Thrace",
+   "lat": 41.6,
+   "lng": 24.7,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_167": {
+   "place": "Amathus, Cyprus",
+   "lat": 34.71,
+   "lng": 33.14,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_168": {
+   "place": "Paphos, Cyprus",
+   "lat": 34.76,
+   "lng": 32.42,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_169": {
+   "place": "Arcadia",
+   "lat": 37.5,
+   "lng": 22.3,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_170": {
+   "place": "Cyprus — court of Cinyras",
+   "lat": 35.0,
+   "lng": 33.4,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_171": {
+   "place": "Gordion, Phrygia",
+   "lat": 39.65,
+   "lng": 31.98,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_172": {
+   "place": "Troy (Hisarlik)",
+   "lat": 39.96,
+   "lng": 26.24,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_173": {
+   "place": "Rome",
+   "lat": 41.9,
+   "lng": 12.47,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_174": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.13,
+   "lng": -20.52,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_175": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.14,
+   "lng": -20.51,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_176": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.12,
+   "lng": -20.53,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_177": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.13,
+   "lng": -20.5,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_178": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.14,
+   "lng": -20.53,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_179": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.12,
+   "lng": -20.5,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_180": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.13,
+   "lng": -20.54,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_181": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.15,
+   "lng": -20.52,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_182": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.11,
+   "lng": -20.52,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_183": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.13,
+   "lng": -20.49,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_184": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.15,
+   "lng": -20.5,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_185": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.11,
+   "lng": -20.54,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_186": {
+   "place": "Skálholt, Iceland — Codex Regius",
+   "lat": 64.14,
+   "lng": -20.49,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_187": {
+   "place": "Reykholt, Iceland — Snorri Sturluson",
+   "lat": 64.665,
+   "lng": -21.29,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_188": {
+   "place": "Reykholt, Iceland — Snorri Sturluson",
+   "lat": 64.66,
+   "lng": -21.28,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_189": {
+   "place": "Reykholt, Iceland — Snorri Sturluson",
+   "lat": 64.67,
+   "lng": -21.3,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_190": {
+   "place": "Reykholt, Iceland — Snorri Sturluson",
+   "lat": 64.66,
+   "lng": -21.3,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_191": {
+   "place": "Iceland — Sigurd's Rhineland legends retold",
+   "lat": 63.77,
+   "lng": -20.4,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_192": {
+   "place": "Uppsala, Sweden",
+   "lat": 59.86,
+   "lng": 17.64,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_193": {
+   "place": "Lejre, Zealand — hall of the Skjöldungs",
+   "lat": 55.6,
+   "lng": 11.97,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_194": {
+   "place": "Borg á Mýrum, Iceland",
+   "lat": 64.55,
+   "lng": -21.93,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_195": {
+   "place": "Bergþórshvoll, Iceland",
+   "lat": 63.66,
+   "lng": -20.2,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_196": {
+   "place": "Laxárdalur, Iceland",
+   "lat": 65.11,
+   "lng": -21.76,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_197": {
+   "place": "Dýrafjörður, Westfjords",
+   "lat": 65.87,
+   "lng": -23.6,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_198": {
+   "place": "Helgafell, Snæfellsnes",
+   "lat": 65.02,
+   "lng": -22.75,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_199": {
+   "place": "Brattahlíð, Greenland",
+   "lat": 61.15,
+   "lng": -45.52,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_200": {
+   "place": "Vinland — L'Anse aux Meadows",
+   "lat": 51.6,
+   "lng": -55.53,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_201": {
+   "place": "Drangey, Skagafjörður",
+   "lat": 65.96,
+   "lng": -19.68,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_202": {
+   "place": "Kirkwall, Orkney",
+   "lat": 58.98,
+   "lng": -2.96,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_203": {
+   "place": "Narberth, Dyfed",
+   "lat": 51.8,
+   "lng": -4.74,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_204": {
+   "place": "Harlech, Gwynedd",
+   "lat": 52.86,
+   "lng": -4.11,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_205": {
+   "place": "Narberth, Dyfed — the enchanted land",
+   "lat": 51.79,
+   "lng": -4.72,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_206": {
+   "place": "Dinas Dinlle, Gwynedd",
+   "lat": 53.08,
+   "lng": -4.33,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_207": {
+   "place": "Powys — Welshpool",
+   "lat": 52.66,
+   "lng": -3.15,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_208": {
+   "place": "Celliwig, Cornwall — Arthur's court",
+   "lat": 50.47,
+   "lng": -4.72,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_209": {
+   "place": "Llyn Tegid (Bala Lake)",
+   "lat": 52.88,
+   "lng": -3.62,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_210": {
+   "place": "Cooley Peninsula, Ulster",
+   "lat": 54.02,
+   "lng": -6.2,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_211": {
+   "place": "Mag Muirthemne, Dundalk",
+   "lat": 53.95,
+   "lng": -6.4,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_212": {
+   "place": "Ben Bulben, Sligo",
+   "lat": 54.37,
+   "lng": -8.47,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_213": {
+   "place": "Lough Foyle, Ulster",
+   "lat": 55.12,
+   "lng": -7.15,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_214": {
+   "place": "Brandon Creek, Dingle",
+   "lat": 52.22,
+   "lng": -10.27,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_215": {
+   "place": "Lough Derravaragh",
+   "lat": 53.65,
+   "lng": -7.37,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_216": {
+   "place": "Emain Macha (Navan Fort)",
+   "lat": 54.35,
+   "lng": -6.7,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_217": {
+   "place": "Mag Muirthemne, Ulster",
+   "lat": 53.93,
+   "lng": -6.42,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_218": {
+   "place": "Tara, Meath",
+   "lat": 53.58,
+   "lng": -6.61,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_219": {
+   "place": "Viena Karelia — Lönnrot's rune-singers",
+   "lat": 65.2,
+   "lng": 31.15,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_220": {
+   "place": "Kajaani, Kainuu — Lönnrot",
+   "lat": 64.22,
+   "lng": 27.73,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_221": {
+   "place": "Pohjola, the North Farm",
+   "lat": 66.5,
+   "lng": 25.7,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_222": {
+   "place": "Kuhmo, Kainuu",
+   "lat": 64.13,
+   "lng": 29.52,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_223": {
+   "place": "Ingria — Kullervo songs",
+   "lat": 59.5,
+   "lng": 29.5,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_224": {
+   "place": "Kemi, Gulf of Bothnia",
+   "lat": 65.74,
+   "lng": 24.56,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_225": {
+   "place": "Võru, Estonia — Kreutzwald",
+   "lat": 57.83,
+   "lng": 27.02,
+   "basis": "origin",
+   "region": "Nordic & Baltic"
+  },
+  "work_226": {
+   "place": "Lielvārde, Latvia",
+   "lat": 56.72,
+   "lng": 24.82,
+   "basis": "setting",
+   "region": "Nordic & Baltic"
+  },
+  "work_227": {
+   "place": "Alborz Mountains, Mount Damavand",
+   "lat": 35.95,
+   "lng": 52.11,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_228": {
+   "place": "Samangan",
+   "lat": 36.26,
+   "lng": 68.02,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_229": {
+   "place": "Siyavushgird, Turan (Samarkand)",
+   "lat": 39.65,
+   "lng": 66.96,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_230": {
+   "place": "Mazandaran",
+   "lat": 36.56,
+   "lng": 53.06,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_231": {
+   "place": "Najd, Arabia — Nizami of Ganja's setting",
+   "lat": 25.0,
+   "lng": 45.0,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_232": {
+   "place": "Bisotun, Kermanshah",
+   "lat": 34.39,
+   "lng": 47.44,
+   "basis": "setting",
+   "region": "Persia & Central Asia"
+  },
+  "work_233": {
+   "place": "Kerman — Khaju Kermani",
+   "lat": 30.28,
+   "lng": 57.08,
+   "basis": "origin",
+   "region": "Persia & Central Asia"
+  },
+  "work_234": {
+   "place": "Nishapur — Attar",
+   "lat": 36.21,
+   "lng": 58.8,
+   "basis": "origin",
+   "region": "Persia & Central Asia"
+  },
+  "work_235": {
+   "place": "Ayodhya",
+   "lat": 26.8,
+   "lng": 82.2,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_236": {
+   "place": "Chitrakoot",
+   "lat": 25.2,
+   "lng": 80.9,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_237": {
+   "place": "Panchavati, Nashik",
+   "lat": 20.0,
+   "lng": 73.79,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_238": {
+   "place": "Kishkindha (Hampi)",
+   "lat": 15.33,
+   "lng": 76.46,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_239": {
+   "place": "Lanka — the Ashoka grove",
+   "lat": 6.93,
+   "lng": 80.78,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_240": {
+   "place": "Rameswaram — the bridge to Lanka",
+   "lat": 9.29,
+   "lng": 79.31,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_241": {
+   "place": "Valmiki's ashram, Bithoor",
+   "lat": 26.61,
+   "lng": 80.27,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_242": {
+   "place": "Kolkata — Romesh Chunder Dutt",
+   "lat": 22.57,
+   "lng": 88.36,
+   "basis": "origin",
+   "region": "South Asia"
+  },
+  "work_243": {
+   "place": "Hastinapura",
+   "lat": 29.17,
+   "lng": 78.02,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_244": {
+   "place": "Indraprastha (Delhi)",
+   "lat": 28.61,
+   "lng": 77.24,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_245": {
+   "place": "Kamyaka forest",
+   "lat": 29.95,
+   "lng": 76.7,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_246": {
+   "place": "Viratnagar, Rajasthan",
+   "lat": 27.43,
+   "lng": 76.18,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_247": {
+   "place": "Upaplavya, Matsya kingdom",
+   "lat": 27.4,
+   "lng": 76.25,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_248": {
+   "place": "Kurukshetra",
+   "lat": 29.97,
+   "lng": 76.85,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_249": {
+   "place": "Kurukshetra",
+   "lat": 29.96,
+   "lng": 76.86,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_250": {
+   "place": "Kurukshetra",
+   "lat": 29.98,
+   "lng": 76.84,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_251": {
+   "place": "Kurukshetra — the lake of Dvaipayana",
+   "lat": 29.95,
+   "lng": 76.83,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_252": {
+   "place": "Kurukshetra — the sleeping camp",
+   "lat": 29.99,
+   "lng": 76.87,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_253": {
+   "place": "Kurukshetra — the field of the dead",
+   "lat": 29.96,
+   "lng": 76.83,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_254": {
+   "place": "Kurukshetra — Bhishma's bed of arrows",
+   "lat": 29.98,
+   "lng": 76.87,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_255": {
+   "place": "Mana, the Himalaya",
+   "lat": 30.77,
+   "lng": 79.49,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_256": {
+   "place": "Vrindavan",
+   "lat": 27.58,
+   "lng": 77.7,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_257": {
+   "place": "Chamundi Hill, Mysore",
+   "lat": 12.27,
+   "lng": 76.67,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_258": {
+   "place": "Puri, Odisha — Jayadeva",
+   "lat": 19.81,
+   "lng": 85.83,
+   "basis": "origin",
+   "region": "South Asia"
+  },
+  "work_259": {
+   "place": "Varanasi — Brahmadatta's Benares",
+   "lat": 25.32,
+   "lng": 83.01,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_260": {
+   "place": "Varanasi",
+   "lat": 25.31,
+   "lng": 83.0,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_261": {
+   "place": "Varanasi",
+   "lat": 25.33,
+   "lng": 83.02,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_262": {
+   "place": "Rohini river, Kapilavastu",
+   "lat": 27.54,
+   "lng": 83.05,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_263": {
+   "place": "Varanasi",
+   "lat": 25.3,
+   "lng": 83.02,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_264": {
+   "place": "The Ganges above Benares",
+   "lat": 25.4,
+   "lng": 82.9,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_265": {
+   "place": "Shahbaz Garhi, Gandhara",
+   "lat": 34.24,
+   "lng": 72.16,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_266": {
+   "place": "Sarnath — the Deer Park",
+   "lat": 25.38,
+   "lng": 83.02,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_268": {
+   "place": "Vulture Peak, Rajgir",
+   "lat": 25.03,
+   "lng": 85.42,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_269": {
+   "place": "Vulture Peak, Rajgir",
+   "lat": 25.02,
+   "lng": 85.43,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_270": {
+   "place": "Vulture Peak, Rajgir",
+   "lat": 25.04,
+   "lng": 85.41,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_271": {
+   "place": "Vulture Peak, Rajgir",
+   "lat": 25.03,
+   "lng": 85.44,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_272": {
+   "place": "Vulture Peak, Rajgir",
+   "lat": 25.02,
+   "lng": 85.41,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_273": {
+   "place": "Lumbini",
+   "lat": 27.47,
+   "lng": 83.28,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_274": {
+   "place": "Uruk",
+   "lat": 31.32,
+   "lng": 45.64,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_275": {
+   "place": "Babylon",
+   "lat": 32.54,
+   "lng": 44.43,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_276": {
+   "place": "Uruk",
+   "lat": 31.33,
+   "lng": 45.65,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_277": {
+   "place": "Shuruppak",
+   "lat": 31.78,
+   "lng": 45.51,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_278": {
+   "place": "Ugarit",
+   "lat": 35.6,
+   "lng": 35.78,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_279": {
+   "place": "Mount Zaphon (Jebel Aqra)",
+   "lat": 35.95,
+   "lng": 35.97,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_280": {
+   "place": "Eridu",
+   "lat": 30.82,
+   "lng": 45.99,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_281": {
+   "place": "Thebes, Egypt",
+   "lat": 25.7,
+   "lng": 32.64,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_282": {
+   "place": "Memphis, Egypt",
+   "lat": 29.85,
+   "lng": 31.25,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_283": {
+   "place": "Elephantine, Upper Egypt",
+   "lat": 24.09,
+   "lng": 32.89,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_284": {
+   "place": "Chang'an (Xi'an) — the pilgrimage begins",
+   "lat": 34.26,
+   "lng": 108.94,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_285": {
+   "place": "Zhaoge, Henan — the Shang capital",
+   "lat": 35.6,
+   "lng": 114.2,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_286": {
+   "place": "Yucheng, Henan",
+   "lat": 34.41,
+   "lng": 115.65,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_287": {
+   "place": "West Lake, Hangzhou",
+   "lat": 30.25,
+   "lng": 120.14,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_288": {
+   "place": "The Kunlun Mountains",
+   "lat": 35.9,
+   "lng": 84.0,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_289": {
+   "place": "Yishui, Shandong",
+   "lat": 35.79,
+   "lng": 118.63,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_290": {
+   "place": "Tianshui, Gansu",
+   "lat": 34.58,
+   "lng": 105.72,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_291": {
+   "place": "Linfen, Shanxi — Emperor Yao's capital",
+   "lat": 36.09,
+   "lng": 111.52,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_292": {
+   "place": "Linfen, Shanxi",
+   "lat": 36.07,
+   "lng": 111.55,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_293": {
+   "place": "Mount Pangu, Biyang",
+   "lat": 32.8,
+   "lng": 113.53,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_294": {
+   "place": "Chentang Pass, Tianjin coast",
+   "lat": 39.1,
+   "lng": 117.2,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_295": {
+   "place": "Awaji Island — Onogoro",
+   "lat": 34.33,
+   "lng": 134.85,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_296": {
+   "place": "Ama-no-Iwato, Takachiho",
+   "lat": 32.72,
+   "lng": 131.33,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_297": {
+   "place": "Izumo, the Hii River",
+   "lat": 35.37,
+   "lng": 132.75,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_298": {
+   "place": "Takachiho-no-mine, Kirishima",
+   "lat": 31.89,
+   "lng": 130.92,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_299": {
+   "place": "Nara — compiled 720 CE",
+   "lat": 34.68,
+   "lng": 135.8,
+   "basis": "origin",
+   "region": "East Asia"
+  },
+  "work_300": {
+   "place": "Kyoto (Heian-kyō)",
+   "lat": 35.01,
+   "lng": 135.77,
+   "basis": "origin",
+   "region": "East Asia"
+  },
+  "work_301": {
+   "place": "Ine, Tango Peninsula",
+   "lat": 35.67,
+   "lng": 135.29,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_302": {
+   "place": "Okayama (Kibi)",
+   "lat": 34.66,
+   "lng": 133.93,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_303": {
+   "place": "Dan-no-ura, Shimonoseki",
+   "lat": 33.96,
+   "lng": 130.96,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_304": {
+   "place": "Kyoto (Heian-kyō)",
+   "lat": 35.02,
+   "lng": 135.76,
+   "basis": "setting",
+   "region": "East Asia"
+  },
+  "work_305": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.69,
+   "lng": 26.94,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_306": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.7,
+   "lng": 26.95,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_307": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.68,
+   "lng": 26.93,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_308": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.69,
+   "lng": 26.96,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_309": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.71,
+   "lng": 26.94,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_310": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.67,
+   "lng": 26.95,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_311": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.7,
+   "lng": 26.92,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_312": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.68,
+   "lng": 26.96,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_313": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.71,
+   "lng": 26.96,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_314": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.67,
+   "lng": 26.92,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_315": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.69,
+   "lng": 26.92,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_316": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.7,
+   "lng": 26.97,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_317": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.68,
+   "lng": 26.91,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_318": {
+   "place": "Rome — Menenius Agrippa's speech",
+   "lat": 41.89,
+   "lng": 12.48,
+   "basis": "setting",
+   "region": "Greece & Rome"
+  },
+  "work_319": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.72,
+   "lng": 26.95,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_320": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.66,
+   "lng": 26.94,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_321": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.72,
+   "lng": 26.93,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_322": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.66,
+   "lng": 26.96,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_323": {
+   "place": "Samos — Aesopic tradition",
+   "lat": 37.71,
+   "lng": 26.91,
+   "basis": "origin",
+   "region": "Greece & Rome"
+  },
+  "work_325": {
+   "place": "Mahilaropya, southern India — Panchatantra frame city",
+   "lat": 13.03,
+   "lng": 80.27,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_326": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.04,
+   "lng": 80.26,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_327": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.02,
+   "lng": 80.28,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_328": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.05,
+   "lng": 80.27,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_329": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.03,
+   "lng": 80.29,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_330": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.01,
+   "lng": 80.27,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_331": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.04,
+   "lng": 80.29,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_332": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.02,
+   "lng": 80.25,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_333": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.05,
+   "lng": 80.25,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_334": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.01,
+   "lng": 80.25,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_335": {
+   "place": "Pataliputra (Patna) — Hitopadesha frame",
+   "lat": 25.61,
+   "lng": 85.14,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_336": {
+   "place": "Mahilaropya, southern India",
+   "lat": 13.06,
+   "lng": 80.28,
+   "basis": "setting",
+   "region": "South Asia"
+  },
+  "work_337": {
+   "place": "Aleppo — told by Hanna Diyab",
+   "lat": 36.2,
+   "lng": 37.16,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_338": {
+   "place": "Aleppo — told by Hanna Diyab",
+   "lat": 36.21,
+   "lng": 37.15,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_339": {
+   "place": "Basra",
+   "lat": 30.51,
+   "lng": 47.78,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_340": {
+   "place": "Baghdad — Harun al-Rashid's city",
+   "lat": 33.31,
+   "lng": 44.36,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_341": {
+   "place": "Baghdad",
+   "lat": 33.32,
+   "lng": 44.37,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_342": {
+   "place": "Baghdad — tale within a tale",
+   "lat": 33.3,
+   "lng": 44.35,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_343": {
+   "place": "Cairo — Egyptian recension",
+   "lat": 30.04,
+   "lng": 31.24,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_344": {
+   "place": "Cairo — Egyptian recension",
+   "lat": 30.05,
+   "lng": 31.25,
+   "basis": "origin",
+   "region": "Near East & Egypt"
+  },
+  "work_345": {
+   "place": "Shiraz, Persia",
+   "lat": 29.59,
+   "lng": 52.58,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_346": {
+   "place": "Kashgar",
+   "lat": 39.47,
+   "lng": 75.99,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_347": {
+   "place": "The western Sahara — Musa ibn Nusayr's expedition",
+   "lat": 29.0,
+   "lng": -1.5,
+   "basis": "setting",
+   "region": "Near East & Egypt"
+  },
+  "work_348": {
+   "place": "Konya — Rumi's Masnavi",
+   "lat": 37.87,
+   "lng": 32.48,
+   "basis": "origin",
+   "region": "Persia & Central Asia"
+  },
+  "work_349": {
+   "place": "Konya — Rumi's Masnavi",
+   "lat": 37.88,
+   "lng": 32.49,
+   "basis": "origin",
+   "region": "Persia & Central Asia"
+  },
+  "work_350": {
+   "place": "Winchester — Malory's Camelot",
+   "lat": 51.06,
+   "lng": -1.31,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_351": {
+   "place": "Lud's Church — the Green Chapel",
+   "lat": 53.19,
+   "lng": -2.02,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_352": {
+   "place": "Forest of Brocéliande (Paimpont)",
+   "lat": 48.02,
+   "lng": -2.17,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_353": {
+   "place": "Troyes — court of Champagne",
+   "lat": 48.3,
+   "lng": 4.08,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_354": {
+   "place": "Troyes — Chrétien's last romance",
+   "lat": 48.29,
+   "lng": 4.07,
+   "basis": "origin",
+   "region": "Southern & Western Europe"
+  },
+  "work_355": {
+   "place": "Nantes — Erec's coronation",
+   "lat": 47.22,
+   "lng": -1.55,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_356": {
+   "place": "Constantinople",
+   "lat": 41.01,
+   "lng": 28.98,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_357": {
+   "place": "Wildenberg Castle, Odenwald",
+   "lat": 49.6,
+   "lng": 9.27,
+   "basis": "origin",
+   "region": "Germanic Europe"
+  },
+  "work_358": {
+   "place": "Tintagel, Cornwall",
+   "lat": 50.66,
+   "lng": -4.75,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_359": {
+   "place": "Lincoln — the Thornton manuscript",
+   "lat": 53.23,
+   "lng": -0.54,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_360": {
+   "place": "Amesbury — Guinevere's retreat",
+   "lat": 51.17,
+   "lng": -1.78,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_361": {
+   "place": "Inglewood Forest, Cumbria",
+   "lat": 54.8,
+   "lng": -2.9,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_362": {
+   "place": "Glastonbury (Avalon)",
+   "lat": 51.15,
+   "lng": -2.71,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_363": {
+   "place": "Lejre, Zealand — Heorot",
+   "lat": 55.61,
+   "lng": 11.96,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_364": {
+   "place": "Worms, on the Rhine",
+   "lat": 49.63,
+   "lng": 8.36,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_365": {
+   "place": "Roncevaux Pass",
+   "lat": 43.02,
+   "lng": -1.32,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_366": {
+   "place": "Burgos, Castile",
+   "lat": 42.34,
+   "lng": -3.7,
+   "basis": "setting",
+   "region": "Southern & Western Europe"
+  },
+  "work_367": {
+   "place": "Malvern Hills",
+   "lat": 52.11,
+   "lng": -2.33,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_368": {
+   "place": "Canterbury",
+   "lat": 51.28,
+   "lng": 1.08,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_369": {
+   "place": "Wülpensand, Scheldt estuary",
+   "lat": 51.4,
+   "lng": 3.6,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_370": {
+   "place": "The Vosges — Walter's crag",
+   "lat": 49.08,
+   "lng": 7.82,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_371": {
+   "place": "Maldon, Essex",
+   "lat": 51.72,
+   "lng": 0.68,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_372": {
+   "place": "Ruthwell Cross, Dumfriesshire",
+   "lat": 55.0,
+   "lng": -3.4,
+   "basis": "origin",
+   "region": "British Isles"
+  },
+  "work_373": {
+   "place": "Sleepy Hollow, New York",
+   "lat": 41.09,
+   "lng": -73.86,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_374": {
+   "place": "The Catskills, New York",
+   "lat": 42.17,
+   "lng": -74.02,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_375": {
+   "place": "Hamelin, Lower Saxony",
+   "lat": 52.1,
+   "lng": 9.36,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_376": {
+   "place": "Cape of Good Hope",
+   "lat": -34.36,
+   "lng": 18.47,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_377": {
+   "place": "Adams, Tennessee",
+   "lat": 36.58,
+   "lng": -87.07,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_378": {
+   "place": "Mexico City",
+   "lat": 19.43,
+   "lng": -99.13,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_379": {
+   "place": "Canóvanas, Puerto Rico",
+   "lat": 18.38,
+   "lng": -65.9,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_380": {
+   "place": "Point Pleasant, West Virginia",
+   "lat": 38.84,
+   "lng": -82.14,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_381": {
+   "place": "Pine Barrens, New Jersey",
+   "lat": 39.5,
+   "lng": -74.43,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_382": {
+   "place": "North shore of Lake Superior",
+   "lat": 49.0,
+   "lng": -88.0,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_383": {
+   "place": "Sherwood Forest, Nottinghamshire",
+   "lat": 53.2,
+   "lng": -1.07,
+   "basis": "setting",
+   "region": "British Isles"
+  },
+  "work_384": {
+   "place": "Altdorf, Uri",
+   "lat": 46.88,
+   "lng": 8.64,
+   "basis": "setting",
+   "region": "Germanic Europe"
+  },
+  "work_385": {
+   "place": "Bemidji, Minnesota — logging camps",
+   "lat": 47.47,
+   "lng": -94.88,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_386": {
+   "place": "Big Bend Tunnel, West Virginia",
+   "lat": 37.65,
+   "lng": -80.75,
+   "basis": "setting",
+   "region": "Americas"
+  },
+  "work_387": {
+   "place": "Pecos River, Texas",
+   "lat": 31.42,
+   "lng": -103.49,
+   "basis": "setting",
+   "region": "Americas"
+  }
+ }
+}

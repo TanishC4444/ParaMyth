@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Sign in & studio teams · ParaMyth</title>
+  <link rel="stylesheet" href="teams.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/" aria-label="ParaMyth home"><img src="/brand/paramyth-logo.png" alt="ParaMyth" width="1280" height="720"><span>A little wonder.<br>A world of possibility.</span></a>
+    <nav class="top-nav" aria-label="Account navigation"><a class="nav-link" href="/#/atlas">Story atlas</a><a class="nav-link studio-link" href="/#/overview">Open studio <span aria-hidden="true">↗</span></a><button id="logout" hidden>Sign out</button></nav>
+  </header>
+  <main class="teams-layout">
+    <p id="message" role="status" aria-live="polite"></p>
+    <section id="account" class="account-layout" aria-labelledby="account-title">
+      <div class="account-story">
+        <span class="eyebrow">A HOME FOR YOUR IMAGINATION</span>
+        <h1 id="account-title">Great stories.<br><em>Shared beginnings.</em></h1>
+        <p>Gather your people, build your world, and write the next chapter together.</p>
+        <figure class="account-art"><img src="/art/castle.webp" alt="A castle rising above a quiet river" width="1200" height="800"><figcaption>A little inspiration for the worlds you’ll build.</figcaption></figure>
+        <a class="explore-link" href="/#/atlas">Find your next beginning in the story atlas <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="account-card">
+      <div class="account-tabs" aria-label="Account action"><button type="button" id="show-login" aria-pressed="true">Sign in</button><button type="button" id="show-signup" aria-pressed="false">Create account</button></div>
+      <span class="eyebrow">YOUR PARAMYTH STUDIO</span>
+      <h2 id="account-heading">Welcome back.</h2>
+      <p class="account-intro" id="account-intro">Sign in to your team’s shared stories.</p>
+      <form id="account-form">
+        <label>API URL <input id="team-api" type="url" required autocomplete="url" placeholder="https://your-paramyth-api.example"></label>
+        <label>Email address <input id="email" type="email" required autocomplete="username" maxlength="254" placeholder="you@example.com"></label>
+        <label>Password <input id="password" type="password" required autocomplete="current-password" minlength="12" maxlength="128" placeholder="At least 12 characters" aria-describedby="password-hint"></label>
+        <p class="hint" id="password-hint">Your session lasts until you reload or leave this page.</p>
+        <label id="display-name-field" hidden>Display name<input id="display-name" autocomplete="nickname" maxlength="100" placeholder="What should we call you?"></label>
+        <p id="account-message" class="error" role="alert" aria-live="polite"></p>
+        <button id="account-submit" type="submit" value="login" class="sign-in-button">Sign in <span aria-hidden="true">→</span></button>
+        <p id="signup-prompt" class="hint">New here? <button type="button" id="signup-link" class="inline-link">Create your free account</button></p>
+      </form>
+      <p class="account-note">A space for your team, your briefs, and your manuscripts.</p>
+      </div>
+    </section>
+    <div id="workspace" hidden>
+      <section class="panel">
+        <div class="panel-head"><h2 id="welcome">Your studios</h2><button id="refresh" class="secondary">Refresh team</button></div>
+        <div class="team-columns">
+          <label>Active studio <select id="studio-select" aria-label="Active studio"></select></label>
+          <form id="create-studio" class="row"><label>New studio <input id="studio-name" required maxlength="100" placeholder="Studio name"></label><button>Create studio</button></form>
+        </div>
+        <form id="join-studio"><label>Invitation code <input id="invitation-token" autocomplete="off" maxlength="100" placeholder="Paste the code your team shared"></label><button>Join studio</button></form>
+      </section>
+      <div id="studio-content" hidden>
+        <section class="panel">
+          <h2>Team <span id="my-role" class="hint"></span></h2>
+          <p class="hint">Owners manage roles and members. Admins invite editors and viewers. Editors write and comment. Viewers read.</p>
+          <ul id="members" class="team-list"></ul>
+          <div id="team-settings" hidden>
+            <form id="rename-studio" class="row"><label>Studio name <input id="rename-name" required maxlength="100"></label><button>Save name</button></form>
+            <form id="invite-form" class="row">
+              <label>Invite by email <input id="invite-email" type="email" required maxlength="254"></label>
+              <label>Role <select id="invite-role"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select></label>
+              <button>Create invitation</button>
+            </form>
+            <p class="hint">Share the generated link privately. Invitations expire after seven days; the recipient must sign in with the invited email. No email is sent automatically.</p>
+            <label id="invite-result" hidden>Invitation link <input id="invite-link" readonly></label>
+            <ul id="invitations" class="team-list"></ul>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Shared projects</h2><button id="new-project">New project</button></div>
+          <label>Project <select id="project-select" aria-label="Project"></select></label>
+          <form id="project-form" hidden>
+            <p id="version" class="hint"></p>
+            <label>Title <input id="project-title" required maxlength="200"></label>
+            <label>Story brief <textarea id="project-brief" rows="5" maxlength="100000" placeholder="Premise, characters, setting, and direction"></textarea></label>
+            <label>Manuscript <textarea id="project-manuscript" rows="16" maxlength="1000000" placeholder="Write together, or paste a generated story here"></textarea></label>
+            <div class="row"><button id="save-project">Save project</button><button id="reload-project" type="button" class="secondary">Load latest version</button><button id="download-draft" type="button" class="secondary">Download my draft</button></div>
+            <p class="hint">Edits are shared when you save. If someone saves first, your draft stays here so you can download it and merge with their version.</p>
+          </form>
+          <div id="project-discussion" hidden>
+            <details><summary>Saved versions</summary><ul id="revisions" class="team-list"></ul><pre id="revision-preview" hidden></pre></details>
+            <h3>Discussion</h3>
+            <form id="comment-form"><label>Your comment <textarea id="comment-body" required rows="3" maxlength="10000"></textarea></label><button>Post comment</button></form>
+            <ul id="comments" class="team-list"></ul>
+          </div>
+        </section>
+      </div>
+      <details class="panel"><summary>Account settings</summary>
+        <form id="password-form">
+          <label>Current password <input id="current-password" type="password" required autocomplete="current-password" maxlength="128"></label>
+          <label>New password <input id="new-password" type="password" required autocomplete="new-password" minlength="12" maxlength="128"></label>
+          <button>Change password and sign out everywhere</button>
+        </form>
+      </details>
+    </div>
+  </main>
+  <footer class="account-footer"><span>ParaMyth · A place to find your next beginning.</span><a href="/">Back to home</a></footer>
+  <script type="module" src="js/teams.js"></script>
+</body>
+</html>
