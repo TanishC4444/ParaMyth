@@ -1,6 +1,6 @@
 # Master Guide to Building Long, Complex Stories
 
-Version 1.0 · 19 October 2026 · HackTX story-development reference
+Version 1.0 · HackTX story-development reference
 
 ## Purpose and scope
 
