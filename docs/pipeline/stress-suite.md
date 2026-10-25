@@ -25,7 +25,7 @@ Twenty planned scenes, approximately 14,400 target words across independent
 worlds plus one eight-scene continued world. Four locations and 70 initial facts
 exercise the larger case. Every authored ensemble character appears in the
 four-scene participant layout. Scene length targets guide the writing, with an
-80% minimum for developed action. Exceeding the former 130% ceiling is advisory;
+80% minimum for developed action. Exceeding 130% of the target is advisory;
 quality, pacing, non-repetition and factual approval remain mandatory. Longer
 drafts are preserved for optional user shortening rather than rewritten solely
 to hit a ceiling.
@@ -73,7 +73,7 @@ input is separate and begins a new episode.
 The full pipeline also accepts `saved_draft_run` to import a complete first-scene
 draft into the current code without a new writer call. The source state and
 initial canon must match, and the creative brief may differ only in length
-policy. This supports the saved novel draft whose only rejection was its former
+policy. This supports the saved novel draft whose only rejection was a
 length ceiling. Imported prose receives fresh literary and memory checks; no
 approval is inherited. Incomplete provider responses and other rejection reasons
 cannot use this shortcut.

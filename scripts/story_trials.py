@@ -5,7 +5,7 @@ from scripts.stress_queue import GitHub,Queue
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--mode',choices=['recovery','parallel'],required=True);p.add_argument('--source-run',default='40103398653');p.add_argument('--out',default='trial');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--mode',choices=['recovery','parallel'],required=True);p.add_argument('--source-run',required=True);p.add_argument('--out',default='trial');a=p.parse_args()
     api=GitHub(os.environ['GITHUB_REPOSITORY'],os.environ['GH_TOKEN']);out=Path(a.out);out.mkdir(exist_ok=True)
     rows=[];source=a.source_run
     workflow='living-universe-pipeline.yml' if a.mode=='recovery' else 'planned-parallel.yml'

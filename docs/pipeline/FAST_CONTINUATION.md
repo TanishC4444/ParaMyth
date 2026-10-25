@@ -1,6 +1,6 @@
 # Troy continuation
 
-`troy-continue.yml` resumes run 39536276390 from its committed `s02_accept` checkpoint. It also requires that run's `s03_design` and `s03_draft` artifacts. It preserves both accepted scenes verbatim and reuses the existing third-scene draft. A mismatched brief or canon checkpoint stops recovery.
+`troy-continue.yml` resumes the run given as `checkpoint_run` from its committed `s02_accept` checkpoint. It also requires that run's `s03_design` and `s03_draft` artifacts. It preserves both accepted scenes verbatim and reuses the existing third-scene draft. A mismatched brief or canon checkpoint stops recovery.
 
 For each remaining scene:
 

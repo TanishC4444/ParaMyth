@@ -307,7 +307,7 @@
     }
   ],
   "execution_intent": {
-    "authorized": "User requested the writing infrastructure from run 39552359292, faster initial refinement, Gemini when available and one detailed scene test.",
+    "authorized": "User requested the reference writing infrastructure, faster initial refinement, Gemini when available and one detailed scene test.",
     "workflow": "Fresh author-compiled preparation, separate character runners, writer, parallel passage editors, independent reviews and memory, bounded repair and strict canon acceptance."
   },
   "execution_policy": {

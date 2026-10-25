@@ -1,7 +1,7 @@
 # Living practice latency
 
-The reference is successful Living Actions run **39856538428**, completed in
-14 minutes 4 seconds on 2026-10-22 UTC. Its final memory batch alone ran for about
+The reference is a successful Living run that completed in
+14 minutes 4 seconds. Its final memory batch alone ran for about
 five minutes. A roughly 15-minute target applies to one 900-word event with
 available hosted capacity and prompt runners, not a guaranteed bound for four
 chapters or a quota outage.
@@ -77,7 +77,7 @@ Hosted pipeline calls transport the full response grammar through the provider's
 native schema rather than also echoing that grammar into the prompt. Application
 validators are unchanged. Final reviewers receive the failed/disputed earlier
 checks and all issues, while independently reassessing all 17 dimensions; repeated
-passing explanations are omitted. A measured stress packet with the previous
+passing explanations are omitted. A measured stress packet with a
 900-word output fell from over the 48,000-character limit to 41,085 characters,
 with all 96 initial facts retained. This measures packet size, not live quality.
 
@@ -105,8 +105,8 @@ so a first timeout cannot consume the entire shared deadline. The HTTP attempt
 cap and model quality are unchanged.
 
 The scale practice now gives prose routes up to 90 seconds per attempt, sharing
-one 180-second writer deadline across three model routes. The former blanket
-40-second cap prematurely cut off the second model after the first returned 503.
+one 180-second writer deadline across three model routes. A blanket
+40-second cap would cut off the second model after the first returned 503.
 After both strong Flash routes fail, Flash-Lite can supply a candidate through the
 same source, format, literary and factual gates. Review and repair routes also
 have this capacity fallback. At most three HTTP requests are allowed per call;
@@ -141,7 +141,7 @@ full evidence/identity validators plus independent factual review still apply.
 Failed field repair retains original records and the exact scene for recovery.
 Incomplete extraction schedules one explicitly blocked diagnostic check rather
 than a matrix of identical failures; no missing verification is treated as a pass.
-A replay of the failed live batch recovered all six records with original fields
+A replay of a failed live batch recovered all six records with original fields
 unchanged; this is a mocked transport regression, not a new live quality result.
 
 A strict short draft with separate paragraphs now uses the existing single repair

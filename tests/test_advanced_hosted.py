@@ -165,7 +165,7 @@ class RefinementFailureRegressionTests(unittest.TestCase):
     def test_actual_failed_run_outputs_remain_rejected(self):
         from paramyth.pipeline.contracts import refinement, ContractError
         req=example()
-        for path in (Path(__file__).parent/'fixtures/retell-refiner-39618729263').glob('*.json'):
+        for path in (Path(__file__).parent/'fixtures/retell-refiner').glob('*.json'):
             value=json.loads(path.read_text())
             # Retell binds the immutable user prompt itself, as in the failed run.
             value['original_prompt']=req['premise']
@@ -207,7 +207,7 @@ class OutlineFailureRegressionTests(unittest.TestCase):
     def test_actual_failed_outline_is_rejected_without_thread_invention(self):
         from paramyth.pipeline.contracts import plan, ContractError
         req=example()
-        bad=json.loads((Path(__file__).parent/'fixtures/outline-39622560642.json').read_text())
+        bad=json.loads((Path(__file__).parent/'fixtures/outline-invalid.json').read_text())
         req['chapters']=1;req['scenes_per_chapter']=4
         req['characters']=[{'id':cid} for cid in ['agamemnon','odysseus','achilles','hector','thestor']]
         with self.assertRaisesRegex(ContractError,'thread strings'):

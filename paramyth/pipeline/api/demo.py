@@ -4,9 +4,9 @@ Send `Authorization: Bearer demo` to use it. Started runs advance through
 simulated jobs over DEMO_SECONDS, then expose the bundled story artifacts.
 State is in memory and resets when the server restarts.
 
-Sample content comes from real live runs of this repo:
-sequential from run 40108148721 (hard-adapt-comic), parallel from run
-40119904662 (hard-chronology, failed its final publish gate).
+Sample content comes from live runs of this repo: sequential from
+hard-adapt-comic, parallel from hard-chronology (which failed its final
+publish gate).
 """
 from __future__ import annotations
 

@@ -23,7 +23,7 @@ class GateContractTests(unittest.TestCase):
         self.assertEqual(spec['items']['enum'],['wage'])
 
     def test_failed_live_review_remains_invalid_under_validator(self):
-        root=Path(__file__).parent/'fixtures/practice-gates-39722013919'
+        root=Path(__file__).parent/'fixtures/practice-gates'
         packet=json.loads((root/'story-packet.json').read_text())
         raw=json.loads((root/'story-output.json').read_text())
         raw['checks']=[dict(v,id=k) for k,v in raw['checks'].items()]
@@ -34,7 +34,7 @@ class GateContractTests(unittest.TestCase):
     def test_failed_live_memory_remains_blocked_without_mutating_canon(self):
         import tempfile,copy
         from paramyth.pipeline.resilience import memory_extract
-        root=Path(__file__).parent/'fixtures/practice-gates-39722013919'
+        root=Path(__file__).parent/'fixtures/practice-gates'
         packet=json.loads((root/'memory-packet.json').read_text());raw=json.loads((root/'memory-output.json').read_text());original=copy.deepcopy(packet['prior_canon'])
         prose='\n\n'.join(p['text'] for p in packet['evidence_passages'])
         class Executor:

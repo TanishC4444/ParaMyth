@@ -7,7 +7,7 @@ from test_advanced_story import example
 
 class ChapterFormTests(unittest.TestCase):
     def test_actual_failed_audit_cannot_demand_forbidden_dialogue(self):
-        raw=json.loads(Path('tests/fixtures/practice-chapter-39786876575/review.json').read_text())
+        raw=json.loads(Path('tests/fixtures/practice-chapter/review.json').read_text())
         with self.assertRaises(ReviewBriefError):validate_review_brief(raw,{'pov':'No dialogue or quoted speech.'})
         self.assertIs(validate_review_brief(raw,{'pov':'Third-person dialogue permitted.'}),raw)
 

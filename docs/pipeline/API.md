@@ -99,9 +99,9 @@ Content-Type: application/json
 ```
 
 ```json
-{ "mode": "sequential", "workflow": "living-universe-pipeline.yml", "run_id": 40123456789,
+{ "mode": "sequential", "workflow": "living-universe-pipeline.yml", "run_id": 1234567890,
   "tracking_tag": "api-1a2b3c4d", "tracks_run_id": null,
-  "html_url": "https://github.com/TanishC4444/ParaMyth/actions/runs/40123456789" }
+  "html_url": "https://github.com/TanishC4444/ParaMyth/actions/runs/1234567890" }
 ```
 
 - `backend: "fixture"` checks the plumbing with labelled synthetic prose in a few minutes. `"live"` runs real models and can take hours.
@@ -112,7 +112,7 @@ Content-Type: application/json
 ### Recover a failed run
 
 ```http
-POST /api/v1/runs/40109187765/recover
+POST /api/v1/runs/1234567890/recover
 { "strategy": "fresh", "backend": "live", "inputs": { "scene_limit": "2" } }
 ```
 

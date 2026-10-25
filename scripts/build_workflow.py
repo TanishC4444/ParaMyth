@@ -57,7 +57,7 @@ def build(total=9, per_chapter=3, troy=False, continuation=False, full_api=False
         header=header.replace('options: [troy-first-thunder]','options: [troy-full-api]').replace('default: troy-first-thunder','default: troy-full-api')
     if continuation:
         header=header.replace('name: Troy story runners','name: Troy continuation / parallel passage editors')
-        header=header.replace('      refinement_seed_run:', "      checkpoint_run:\n        type: string\n        default: '39536276390'\n        description: Source run containing the committed s02_accept artifact\n      refinement_seed_run:")
+        header=header.replace('      refinement_seed_run:', "      checkpoint_run:\n        type: string\n        required: true\n        description: Source run containing the committed s02_accept artifact\n      refinement_seed_run:")
     blocks = [header]
     jobs = []
     def job(key, title, task, needs=(), downloads=(), index=None, matrix=None, state_output=False):
