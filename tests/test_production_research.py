@@ -64,6 +64,51 @@ class ResearchTests(unittest.TestCase):
             Search(self.root, keys=[])('query')
         call.assert_not_called()
 
+    def test_cache_keeps_purpose_and_legal_freshness_separate(self):
+        client = Search(self.root, keys=['key'], plan_limit=3)
+        with patch('paramyth.production_research.time.time', return_value=1000), \
+                patch('paramyth.production_research.request_json', return_value=hit()) as call:
+            self.assertEqual(client('film permits', 'location')['purpose'], 'location')
+            self.assertEqual(client('film permits', 'legal')['purpose'], 'legal')
+            self.assertEqual(call.call_count, 2)
+        fresh = Search(self.root, keys=['key'], plan_limit=3)
+        with patch('paramyth.production_research.time.time', return_value=22601), \
+                patch('paramyth.production_research.request_json', return_value=hit()) as call:
+            self.assertTrue(fresh('film permits', 'location')['cached'])
+            self.assertFalse(fresh('film permits', 'legal')['cached'])
+            self.assertEqual(call.call_count, 1)
+
+    def test_keys_are_trimmed_before_deduplication(self):
+        client = Search(self.root, keys=[' key ', 'key', '', 'backup'], plan_limit=1)
+        with patch('paramyth.production_research.request_json', side_effect=[ProviderError('Provider HTTP 429'), hit()]) as call:
+            client('query')
+        self.assertEqual(call.call_count, 2)
+        self.assertIn('api_key=backup', call.call_args.args[0])
+
+    def test_invalid_inputs_do_not_spend_allowance(self):
+        client = Search(self.root, keys=['key'], plan_limit=1)
+        for query, purpose in [('', 'location'), (None, 'location'), ('query', []), ('query', '')]:
+            with self.subTest(query=query, purpose=purpose), self.assertRaises(ValueError):
+                client(query, purpose)
+        self.assertEqual(client.used, 0)
+
+    def test_negative_results_are_cached_without_key_failover(self):
+        client = Search(self.root, keys=['key', 'backup'], plan_limit=1)
+        with patch('paramyth.production_research.request_json', return_value={
+                'search_metadata': {'status': 'Success'}, 'error': "Google hasn't returned any results for this query."}) as call:
+            self.assertEqual(client('obscure query')['results'], [])
+            self.assertTrue(client('obscure query')['cached'])
+            self.assertEqual(call.call_count, 1)
+
+    def test_malformed_results_are_not_cached(self):
+        for i, value in enumerate([[], {'organic_results': None}, {'organic_results': [None]}]):
+            client = Search(self.root / str(i), keys=['key'], plan_limit=2)
+            with patch('paramyth.production_research.request_json', return_value=value), self.assertRaises(ProviderError):
+                client('query')
+            with patch('paramyth.production_research.request_json', return_value=hit()) as call:
+                self.assertFalse(client('query')['cached'])
+                self.assertEqual(call.call_count, 1)
+
     @patch.dict(os.environ, {'VULTR_INFERENCE_API_KEY': 'test-key', 'SERPAPI_API_KEY': 'serp-key'})
     def test_plan_uses_serpapi_by_default_when_configured(self):
         (self.root / 'story.txt').write_text('A Troy story')

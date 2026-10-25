@@ -22,8 +22,8 @@ def safe_url(value):
 
 class Search:
     def __init__(self, folder, keys=None, daily_limit=10, plan_limit=2):
-        self.keys = list(dict.fromkeys(keys if keys is not None else filter(None, [os.getenv('SERPAPI_API_KEY', ''), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')])))
-        self.keys = [k.strip() for k in self.keys if k.strip()]
+        configured = keys if keys is not None else [os.getenv('SERPAPI_API_KEY', ''), *os.getenv('SERPAPI_BACKUP_KEYS', '').split(',')]
+        self.keys = list(dict.fromkeys(k.strip() for k in configured if isinstance(k, str) and k.strip()))
         self.daily_limit = min(30, max(0, int(daily_limit)))
         self.plan_limit = min(3, max(0, int(plan_limit)))
         self.used = 0
@@ -59,8 +59,14 @@ class Search:
         return self.search(query, purpose)
 
     def search(self, query, purpose='location'):
-        query = ' '.join(str(query).split())[:240]
-        ident = hashlib.sha256(query.casefold().encode()).hexdigest()
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError('Search query must be nonempty text')
+        if not isinstance(purpose, str) or not purpose.strip() or len(purpose) > 60:
+            raise ValueError('Search purpose must be text between 1 and 60 characters')
+        query = ' '.join(query.split())[:240]
+        purpose = purpose.strip().lower()
+        # Purpose controls freshness: a day-old location cache cannot satisfy legal research.
+        ident = hashlib.sha256(json.dumps([query.casefold(), purpose]).encode()).hexdigest()
         now = time.time()
         with self.connect() as c:
             row = c.execute('SELECT body FROM cache WHERE id=? AND expires>?', (ident, now)).fetchone()
@@ -80,6 +86,8 @@ class Search:
                         c.execute('INSERT OR REPLACE INTO cooldown VALUES (?,?)', (fingerprint, now + 3600))
                     continue
                 raise
+            if not isinstance(body, dict):
+                raise ProviderError('Search provider returned invalid results')
             if body.get('error'):
                 error = str(body['error']).lower()
                 if any(x in error for x in ('run out', 'limit', 'invalid api key', 'no searches')):
@@ -91,7 +99,10 @@ class Search:
                 if 'no results' not in error and 'hasn\'t returned any results' not in error:
                     raise ProviderError('Search provider could not complete this query')
             results = []
-            for item in body.get('organic_results', [])[:5]:
+            organic = body.get('organic_results', [])
+            if not isinstance(organic, list) or any(not isinstance(item, dict) for item in organic):
+                raise ProviderError('Search provider returned invalid results')
+            for item in organic[:5]:
                 url = safe_url(item.get('link', ''))
                 if url:
                     results.append({'title':str(item.get('title',''))[:300], 'url':url, 'snippet':str(item.get('snippet',''))[:1200]})
