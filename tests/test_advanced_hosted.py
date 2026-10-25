@@ -167,7 +167,7 @@ class RefinementFailureRegressionTests(unittest.TestCase):
         req=example()
         for path in (Path(__file__).parent/'fixtures/retell-refiner').glob('*.json'):
             value=json.loads(path.read_text())
-            # Retell binds the immutable user prompt itself, as in the failed run.
+            # Retell binds the immutable user prompt itself.
             value['original_prompt']=req['premise']
             with self.subTest(path=path.name),self.assertRaises(ContractError):
                 refinement(value,req)

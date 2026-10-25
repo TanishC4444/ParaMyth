@@ -1,8 +1,6 @@
 # Living practice latency
 
-The reference is a successful Living run that completed in
-14 minutes 4 seconds. Its final memory batch alone ran for about
-five minutes. A roughly 15-minute target applies to one 900-word event with
+A roughly 15-minute target applies to one 900-word event with
 available hosted capacity and prompt runners, not a guaranteed bound for four
 chapters or a quota outage.
 
@@ -124,8 +122,8 @@ or provisional approval is substituted.
 Pipeline writer packets share identical scene cards, world rules, beat cards and
 actor fact references rather than repeating them in serialized direction text.
 All current facts, complete authored actor profiles, knowledge allowlists and
-historical beliefs remain. Replaying the failed scene-two packet with a 900-word
-rejected candidate yields about 51,500 input characters before the system prompt,
+historical beliefs remain. A scene-two packet with a 900-word
+rejected candidate is about 51,500 input characters before the system prompt,
 within the existing 64,000-character budget. No memory cutoff was increased.
 
 Memory descriptions are required for every kind, including threads; the schema
@@ -141,8 +139,8 @@ full evidence/identity validators plus independent factual review still apply.
 Failed field repair retains original records and the exact scene for recovery.
 Incomplete extraction schedules one explicitly blocked diagnostic check rather
 than a matrix of identical failures; no missing verification is treated as a pass.
-A replay of a failed live batch recovered all six records with original fields
-unchanged; this is a mocked transport regression, not a new live quality result.
+A mocked-transport regression test recovers all six records of a failed batch with
+original fields unchanged; it is not a live quality result.
 
 A strict short draft with separate paragraphs now uses the existing single repair
 slot for source-owned insertions rather than regenerating the entire scene.
@@ -184,8 +182,8 @@ Failed repair preserves the exact source, rejected records and individually
 validated partial facts, marked unverified. Partial facts cannot publish canon or
 unlock the next scene. Outer-list normalization is lossless, nested malformed
 knowledge/link values report validation errors, and malformed wrappers retain the
-bounded source re-extraction path. Four saved failing Iron Man outputs replayed
-successfully with mocked transport; this is regression evidence, not live approval.
+bounded source re-extraction path. Failing-output fixtures pass with mocked
+transport; this is regression evidence, not live approval.
 
 Strict acceptance now blocks unverified memory at the actual handoff gate and
 saves prose plus a blocked-handoff report. It cannot report acceptance success and

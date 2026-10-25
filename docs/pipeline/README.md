@@ -165,7 +165,7 @@ The expressive profile keeps Glitter drafting and Gemma literary editing/review.
 
 Code validates counts, identifiers, source bindings and context budgets. Formatting repairs receive only the invalid output, validation error and allowed IDs; a parseable review's judgments and reasons must remain unchanged. Failed content checks do not become formatting passes. Resident sessions count tokenized content, reserve requested output and template allowance, and reject overflow without truncation. Six-hour job budgets remain in place.
 
-The library's real GitHub resident-session smoke test passed two isolated constrained-JSON calls using one loaded model. Standard runners remain CPU-only; optional GPU offload requires a separately provisioned compatible host. No GPU speedup is claimed. Fixture tests do not establish literary quality or live Troy performance.
+Standard runners remain CPU-only; optional GPU offload requires a separately provisioned compatible host. No GPU speedup is claimed. Fixture tests do not establish literary quality or live Troy performance.
 
 ### Duplicate-check regression
 
@@ -275,16 +275,15 @@ gates remain in the practice workflow. Practice ending requirements are scoped
 to discovery, not the full story's acquisition/deployment arc.
 
 Troy workflows reuse the approved scene card plus character proposals as writer
-direction (combine_direction=true), avoiding a redundant model restatement. The
-practice's observed director call used 202.2 seconds; fixture coverage exercises
-the forwarding path. Prose and memory verification remain independent gates.
+direction (combine_direction=true), avoiding a redundant model restatement. Fixture
+coverage exercises the forwarding path. Prose and memory verification remain independent gates.
 
-A practice run exposed two simultaneous writer faults (269 words and
-direct dialogue). Prose validation now reports every detected form/length fault
+A writer can produce several faults at once, such as a short draft that
+also uses direct dialogue. Prose validation now reports every detected form/length fault
 together so the first retry can address them all. Compact no-dialogue packets
 remove voice examples recursively, including POV profiles and scoped character
 requirements. The original brief and raw rejected attempts remain preserved.
-The failed live responses are regression fixtures; no rejected scene became canon.
+Regression fixtures cover these failures; no rejected scene becomes canon.
 
 For the short practice, hosted_prose=flash uses the existing configured Gemini
 route for sequential drafting and editing, with bounded retries and the same
