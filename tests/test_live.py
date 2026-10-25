@@ -101,9 +101,13 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(len(state['accepted']), 1)
         self.assertLess(calls.index('character'), calls.index('director'))
         self.assertLess(calls.index('director'), calls.index('writer'))
-        self.assertNotIn('scene', actors[0])
-        self.assertNotIn('characters', actors[0])
-        self.assertEqual(actors[0]['visible_memory'], [])
+        by_actor = {packet['character']['id']: packet for packet in actors}
+        for packet in by_actor.values():
+            self.assertNotIn('scene', packet)
+            self.assertNotIn('characters', packet)
+        self.assertEqual(by_actor['mara']['visible_memory'], [])
+        self.assertEqual(len(by_actor['oren']['visible_memory']), 1)
+        self.assertEqual(by_actor['oren']['visible_memory'][0]['known_by'], ['oren'])
 
     def test_provider_identity_is_pinned_on_resume(self):
         class Transport:
