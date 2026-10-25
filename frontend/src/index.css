@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Young+Serif&display=swap');
 @import 'tailwindcss';
 
 :root{--navy:#203970;--slate:#616a80;--mint:#91c8ad;--soft-mint:#dcefe6;--gold:#f2c358;--peach:#e7a674;--cream:#f8f6f0;--paper:#fffefa;--line:#e5e4df;--ink:#263653;--muted:#757b87;--shadow:0 10px 30px rgba(32,57,112,.09)}

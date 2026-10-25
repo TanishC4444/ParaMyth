@@ -3,7 +3,7 @@ import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { useMaterials } from "../materials"
-import { PageTitle } from "../ui"
+import { errorText, PageTitle } from "../ui"
 export default function Production() {
   const { project, mediaDirection, flush, refresh, setDraft, go } = useStudio()
   const { source, sourceId, sourceTitle, signature, streaming, images: availableImages, tracks: availableTracks, setSource } = useMaterials()
@@ -49,7 +49,7 @@ export default function Production() {
       setStatus("Your production plan is ready.")
       await refresh()
     },
-    failed: setError,
+    failed: (message) => { setError(message); setStatus("") },
   })
   const plan = savedPlan
   const prompts = starter?.source_id === sourceId ? starter : plan?.starter
@@ -93,7 +93,7 @@ export default function Production() {
       setPendingJob({ id: q.job_id, kind: prepare ? "production-brief" : "production", local: q.local })
       await refresh()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     } finally {
       setSubmitting(false)
     }
@@ -111,7 +111,7 @@ export default function Production() {
       setIds((v) => [result.id, ...v.filter((x) => x !== result.id)])
       setStatus("Schedule and budget recalculated and saved.")
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     } finally {
       setSubmitting(false)
     }
@@ -120,7 +120,6 @@ export default function Production() {
   return (
     <div className="page simple-workspace">
       <PageTitle
-        eyebrow=""
         title="Production"
         text="Turn your story into a shoot schedule, budget and location plan."
       />

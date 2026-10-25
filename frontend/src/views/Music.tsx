@@ -2,9 +2,9 @@ import { useEffect, useState } from "react"
 import { useSavedJob } from "../useSavedJob"
 import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
-import { PageTitle } from "../ui"
+import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
-import { Artwork } from "../art"
+import { BrandSpot } from "../brandArt"
 export default function Music() {
   const { project, mediaDirection, flush, refresh, go } = useStudio()
   const { source, sourceTitle, signature, streaming } = useMaterials()
@@ -24,7 +24,7 @@ export default function Music() {
   const [pendingJob, setPendingJob] = useSavedJob("music.pendingJob", ["music"], {
     progress: (j) => { setStatus(j.message); setError("") },
     complete: async () => { await load(); await refresh(); setStatus("Your soundtrack request is saved below.") },
-    failed: setError,
+    failed: (message) => { setError(message); setStatus("") },
   })
   const busy = submitting || !!pendingJob
   const path = (p: string) => projectPath(p, project.id)
@@ -69,7 +69,7 @@ export default function Music() {
             prev.map((t) => values.find((v) => v.job.id === t.job.id) || t),
           )
       } catch (e) {
-        if (live) setError(String(e))
+        if (live) setError(errorText(e))
       }
     }, 6000)
     return () => {
@@ -94,7 +94,7 @@ export default function Music() {
       setPendingJob({ id: q.job_id, kind: "music", local: q.local })
       await refresh()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     } finally {
       setSubmitting(false)
     }
@@ -109,7 +109,7 @@ export default function Music() {
       )
       await load()
     } catch (e) {
-      setError(String(e))
+      setError(errorText(e))
     }
   }
   const shown = tracks.find((t) => t.job.id === selectedTrack) || tracks[0]
@@ -118,7 +118,7 @@ export default function Music() {
     <div className="page simple-workspace">
       {streaming && <p className="hint" role="status">Following the live draft. New soundtracks use its current mood and story details.</p>}
       {shown?.writing_signature && shown.writing_signature !== signature && <p className="source-changed">Your writing has changed since this soundtrack. <button disabled={busy} onClick={()=>void create()}>Create an updated soundtrack</button></p>}
-      <PageTitle eyebrow="" title="Soundtracks" text="Choose a sound. Your story sets the mood." />
+      <PageTitle title="Soundtracks" text="Choose a sound. Your story sets the mood." />
       {error && <p className="live-status error" role="alert">{error}</p>}
       {status && <p className="live-status" role="status">{status}</p>}
       <div className="creative-layout">
@@ -160,7 +160,7 @@ export default function Music() {
             {t.job.error && <p role="alert">{String(t.job.error.message || t.job.error)}</p>}
             <details><summary>Track details</summary><p>{t.cue.prompt}</p><small>{t.settings?.seconds ? `${t.settings.seconds} seconds · ` : ""}{t.source_title ? `${t.source_title} · ` : ""}{t.provider || t.job.model || "Saved audio"} · {t.cue.sources?.join(", ")}</small></details>
           </article>)}
-          {!tracks.length && <div className="empty illustrated-empty music-empty"><Artwork name="music" /><div className="empty-copy"><h3>Give your story a sound.</h3><p>Create a soundtrack to listen to it here.</p></div></div>}
+          {!tracks.length && <div className="empty illustrated-empty music-empty"><BrandSpot kind="music" /><div className="empty-copy"><h3>Give your story a sound.</h3><p>Create a soundtrack to listen to it here.</p></div></div>}
           {tracks.length > 0 && <button className="text-action workspace-next" onClick={() => go("production")}>Next: plan production →</button>}
         </section>
       </div>
