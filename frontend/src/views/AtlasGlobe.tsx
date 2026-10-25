@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ink } from "../atlas";
@@ -7,6 +7,7 @@ import type { AtlasPin } from "../types";
 export type GlobeTransition = { zoomToMap: () => { lat: number; lng: number } | null; pullOut: (center?: { lat: number; lng: number } | null) => void };
 
 type Props = {
+  active?: boolean;
   transitionRef?: RefObject<GlobeTransition | null>;
   reduceMotion?: boolean;
   onReady?: () => void;
@@ -18,7 +19,7 @@ type Props = {
   onCluster: (ids: string[]) => void;
   onFallback: () => void;
 };
-type Marker = { x: number; y: number; stories: AtlasPin[] };
+type Marker = { x: number; y: number; stories: AtlasPin[]; background?: string };
 type MapLabel = { text: string; lat: number; lng: number; kind: "continent" | "water" | "place" };
 const LETTERING: MapLabel[] = [
   { text: "AFRICA", lat: 1, lng: 20, kind: "continent" },
@@ -73,6 +74,21 @@ export default function AtlasGlobe(props: Props) {
   latest.current = props;
   const api = useRef<{ redraw: () => void; focus: (s: AtlasPin) => void; rotate: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void; zoomToMap: GlobeTransition["zoomToMap"]; pullOut: GlobeTransition["pullOut"] } | null>(null);
   useImperativeHandle(props.transitionRef, () => ({ zoomToMap: () => api.current?.zoomToMap() ?? null, pullOut: (center) => api.current?.pullOut(center) }), []);
+  const pinLayer = useRef<HTMLDivElement>(null);
+  const labelLayer = useRef<HTMLDivElement>(null);
+  const overlay = useRef<{ points: Marker[]; labels: (MapLabel & { x: number; y: number })[] }>({ points: [], labels: [] });
+  const positionOverlays = () => {
+    const points = new Map(overlay.current.points.map(p => [p.stories[0].id, p]));
+    const labels = new Map(overlay.current.labels.map(p => [`${p.text}-${p.lng}`, p]));
+    for (const [layer, positions] of [[pinLayer.current, points], [labelLayer.current, labels]] as const) {
+      layer?.querySelectorAll<HTMLElement>("[data-marker]").forEach(element => {
+        const point = positions.get(element.dataset.marker!);
+        element.style.visibility = point ? "" : "hidden";
+        if (point) { element.style.left = `${point.x}px`; element.style.top = `${point.y}px`; }
+      });
+    }
+  };
+  useLayoutEffect(positionOverlays);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [labels, setLabels] = useState<(MapLabel & { x: number; y: number })[]>([]);
   const [ready, setReady] = useState(false);
@@ -84,7 +100,9 @@ export default function AtlasGlobe(props: Props) {
     try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
     catch { setFailed(true); latest.current.onView(latest.current.stories.map((s) => s.id)); return; }
     const abort = new AbortController();
-    let disposed = false, frame = 0, lastView = "";
+    let disposed = false, frame = 0, lastView = "", pinSignature = "", labelSignature = "";
+    let inViewport = false, viewTimer: ReturnType<typeof setTimeout> | undefined;
+    let pendingIds: string[] = [];
     let targetPosition: THREE.Vector3 | null = null;
     let mapReturnDistance: number | null = null;
     let restoringFromMap = false;
@@ -99,12 +117,13 @@ export default function AtlasGlobe(props: Props) {
     renderer.domElement.setAttribute("role", "img");
     renderer.domElement.tabIndex = 0;
     container.appendChild(renderer.domElement);
+    const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     // Pinch and wheel zoom use the same globe camera as the explicit controls.
     controls.enableZoom = true; controls.zoomSpeed = .55;
     controls.minDistance = 1.55; controls.maxDistance = 8;
-    controls.enableDamping = !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    controls.enableDamping = !latest.current.reduceMotion && !motionPreference.matches;
     controls.dampingFactor = .075;
     controls.rotateSpeed = .65;
     controls.minPolarAngle = .12; controls.maxPolarAngle = Math.PI - .12;
@@ -122,14 +141,15 @@ export default function AtlasGlobe(props: Props) {
     light.position.set(-3, 4, 5); camera.add(light); scene.add(camera);
 
     let lastFrame = 0, lastOverlay = 0;
+    const projected = new THREE.Vector3();
     const normals = new Map<string, THREE.Vector3>();
     const draw = (time: number) => {
       const dt = Math.min(64, lastFrame ? time - lastFrame : 16.67); lastFrame = time;
       frame = 0;
-      if (disposed) return;
+      if (disposed || !inViewport || latest.current.active === false) return;
       const width = container.clientWidth, height = container.clientHeight;
       if (targetPosition) {
-        const reduced = latest.current.reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const reduced = latest.current.reduceMotion || motionPreference.matches;
         const t = reduced ? 1 : 1 - Math.exp(-dt / 150);
         const current = new THREE.Spherical().setFromVector3(camera.position);
         const target = new THREE.Spherical().setFromVector3(targetPosition);
@@ -141,7 +161,7 @@ export default function AtlasGlobe(props: Props) {
         if (camera.position.distanceTo(targetPosition) < .001) { camera.position.copy(targetPosition); targetPosition = null; if (restoringFromMap) { mapReturnDistance = null; restoringFromMap = false; } }
         else redraw();
       }
-      controls.enableDamping = !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      controls.enableDamping = !latest.current.reduceMotion && !motionPreference.matches;
       controls.update();
       camera.updateMatrixWorld();
       renderer.render(scene, camera);
@@ -149,35 +169,60 @@ export default function AtlasGlobe(props: Props) {
       if (time - lastOverlay < 60 && (targetPosition || frame)) return;
       lastOverlay = time;
       const points: Marker[] = [];
+      const grid = new Map<string, Marker[]>();
+      const cellSize = 48;
       const ids: string[] = [];
       for (const story of latest.current.stories) {
         let cached = normals.get(story.id);
         if (!cached) { cached = position(story.lat, story.lng); normals.set(story.id, cached); }
-        const normal = cached.clone();
+        const normal = cached;
         // Perspective horizon test: points on the far side must never be clickable.
-        if (normal.dot(camera.position.clone().sub(normal)) <= .04) continue;
-        const point = normal.multiplyScalar(1.006).project(camera);
+        if (normal.dot(camera.position) - 1 <= .04) continue;
+        const point = projected.copy(normal).multiplyScalar(1.006).project(camera);
         if (Math.abs(point.x) > .96 || Math.abs(point.y) > .9) continue;
         const x = (point.x + 1) * width / 2, y = (1 - point.y) * height / 2;
         ids.push(story.id);
-        const group = points.find((p) => Math.hypot(p.x - x, p.y - y) < 32);
-        if (group) group.stories.push(story); else points.push({ x, y, stories: [story] });
+        const gx = Math.floor(x / cellSize), gy = Math.floor(y / cellSize);
+        let group: Marker | undefined;
+        for (let dx = -1; dx <= 1 && !group; dx++) for (let dy = -1; dy <= 1 && !group; dy++) {
+          group = grid.get(`${gx + dx},${gy + dy}`)?.find(p => (p.x - x) ** 2 + (p.y - y) ** 2 < cellSize ** 2);
+        }
+        if (group) group.stories.push(story);
+        else {
+          const marker = { x, y, stories: [story] };
+          points.push(marker);
+          const key = `${gx},${gy}`;
+          const cell = grid.get(key);
+          if (cell) cell.push(marker); else grid.set(key, [marker]);
+        }
       }
-      setMarkers(points);
       const nextLabels: (MapLabel & { x: number; y: number })[] = [];
       for (const label of LETTERING) {
         if (label.kind === "place" && camera.position.length() > homeDistance() * .9) continue;
         const normal = position(label.lat, label.lng);
-        if (normal.dot(camera.position.clone().normalize()) < .55) continue;
+        if (normal.dot(camera.position) / camera.position.length() < .55) continue;
         const p = normal.multiplyScalar(1.003).project(camera);
         const x = (p.x + 1) * width / 2, y = (1 - p.y) * height / 2;
         if (Math.abs(p.x) > .8 || Math.abs(p.y) > .8 || points.some((m) => Math.hypot(m.x - x, m.y - y) < 40)) continue;
         if (nextLabels.some((l) => Math.abs(l.x - x) < 85 && Math.abs(l.y - y) < 22)) continue;
         nextLabels.push({ ...label, x, y });
       }
-      setLabels(nextLabels);
+      overlay.current = { points, labels: nextLabels };
+      positionOverlays();
+      // Camera movement only moves existing DOM nodes. React reconciles when membership changes.
+      const nextPins = points.map(p => p.stories.map(s => s.id).join(",")).join("|");
+      if (nextPins !== pinSignature) {
+        pinSignature = nextPins;
+        setMarkers(points.map(p => ({ ...p, background: ring(p.stories) })));
+      }
+      const nextLabelsKey = nextLabels.map(p => `${p.text}-${p.lng}`).join("|");
+      if (nextLabelsKey !== labelSignature) { labelSignature = nextLabelsKey; setLabels(nextLabels); }
       const signature = ids.join("|");
-      if (signature !== lastView) { lastView = signature; latest.current.onView(ids); }
+      if (signature !== lastView) {
+        lastView = signature; pendingIds = ids;
+        clearTimeout(viewTimer);
+        viewTimer = setTimeout(() => latest.current.onView(pendingIds), 120);
+      }
     };
     const redraw = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
     const rotate = (x: number, y: number) => {
@@ -238,13 +283,19 @@ export default function AtlasGlobe(props: Props) {
       camera.updateProjectionMatrix(); controls.update(); renderer.setSize(w, h); redraw();
     });
     resize.observe(container);
+    const visibility = new IntersectionObserver(entries => {
+      inViewport = entries.some(entry => entry.isIntersecting);
+      if (inViewport) { lastFrame = 0; redraw(); }
+      else { cancelAnimationFrame(frame); frame = 0; }
+    });
+    visibility.observe(container);
     makeTexture(abort.signal).then((textures) => {
       if (disposed) { textures.forEach(t => t?.dispose()); return; }
       textures.forEach(t => { if (t) t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
       material.map = textures[0]; material.bumpMap = textures[1]; material.specularMap = textures[2]; material.needsUpdate = true; setReady(true); redraw();
     }).catch(() => { if (!disposed) setFailed(true); });
     return () => {
-      disposed = true; abort.abort(); cancelAnimationFrame(frame); resize.disconnect();
+      disposed = true; abort.abort(); cancelAnimationFrame(frame); clearTimeout(viewTimer); resize.disconnect(); visibility.disconnect();
       renderer.domElement.removeEventListener("keydown", keydown);
       renderer.domElement.removeEventListener("webglcontextlost", lost);
       controls.dispose(); geometry.dispose(); material.map?.dispose(); material.bumpMap?.dispose(); material.specularMap?.dispose(); material.dispose(); atmosphereMaterial.dispose(); renderer.dispose();
@@ -253,7 +304,7 @@ export default function AtlasGlobe(props: Props) {
   }, []);
 
   useEffect(() => { if (ready || failed) props.onReady?.(); }, [ready, failed, props.onReady]);
-  useEffect(() => { if (failed) props.onView(props.stories.map((s) => s.id)); else api.current?.redraw(); }, [props.stories, props.selectedId, failed]);
+  useEffect(() => { if (failed) props.onView(props.stories.map((s) => s.id)); else api.current?.redraw(); }, [props.stories, props.selectedId, props.active, props.reduceMotion, failed]);
   useEffect(() => {
     const story = props.stories.find((s) => s.id === props.focus?.id);
     if (story) api.current?.focus(story);
@@ -263,12 +314,12 @@ export default function AtlasGlobe(props: Props) {
     <div className="globe-stage" ref={host} />
     {!ready && !failed && <div className="globe-status" role="status">Loading globe…</div>}
     {failed ? <div className="globe-status"><b>The 3D globe is unavailable.</b><p>You can still search and open every story.</p><button className="secondary" onClick={props.onFallback}>Open the flat map</button></div> : <>
-      {ready && <div className="globe-labels" aria-hidden="true">{labels.map((label) => <span key={`${label.text}-${label.lng}`} className={label.kind} style={{ left: label.x, top: label.y }}>{label.text}</span>)}</div>}
-      {ready && <div className="globe-pins">{markers.map((m) => {
+      {ready && <div className="globe-labels" ref={labelLayer} aria-hidden="true">{labels.map((label) => <span key={`${label.text}-${label.lng}`} data-marker={`${label.text}-${label.lng}`} className={label.kind} style={{ left: label.x, top: label.y }}>{label.text}</span>)}</div>}
+      {ready && <div className="globe-pins" ref={pinLayer}>{markers.map((m) => {
         const selected = m.stories.some((s) => s.id === props.selectedId);
         const single = m.stories.length === 1;
-        return <button key={m.stories[0].id} className={`globe-pin ${single ? "single" : "cluster"}${selected ? " selected" : ""}`}
-          style={{ left: m.x, top: m.y, background: ring(m.stories) }}
+        return <button key={m.stories[0].id} data-marker={m.stories[0].id} aria-pressed={selected} className={`globe-pin ${single ? "single" : "cluster"}${selected ? " selected" : ""}`}
+          style={{ left: m.x, top: m.y, background: m.background }}
           aria-label={single ? `${m.stories[0].title} · ${m.stories[0].place}` : `Explore ${m.stories.length} stories near ${m.stories[0].place}`}
           title={single ? m.stories[0].title : `${m.stories.length} stories · select to browse`}
           onClick={() => single ? props.onSelect(m.stories[0].id) : props.onCluster(m.stories.map((s) => s.id))}>

@@ -91,44 +91,17 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
       const mesh = new THREE.Mesh(geometry, makeSurface(i * 2 + 1, i * 2 + 2, true));
       book.add(mesh); return { mesh, geometry, index: i };
     });
-    // The world grows from the book's own horizon in this camera, not in the off-screen Atlas.
-    const worldGeometry = new THREE.SphereGeometry(1, 80, 56);
-    const worldMaterial = new THREE.MeshPhongMaterial({ color: 0x326b6d, transparent: true, opacity: 0, shininess: 15, specular: 0x416e73, depthWrite: false });
-    const world = new THREE.Mesh(worldGeometry, worldMaterial); world.position.z = .3; scene.add(world);
-    resources.push(worldGeometry, worldMaterial);
-    const atmosphereMaterial = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.BackSide,
-      uniforms: { reveal: { value: 0 } },
-      vertexShader: `varying vec3 n;varying vec3 eye;void main(){vec4 p=modelViewMatrix*vec4(position,1.);n=normalize(normalMatrix*normal);eye=-p.xyz;gl_Position=projectionMatrix*p;}`,
-      fragmentShader: `uniform float reveal;varying vec3 n;varying vec3 eye;void main(){float rim=pow(1.-abs(dot(normalize(n),normalize(eye))),3.);gl_FragColor=vec4(.35,.72,.68,rim*.3*reveal);}`
-    });
-    resources.push(atmosphereMaterial);
-    const atmosphere = new THREE.Mesh(worldGeometry, atmosphereMaterial); world.add(atmosphere); atmosphere.scale.setScalar(1.02);
-    let worldRequested = false;
-    const requestWorld = () => {
-      if (worldRequested) return; worldRequested = true;
-      loader.load(`${import.meta.env.BASE_URL}landing/earth-surface.webp`, texture => {
-        if (disposed) { texture.dispose(); return; }
-        texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
-        resources.push(texture); worldMaterial.color.set(0xffffff); worldMaterial.map = texture; worldMaterial.needsUpdate = true; redraw(true);
-      }, undefined, () => { worldMaterial.color.set(0x326b6d); redraw(true); });
-    };
     const draw = () => {
       frame = 0; if (disposed) return;
       const p = progress.current;
       if (p === lastProgress && lastReduced === reduceRef.current && !dirty) return;
       lastProgress = p; lastReduced = reduceRef.current; dirty = false;
       const state = chapterMotion(p);
-      if (p > .57) requestWorld();
       book.visible = state.book > 0;
       bookMaterials.forEach(m => {
         m.opacity = state.book; m.depthWrite = state.book > .99;
         if (m instanceof THREE.ShaderMaterial) m.uniforms.pageOpacity.value = state.book;
       });
-      world.visible = state.earth > 0;
-      world.scale.set(1.2, .025 + state.earth * 1.175, 1.2);
-      world.rotation.set(.22, -.7 + state.earth * .32, 0);
-      worldMaterial.opacity = state.earth;
-      atmosphereMaterial.uniforms.reveal.value = state.earth;
       book.rotation.set(.18 - state.collapse * 1.72, .015, -.025 * (1 - state.collapse));
       book.position.set(0, 0, 0);
       book.scale.set(1 - state.collapse * .2, 1, 1 - state.collapse * .85);
@@ -174,7 +147,6 @@ export default function Storybook({ progress, actionsRef, scene: sceneIndex, red
   }, [progress]);
   return <div className={`storybook-object${ready ? " is-ready" : ""}`} aria-hidden="true">
     <div className="book-canvas" ref={host} />
-    {sceneIndex === 5 && <div className="book-world-fallback"><img src={`${import.meta.env.BASE_URL}landing/earth-surface.webp`} alt="" loading="lazy" decoding="async" /></div>}
     <div className="book-static"><Artwork name={BOOK_ART[sceneIndex * 2]} variant="book" eager /><Artwork name={BOOK_ART[sceneIndex * 2 + 1]} variant="book" eager /></div>
   </div>;
 }

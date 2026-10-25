@@ -133,3 +133,7 @@
 @media(min-width:1101px) and (max-width:1350px){.atlas-layout{grid-template-columns:minmax(0,1fr) 320px}.globe-frame .atlas-legend{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.atlas-landing .atlas-side{max-height:480px}.atlas-intro-actions>span{max-width:180px;text-align:right}.atlas-globe{height:590px}.atlas-page .atlas-side{padding:20px 0}}
 @media(max-width:760px){.atlas-intro{display:block;padding-bottom:24px}.atlas-intro h1{font-size:42px}.atlas-intro-actions{justify-items:start;margin-top:20px;gap:10px}.atlas-intro-actions>span{max-width:none;text-align:left}.atlas-page .page-title{flex-wrap:wrap;gap:12px}.atlas-page .title-actions{flex-wrap:wrap;gap:7px}.atlas-source{font-size:8px;padding:7px 9px}.atlas-globe{height:480px}.globe-stage,.globe-pins,.globe-labels{inset:48px 0 65px}.globe-frame .atlas-legend{grid-template-columns:repeat(2,minmax(0,1fr));right:auto;max-height:none}.globe-frame .globe-caption{bottom:55px;right:0}.globe-caption span{display:none}.globe-caption small{font-size:8px}.atlas-landing .atlas-side{max-height:560px}.atlas-search{width:calc(100% - 32px)}}
+
+/* A marker is a real keyboard/touch target; clustering keeps targets apart. */
+.atlas-page .globe-pin.single,.atlas-page .globe-pin.cluster{width:44px;height:44px}
+.atlas-page .globe-controls button{width:44px;height:44px}

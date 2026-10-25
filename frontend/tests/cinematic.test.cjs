@@ -50,12 +50,19 @@ test('five page turns unfold in order and retrace the same path backwards', () =
   const states = Array.from({length:101}, (_, i) => chapterMotion(i / 100));
   for (let i=100;i>=0;i--) assert.deepEqual(chapterMotion(i/100),states[i]);
 });
-test('the open book bridges to the globe without an empty visual frame', () => {
+test('the book finishes without collapsing or creating a second globe', () => {
   const { chapterMotion } = motion();
-  assert.equal(chapterMotion(0).open, 1); assert.equal(chapterMotion(0).book, 1);
-  assert.equal(chapterMotion(.94).collapse, 1); assert.equal(chapterMotion(.86).horizon, 1);
-  assert.equal(chapterMotion(.98).earth, 1); assert.equal(chapterMotion(1).controls, 1); assert.equal(chapterMotion(1).book, 0);
-  for(let i=0;i<=1000;i++){const s=chapterMotion(i/1000);assert.ok(Math.max(s.book,s.earth,s.horizon)>.35);}
+  assert.equal(chapterMotion(0).book, 1);
+  assert.equal(chapterMotion(.85).book, 1);
+  assert.equal(chapterMotion(.85).scene5, 1);
+  assert.equal(chapterMotion(1).book, 0);
+  for (let i = 0; i <= 1000; i++) {
+    const state = chapterMotion(i / 1000);
+    assert.equal(state.collapse, 0);
+    assert.equal(state.earth, undefined);
+    assert.equal(state.controls, 1);
+    assert.ok(Math.max(state.stageOpacity, state.about) > .6);
+  }
 });
 test('caption scenes stay bounded through fast scrolls and direct jumps', () => {
   const { sceneAt } = motion();
@@ -78,21 +85,10 @@ test('page turns use nearly a full viewport of the longer scroll track', () => {
   assert.equal(pageTurn(.14,0),1);
 });
 
-test('the book reaches its horizon before the visible world expands to full size', () => {
-  const {chapterMotion} = motion();
-  assert.equal(chapterMotion(.83).collapse,1);
-  assert.ok(chapterMotion(.83).book > .99);
-  assert.ok(chapterMotion(.83).earth > 0);
-  assert.ok(chapterMotion(.9).earth > chapterMotion(.83).earth);
-  assert.equal(chapterMotion(.98).earth,1);
-  assert.equal(chapterMotion(.98).book,0);
-});
-
 test('the book scene and About overlap without an empty or delayed handoff', () => {
   const {chapterMotion}=motion();
   assert.equal(chapterMotion(.88).about,0);
   assert.equal(chapterMotion(.9).stageOpacity,1);
-  assert.equal(chapterMotion(.91).earth,1);
   assert.equal(chapterMotion(.98).about,1);
   assert.equal(chapterMotion(1).stageOpacity,0);
   for(let i=880;i<=1000;i++){
