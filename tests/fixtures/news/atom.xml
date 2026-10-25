@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Craft Notes</title>
+  <entry>
+    <title type="html">Structure &lt;i&gt;before&lt;/i&gt; scenes</title>
+    <link rel="self" href="https://craft.example/api/entries/1"/>
+    <link rel="alternate" href="https://craft.example/structure-before-scenes"/>
+    <id>tag:craft.example,2026:1</id>
+    <updated>2026-10-24T12:00:00Z</updated>
+    <summary type="html">&lt;p&gt;Outline the turns first.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>Studio Greenlights ‘Harbor Bell’ Series</title>
+    <link href="https://www.trade.example/2026/10/harbor-bell"/>
+    <published>2026-10-23T19:00:00+01:00</published>
+    <content type="html">Same story, syndicated.</content>
+  </entry>
+</feed>

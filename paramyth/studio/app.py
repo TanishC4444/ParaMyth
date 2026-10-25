@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.staticfiles import StaticFiles
 
-from . import images, library, music, planning, projects, search, workspace, writing
+from . import images, library, music, news, planning, projects, search, workspace, writing
 from .deps import TOKEN_HEADER, local
 from .runtime import Runtime
 from .studios import router as accounts_router
@@ -55,6 +55,7 @@ def create_app(root=None, frontend=FRONTEND):
     app.include_router(planning.router)
     app.include_router(library.router)
     app.include_router(search.router)
+    app.include_router(news.router)
     app.include_router(accounts_router)
     if frontend and (Path(frontend) / 'index.html').is_file():
         app.mount('/', StaticFiles(directory=frontend, html=True), name='frontend')
