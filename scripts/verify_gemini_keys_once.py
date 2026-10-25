@@ -1,6 +1,7 @@
 """Verify configured credentials without printing or persisting their values."""
 import json
 import tempfile
+import sys
 import time
 from pathlib import Path
 
@@ -15,7 +16,7 @@ def main():
             raise SystemExit(f"Expected 10 unique credentials, loaded {len(pool.keys)}")
         print("Loaded 10 unique credentials from Actions secrets", flush=True)
         policy = {
-            "timeout": 20, "thinking": "low", "quality_routing": True,
+            "timeout": 90 if "--flash-only" in sys.argv else 20, "thinking": "low", "quality_routing": True,
             "estimate_small_calls": True, "request_attempt_limit": 1,
         }
         schema = {
@@ -24,6 +25,8 @@ def main():
         }
         checks = [(i, key, "lite") for i, key in enumerate(pool.keys, 1)]
         checks += [(1, pool.keys[0], kind) for kind in ("flash36", "flash")]
+        if "--flash-only" in sys.argv:
+            checks = checks[-1:]
         for number, (slot, key, kind) in enumerate(checks):
             if number:
                 time.sleep(6)  # All ten keys share one project's quota.
