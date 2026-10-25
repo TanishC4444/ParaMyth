@@ -149,7 +149,7 @@ class CreativeLoopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'VULTR_INFERENCE_API_KEY':'test-key'}):
             root=Path(folder)
             values=[{'title':'Idea','text':'An initial premise'},{'pass':False,'summary':'Needs stakes','issues':[{'fix':'Add a consequence'}]},{'title':'Better idea','text':'An improved premise'}]
-            responses=[{'choices':[{'message':{'content':json.dumps(v)}}],'usage':{}} for v in values]
+            responses=[{'choices':[{'message':{'content':json.dumps(v)},'finish_reason':'stop'}],'usage':{}} for v in values]
             with patch('paramyth.pipeline.creative_studio.request_json',side_effect=responses) as request:
                 record=creative_studio.run(root,{'operation':'loop','loop_mode':'ideas','brief':'A meaningful choice','use_story':False,'rounds':1})
             self.assertEqual(request.call_count,3);self.assertEqual([s['stage'] for s in record['steps']],['Ideas','Review','Revise'])
@@ -159,7 +159,7 @@ class CreativeLoopTests(unittest.TestCase):
     def test_passing_review_stops_without_extra_revision(self):
         import os
         with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'VULTR_INFERENCE_API_KEY':'test-key'}):
-            response={'choices':[{'message':{'content':json.dumps({'pass':True,'issues':[]})}}]}
+            response={'choices':[{'message':{'content':json.dumps({'pass':True,'issues':[]})},'finish_reason':'stop'}]}
             with patch('paramyth.pipeline.creative_studio.request_json',return_value=response) as request:
                 record=creative_studio.run(Path(folder),{'operation':'loop','text':'Existing candidate','rounds':3,'use_story':False})
             self.assertEqual(request.call_count,1);self.assertTrue(record['review_matches_result'])
