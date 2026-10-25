@@ -53,7 +53,7 @@ test('five page turns unfold in order and retrace the same path backwards', () =
 test('the open book bridges to the globe without an empty visual frame', () => {
   const { chapterMotion } = motion();
   assert.equal(chapterMotion(0).open, 1); assert.equal(chapterMotion(0).book, 1);
-  assert.equal(chapterMotion(.94).collapse, 1); assert.equal(chapterMotion(.93).horizon, 1);
+  assert.equal(chapterMotion(.94).collapse, 1); assert.equal(chapterMotion(.86).horizon, 1);
   assert.equal(chapterMotion(.98).earth, 1); assert.equal(chapterMotion(1).controls, 1); assert.equal(chapterMotion(1).book, 0);
   for(let i=0;i<=1000;i++){const s=chapterMotion(i/1000);assert.ok(Math.max(s.book,s.earth,s.horizon)>.35);}
 });
@@ -76,4 +76,14 @@ test('page turns use nearly a full viewport of the longer scroll track', () => {
   assert.ok(pageTurn(.08,0) > .4 && pageTurn(.08,0) < .6);
   assert.ok(pageTurn(.12,0) > .8 && pageTurn(.12,0) < 1);
   assert.equal(pageTurn(.14,0),1);
+});
+
+test('the book reaches its horizon before the visible world expands to full size', () => {
+  const {chapterMotion} = motion();
+  assert.equal(chapterMotion(.85).collapse,1);
+  assert.ok(chapterMotion(.85).book > .99);
+  assert.ok(chapterMotion(.85).earth > 0);
+  assert.ok(chapterMotion(.9).earth > chapterMotion(.85).earth);
+  assert.equal(chapterMotion(.98).earth,1);
+  assert.equal(chapterMotion(.98).book,0);
 });

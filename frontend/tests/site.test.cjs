@@ -7,10 +7,11 @@ const ts = require('typescript');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 const root = resolve(__dirname, '..');
-function loader(hash = '#/') {
+function loader(hash = '#/', stubStore = false) {
   const cache = new Map();
   const load = file => {
     if (!file.startsWith('.' ) && !file.startsWith('/')) return require(file);
+    if (stubStore && file.endsWith("/store")) return {useStudio: () => ({go() {}})};
     const path = file.startsWith('/') ? file : resolve(root, file);
     if (path.endsWith('.css')) return {};
     const full = [path,path+'.ts',path+'.tsx',path+'.json'].find(existsSync);
@@ -21,7 +22,7 @@ function loader(hash = '#/') {
     let source = readFileSync(full,'utf8').replaceAll('import.meta.env', '({BASE_URL:"/",VITE_API_BASE:""})');
     // The server-render checks never call API methods; this only supplies the hosting flag.
     const code = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
-    vm.runInNewContext(code,{module,exports:module.exports,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash,hostname:'paramyth.tech'},document:{querySelector:()=>null},console,URL,AbortSignal});
+    vm.runInNewContext(code,{module,exports:module.exports,require:id=>id.startsWith('.')?load(resolve(dirname(full),id)):require(id),location:{hash,hostname:'paramyth.tech'},document:{querySelector:()=>null},console,URL,AbortSignal,matchMedia:()=>({matches:false})});
     return module.exports;
   };
   return path => load(resolve(root,path));
@@ -71,4 +72,15 @@ test('legal and missing pages remain public while account storage is unavailable
   const html=renderToStaticMarkup(React.createElement(Gate,null,React.createElement('main',{id:'public-page'})));
   assert.ok(html.includes('id="public-page"'),route);
  }
+});
+
+test('About and its full-width Instagram section sit outside the Atlas reveal',()=>{
+ const Landing=loader('#/',true)('src/views/Landing.tsx').default;
+ const html=renderToStaticMarkup(React.createElement(Landing,{focusAtlas:false}));
+ const book=html.indexOf('aria-label="Illustrated storybook"');
+ const about=html.indexOf('class="about-section"');
+ const instagram=html.indexOf('class="instagram-panel"');
+ const atlas=html.indexOf('aria-label="Explore the story atlas"');
+ assert.ok(book>=0 && about>book && instagram>about && atlas>instagram);
+ assert.ok(!html.includes('class="product-purpose"'));
 });

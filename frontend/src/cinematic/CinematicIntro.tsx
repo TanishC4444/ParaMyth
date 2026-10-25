@@ -39,15 +39,6 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     const measure = () => {
       if (!section.offsetHeight) return;
       geometry = { top: section.getBoundingClientRect().top + scrollY, height: section.offsetHeight, viewport: innerHeight };
-      const world = atlas.querySelector<HTMLElement>(".globe-stage");
-      const object = section.querySelector<HTMLElement>(".storybook-object");
-      if (world && object) {
-        const r = world.getBoundingClientRect();
-        const atlasTop = atlas.getBoundingClientRect().top;
-        shell.style.setProperty("--book-center-x", `${object.offsetLeft}px`);
-        shell.style.setProperty("--bridge-x", `${r.left + r.width / 2 - object.offsetLeft}px`);
-        shell.style.setProperty("--bridge-y", `${Math.min(innerHeight * .72, r.top - atlasTop + r.height / 2) - (object.offsetTop + object.offsetHeight / 2)}px`);
-      }
     };
     const saved = readNavigation();
     bookmark.current = saved?.bookProgress ?? bookmark.current;
@@ -60,7 +51,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       const { top, height } = bounds();
       const p = scrollProgress(scrollY, top, height, innerHeight);
       progress.current = p;
-      if (p > .35) callbacks.current.onPrepareAtlas?.();
+      if (p > .88) callbacks.current.onPrepareAtlas?.();
       const inBook = p < .9995;
       Object.entries(chapterMotion(p)).forEach(([key, value]) => { if (values.get(key) !== value) { values.set(key, value); shell.style.setProperty(`--${key}`, String(value)); } });
       shell.style.setProperty("--progress", String(p));

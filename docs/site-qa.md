@@ -28,3 +28,12 @@ on loopback, so any other host is the public site.
 - Verified with TypeScript, production build, cinematic/Atlas behavior tests, legal-route tests, server rendering of all five information pages, and local asset/source checks.
 - Added the supplied @paramythofficial embed to About, with lazy script loading, a reserved display area, and a permanent direct-profile fallback. The official email also appears in the footer.
 - Browser access was disabled in Work settings during this revision. Visual layout, GPU execution, and measured frame rate could not be rechecked; source and server-render tests do not substitute for that check.
+
+### About layout and visible book-to-world revision
+
+- Root cause: the About/Instagram content was inside the fixed Atlas reveal and displaced the globe below the viewport. About and Atlas are now separate, normal-flow sections after the sticky animation.
+- The book and an Earth mesh share one Three.js scene and camera. The book tilts and compresses into a horizon; an oblate Earth expands to a sphere in place. The final world stays visible while the sticky stage scrolls away. Scroll position alone controls the sequence, including reverse motion.
+- The About section has a two-column introduction, three compact workflow items, and a full-width Instagram panel. The embed can use 900 px instead of 280 px on desktop, with natural document height instead of a fixed scrolling box.
+- World texture loading starts before its reveal. Atlas initialization is deferred until the end of the book. The 3D preview skips identical frames while the user scrolls through later content.
+- Added a structural server-render regression check to ensure About and Instagram cannot be nested inside the Atlas again, plus tests for the visible horizon/world phases.
+- Local browser control remains disabled. TypeScript, build, behavior, and server-render checks verify the implementation; GPU appearance and responsive visual layouts still need a browser pass.

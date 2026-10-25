@@ -3,6 +3,7 @@ import { Artwork } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
 import { useAccess } from "../AccountGate";
+import "../about.css";
 import Instagram from "../Instagram";
 import { CONTACT_EMAIL } from "../contact";
 import { SiteLinks } from "../SiteLinks";
@@ -35,15 +36,16 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
     </header>
     <main id="landing-main" className="landing-main" tabIndex={-1}>
       <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} onBookChange={onBookChange} onPrepareAtlas={prepareAtlas} />
-      <section ref={atlas} tabIndex={-1} className="landing-atlas-section cinematic-atlas" aria-label="About ParaMyth and the Story Atlas">
-    <section className="product-purpose" aria-labelledby="purpose-title">
-      <div className="about-copy"><span className="about-label">About ParaMyth</span><h2 id="purpose-title">Story Development<br /><em>for Creative Directors</em></h2><p>ParaMyth helps creative directors brainstorm story concepts, draft treatments, and explore production ideas. Start with a classic story, reshape its characters and world, and develop a rough direction before committing to production.</p><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{!access.authenticated && <div className="about-account"><a href="#/signin">Sign In</a><a href="#/signup">Create Account</a></div>}</div>
-      <ol><li><h3>Find a Starting Point</h3><p>Explore myths, fairy tales, and epics through the Story Atlas.</p></li><li><h3>Shape the Story</h3><p>Develop a premise, characters, tone, and an early draft.</p></li><li><h3>Explore the Production</h3><p>Work through visual direction, scene ideas, and a rough production plan.</p></li></ol>
-      <Instagram enabled={active && !bookVisible} />
-    </section>
-
+      <section className="about-section" aria-labelledby="purpose-title">
+        <div className="about-intro">
+          <div><span className="about-eyebrow">About ParaMyth</span><h2 id="purpose-title">Story Development<br /><em>for Creative Directors</em></h2></div>
+          <div className="about-description"><p>Brainstorm concepts, draft treatments, and explore production ideas before committing to a direction. ParaMyth brings classic stories, early writing, and visual planning into one creative workspace.</p><div className="about-actions"><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{!access.authenticated && <a href="#/signin">Sign In</a>}</div></div>
+        </div>
+        <ol className="about-workflow"><li><h3>Discover</h3><p>Find a starting point in myths, fairy tales, and epics.</p></li><li><h3>Develop</h3><p>Shape the premise, characters, tone, and rough draft.</p></li><li><h3>Plan</h3><p>Explore scenes, visual direction, and production ideas.</p></li></ol>
+        <Instagram enabled={active && !bookVisible} />
+      </section>
+      <section ref={atlas} tabIndex={-1} className="landing-atlas-section cinematic-atlas" aria-label="Explore the story atlas">
         {atlasPrepared && <Suspense fallback={<PageLoading label="Loading the Story Atlas…" />}><Atlas landing reduceMotion={reduceMotion} onReady={syncWorld} /></Suspense>}
-
       </section>
     </main>
     <section className="image-library" aria-label="Artwork collection">
