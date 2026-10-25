@@ -311,8 +311,10 @@ saved. A timeout may leave billing uncertain; there are no automatic retries or
 provider fallbacks. Interrupted processes may leave a generating record for
 manual inspection.
 
-This phase exposes Python functions and a CLI. Studio HTTP routes and prompt
-enhancement are separate work. Tests use synthetic PNGs
+Add `--enhance` to `prepare` to have Muse Glimmer on Vultr write the prompt from
+the selected story passages and art direction instead of the local template. It
+needs `VULTR_INFERENCE_API_KEY`, makes one model call and records its token usage
+and any invented visual choices as assumptions. Tests use synthetic PNGs
 and mocked provider responses; they do not establish live account access or
 image quality.
 
