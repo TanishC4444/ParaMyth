@@ -4,6 +4,7 @@ import mimetypes
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -20,12 +21,26 @@ ACCOUNTS_UI = Path(__file__).resolve().parents[2] / 'web'
 PUBLIC_ASSETS = Path(__file__).resolve().parents[2] / 'frontend' / 'public'
 
 
+class StudioApp(FastAPI):
+    def build_middleware_stack(self):
+        stack = super().build_middleware_stack()
+        # Wrap ServerErrorMiddleware too: add_middleware puts CORS inside it,
+        # hiding unhandled 500s (and outer middleware rejections) from browsers.
+        # Keep the FastAPI instance so routes, state and lifespan work as usual.
+        if self.state.frontend_origin:
+            stack = CORSMiddleware(stack, allow_origins=[self.state.frontend_origin],
+                allow_credentials=True, allow_methods=['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+                allow_headers=['Accept', 'Content-Type', 'Authorization', 'X-ParaMyth-Token', 'X-ParaMyth-Account'],
+                expose_headers=['Content-Disposition'], max_age=600)
+        return stack
+
+
 def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_origin=None):
     """Build the app for a workspace folder (PARAMYTH_WORKSPACE, or the current directory).
     A built frontend, when present, is served at / from the same local origin."""
     from .server_settings import load_server_environment
     load_server_environment()
-    app = FastAPI(title='ParaMyth studio', version='0.1.0')
+    app = StudioApp(title='ParaMyth studio', version='0.1.0')
     # Slim Linux images may omit the system MIME database used by StaticFiles.
     mimetypes.add_type('image/webp', '.webp')
     public_origin = public_origin if public_origin is not None else os.getenv('PARAMYTH_PUBLIC_ORIGIN', '')
@@ -53,12 +68,6 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
         app.state.workspaces = Workspaces(root, key)
         app.router.on_shutdown.append(app.state.workspaces.close)
         app.add_middleware(HostedRequests)
-        if app.state.frontend_origin:
-            from fastapi.middleware.cors import CORSMiddleware
-            app.add_middleware(CORSMiddleware, allow_origins=[app.state.frontend_origin],
-                allow_credentials=True, allow_methods=['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-                allow_headers=['Accept', 'Content-Type', 'Authorization', 'X-ParaMyth-Token', 'X-ParaMyth-Account'],
-                expose_headers=['Content-Disposition'], max_age=600)
     else:
         app.state.runtime = Runtime(root)
         app.router.on_shutdown.append(app.state.runtime.close)
