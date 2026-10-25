@@ -11,6 +11,7 @@ import {
   useCallback,
 } from "react"
 import { api as requestApi, currentAccountIdentity, studioHost, projectPath, studioJobs, type Job } from "./api"
+import { STATIC_SITE } from "./site"
 import { uid, now, modeOf } from "./data"
 import { errorText } from "./ui"
 import type {
@@ -41,7 +42,9 @@ const VIEWS: View[] = [
 const routeView = (): View => {
   const v = location.hash.replace(/^#\/?/, "").split("/")[0] as View
   if (["creative", "images", "music", "production", "project"].includes(v)) return "workflow"
-  return VIEWS.includes(v) ? v : "landing"
+  if (VIEWS.includes(v)) return v
+  // "#/something" is a route that does not exist; bare "#anchor" links stay on the landing.
+  return location.hash.startsWith("#/") && v ? "notfound" : "landing"
 }
 export const blankProject = (): Project => ({
   id: "",
@@ -246,6 +249,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   }, [])
   const refresh = useCallback(async () => {
     if (access.accounts_required && !access.authenticated) { setReady(true); return }
+    if (STATIC_SITE) {
+      setReady(true)
+      return
+    }
     try {
       const value = await api<{
         projects: Project[]

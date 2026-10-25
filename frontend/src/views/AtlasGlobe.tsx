@@ -90,7 +90,7 @@ export default function AtlasGlobe(props: Props) {
     let restoringFromMap = false;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
-    const homeDistance = () => Math.max(3.5, 1.12 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
+    const homeDistance = () => Math.max(3.2, 1.04 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
     const home = () => camera.position.copy(position(25, 25).multiplyScalar(homeDistance()));
     home(); camera.lookAt(0, 0, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
