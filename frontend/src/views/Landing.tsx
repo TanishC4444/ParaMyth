@@ -14,8 +14,11 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
   return <div className="landing-shell cinematic-landing">
     <a className="skip-link" href="#landing-main" onClick={(event) => { event.preventDefault(); document.getElementById("landing-main")?.focus(); }}>Skip to content</a>
     <header className="landing-header">
-      <a className="landing-brand" href="#/" aria-label="ParaMyth home"><img className="brand-logo" src="/brand/paramyth-logo.png" width="1280" height="720" alt="ParaMyth" /><span className="brand-tagline">A little wonder.<br />A world of possibility.</span></a>
-      <nav aria-label="Landing navigation"><a href="#/atlas">Story atlas</a><a href="#/projects">Your stories</a><a href="/studio/teams.html">Sign in / Join</a><button className="primary" onClick={() => go("overview")}>Open studio <Icon name="arrow" size={15} /></button></nav>
+      <nav aria-label="Landing navigation">
+        <button className="dock-atlas" onClick={() => intro.current?.enter()}><Icon name="atlas" size={16} /><span>Story atlas</span></button>
+        <a href="#/projects">Your stories</a><a href="/studio/teams.html">Sign in</a>
+        <button className="dock-studio" onClick={() => go("overview")}>Open studio <Icon name="arrow" size={14} /></button>
+      </nav>
     </header>
     <main id="landing-main" className="landing-main" tabIndex={-1}>
       <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} />

@@ -31,3 +31,36 @@ test('navigation memory is scoped to the session and storage denial is safe', ()
   assert.equal(blocked.hasSeenIntro(), false);
   assert.doesNotThrow(() => blocked.rememberIntro());
 });
+
+test('chapter curves remain finite and bounded throughout fast forward and reverse scrolling', () => {
+  const { chapterMotion } = motion();
+  for (let i = -100; i <= 1100; i++) {
+    const p = i / 1000;
+    const state = chapterMotion(p);
+    for (const [key, value] of Object.entries(state)) {
+      assert.ok(Number.isFinite(value) && value >= 0 && value <= 1, `${key} at ${p}`);
+    }
+    assert.deepEqual(chapterMotion(p), state, 'scroll history cannot affect a frame');
+  }
+});
+test('the book assembles before Earth takes over, and Atlas is fully visible at the destination', () => {
+  const { chapterMotion } = motion();
+  assert.equal(chapterMotion(0).hero, 1);
+  assert.equal(chapterMotion(0).book, 1);
+  assert.ok(chapterMotion(.27).burst > .99);
+  assert.equal(chapterMotion(.58).burst, 0);
+  assert.equal(chapterMotion(.58).unfold, 1);
+  assert.equal(chapterMotion(.58).book, 1);
+  assert.equal(chapterMotion(.78).earth, 1);
+  assert.equal(chapterMotion(.78).book, 0);
+  assert.equal(chapterMotion(1).atlas, 1);
+  assert.equal(chapterMotion(1).earth, 0);
+  assert.equal(chapterMotion(0).atlas, 0);
+});
+test('the reveal has no blank chapter between book and Earth', () => {
+  const { chapterMotion } = motion();
+  for (let i = 0; i <= 1000; i++) {
+    const state = chapterMotion(i / 1000);
+    assert.ok(Math.max(state.book, state.earth, state.atlas) > .35);
+  }
+});

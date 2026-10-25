@@ -1,141 +1,93 @@
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { createTimeline, stagger } from "animejs";
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import Storybook from "./Storybook";
-import StoryParticles from "./StoryParticles";
-import TitleReveal from "./TitleReveal";
-import { hasSeenIntro, phaseAt, rememberIntro, scrollProgress, SCROLL_DURATION } from "./motion";
+import LandingEarth from "./LandingEarth";
+import { Artwork } from "../art";
+import { chapterMotion, scrollProgress } from "./motion";
 import "./cinematic.css";
 
-export type IntroActions = { replay: () => void };
+export type IntroActions = { replay: () => void; enter: () => void };
 type Props = { atlasRef: RefObject<HTMLElement | null>; actionsRef: RefObject<IntroActions | null>; active: boolean; focusAtlas: boolean; reduceMotion: boolean };
+
 export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtlas, reduceMotion }: Props) {
   const root = useRef<HTMLElement>(null);
-  const [systemReduced, setSystemReduced] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches || !CSS.supports("transform-style", "preserve-3d"));
-  const reduced = systemReduced || reduceMotion;
-  const [paused, setPaused] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [phase, setPhase] = useState("book");
   const progress = useRef(0);
-  const firstVisit = useRef(!hasSeenIntro() && !focusAtlas);
-  const wasActive = useRef(active);
-  const activeRef = useRef(active); activeRef.current = active;
-  const pausedRef = useRef(paused); pausedRef.current = paused;
-  const controls = useRef<{ skip: (focus?: boolean) => void; refresh: () => void; replay: () => void } | null>(null);
-  useImperativeHandle(actionsRef, () => ({ replay: () => { setPaused(false); controls.current?.replay(); } }), []);
-
+  const entered = useRef(false);
+  const [systemReduced, setSystemReduced] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [paused, setPaused] = useState(false);
+  const [chapter, setChapter] = useState(0);
+  const reduced = systemReduced || reduceMotion;
+  const enter = () => {
+    const atlas = atlasRef.current;
+    if (!atlas) return;
+    entered.current = true;
+    atlas.inert = false; atlas.removeAttribute("aria-hidden");
+    atlas.style.opacity = "1";
+    atlas.scrollIntoView({ behavior: "instant" });
+    atlas.focus({ preventScroll: true });
+  };
+  useImperativeHandle(actionsRef, () => ({
+    enter,
+    replay: () => { entered.current = false; setPaused(false); root.current?.scrollIntoView({ behavior: "instant" }); root.current?.focus({ preventScroll: true }); },
+  }));
   useEffect(() => {
-    const preference = matchMedia("(prefers-reduced-motion: reduce)");
-    const changed = () => setSystemReduced(preference.matches || !CSS.supports("transform-style", "preserve-3d"));
-    preference.addEventListener("change", changed);
-    return () => preference.removeEventListener("change", changed);
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => setSystemReduced(query.matches);
+    query.addEventListener("change", change);
+    return () => query.removeEventListener("change", change);
   }, []);
-
   useEffect(() => {
     const section = root.current!, atlas = atlasRef.current!;
-    let frame = 0, disposed = false, lastPhase = "book", settled = false;
-    const find = (selector: string) => section.querySelector<HTMLElement>(selector)!;
-    const skip = (focus = true) => {
-      settle(); rememberIntro();
-      scroll.seek(SCROLL_DURATION, true);
-      atlas.inert = false; atlas.removeAttribute("aria-hidden");
-      const top = atlas.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top, behavior: "instant" }); update();
-      if (focus) atlas.focus({ preventScroll: true });
-    };
-    if (reduced) {
-      setReady(true); setPhase("book");
-      atlas.style.opacity = "1"; atlas.inert = false; atlas.removeAttribute("aria-hidden");
-      controls.current = { skip: (focus = true) => { rememberIntro(); atlas.scrollIntoView({ behavior: "instant" }); if (focus) atlas.focus({ preventScroll: true }); }, refresh: () => {}, replay: () => section.scrollIntoView({ behavior: "instant" }) };
-      if (!firstVisit.current && activeRef.current) controls.current.skip(false);
-      return () => { controls.current = null; atlas.style.removeProperty("opacity"); };
-    }
-
-    const opening = createTimeline({ autoplay: false, defaults: { ease: "inOutSine" }, onComplete: () => { settled = true; firstVisit.current = false; setReady(true); rememberIntro(); } })
-      .add(find(".storybook-assembly"), { opacity: [0, 1], y: [70, 0], x: ["-14%", "0%"], rotateX: [46, 28], rotateZ: [-12, -5], duration: 1800 }, 0)
-      .add(find(".book-cover"), { rotateY: [0, -178], duration: 1600 }, 650)
-      .add(find(".book-left-block"), { opacity: [0, 1], duration: 800 }, 1000)
-      .add(find(".book-cover"), { zIndex: [8, 0], duration: 1 }, 2300);
-    [0, 1, 2].forEach((i) => {
-      opening.add(find(`.book-leaf-${i}`), { rotateY: [0, -177 + i * .7], duration: 1450 + i * 110 }, 2750 + i * 2000)
-        .add(find(`.book-leaf-${i}`), { zIndex: [6 - i, i + 1], duration: 1 }, 4210 + i * 2100);
-    });
-    opening.add(find(".cinema-world-light"), { backgroundColor: ["#6d9e81", "#61789e"], duration: 1500 }, 2700)
-      .add(find(".cinema-world-light"), { backgroundColor: "#bb9674", duration: 1500 }, 4800)
-      .add(find(".cinema-world-light"), { backgroundColor: "#91b7a0", duration: 1500 }, 6900)
-      .add(section.querySelectorAll(".book-illustration .art-image"), { scale: [1.06, 1], duration: 8500, ease: "linear" }, 0);
-
-    const scroll = createTimeline({ autoplay: false, defaults: { ease: "inOutSine" } })
-      .add(find(".storybook-exit"), { scale: [1, .5], y: [0, -100], opacity: [1, 0], duration: 1000 }, 120)
-      .add(find(".cinema-opening-copy"), { opacity: [1, 0], y: [0, -20], duration: 450 }, 50)
-      .add(find(".cinema-scroll-cue"), { opacity: [1, 0], duration: 400 }, 100)
-      .add(find(".cinema-title-reveal"), { opacity: [0, 1], duration: 400 }, 950)
-      .add(section.querySelectorAll(".cinema-letter"), { opacity: [0, 1], y: [32, 0], duration: 550, delay: stagger(65), ease: "outCubic" }, 950)
-      .add(find(".cinema-title-reveal"), { opacity: 0, y: [0, -65], duration: 600 }, 2200)
-      .add(find(".cinema-stage"), { backgroundColor: ["#142f37", "#f8f7f2"], duration: 900 }, 2300)
-      .add(find(".cinema-atmosphere"), { opacity: [1, 0], duration: 900 }, 2300)
-      .add(atlas, { opacity: [0, 1], translateY: [35, 0], scale: [.97, 1], duration: 750 }, 2450);
-    function settle() {
-      if (settled) return;
-      opening.seek(opening.duration, true).pause(); settled = true; firstVisit.current = false; setReady(true); rememberIntro();
-    }
-    function update() {
+    const preserveAtlas = atlas.contains(document.activeElement);
+    let frame = 0;
+    const update = () => {
       frame = 0;
-      if (disposed || !activeRef.current || document.hidden) return;
+      if (!active) return;
       const rect = section.getBoundingClientRect();
-      if (!rect.height) return;
-      const p = scrollProgress(window.scrollY, rect.top + window.scrollY, rect.height, window.innerHeight);
-      if (p > .012) settle();
-      progress.current = p; scroll.seek(p * SCROLL_DURATION, true);
-      atlas.inert = p < .92;
-      if (atlas.inert) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
-      const nextPhase = phaseAt(p);
+      const p = reduced ? 0 : scrollProgress(window.scrollY, rect.top + window.scrollY, rect.height, window.innerHeight);
+      progress.current = p;
+      if (p >= .98) entered.current = true;
+      if (p < .8) entered.current = false;
+      const state = chapterMotion(p);
+      Object.entries(state).forEach(([key, value]) => section.style.setProperty(`--${key}`, String(value)));
       section.dataset.progress = p.toFixed(3);
-      if (nextPhase !== lastPhase) { lastPhase = nextPhase; setPhase(nextPhase); }
-      if (p >= .98) rememberIntro();
-    }
-    const requestUpdate = () => { if (!frame && activeRef.current) frame = requestAnimationFrame(update); };
-    const refresh = () => {
-      if (!activeRef.current || pausedRef.current || document.hidden) opening.pause();
-      else if (!settled) opening.resume();
-      requestUpdate();
+      section.dataset.phase = p < .25 ? "book" : p < .6 ? "pages" : p < .9 ? "world" : "atlas";
+      setChapter(p < .25 ? 0 : p < .6 ? 1 : 2);
+      atlas.inert = !reduced && !entered.current && p < .9;
+      if (atlas.inert) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
+      atlas.style.opacity = reduced || entered.current ? "1" : String(state.atlas);
     };
-    const replay = () => {
-      window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY, behavior: "instant" });
-      settled = false; setReady(false); opening.restart(); update(); section.focus({ preventScroll: true });
-    };
-    controls.current = { skip, refresh, replay };
+    const requestUpdate = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("scroll", requestUpdate, { passive: true });
     window.addEventListener("resize", requestUpdate);
-    document.addEventListener("visibilitychange", refresh);
-    if (!firstVisit.current) { settle(); if (activeRef.current) skip(false); }
-    else refresh();
     update();
+    if (preserveAtlas) enter();
     return () => {
-      disposed = true; cancelAnimationFrame(frame); opening.revert(); scroll.revert();
-      window.removeEventListener("scroll", requestUpdate); window.removeEventListener("resize", requestUpdate); document.removeEventListener("visibilitychange", refresh);
-      atlas.inert = false; atlas.removeAttribute("aria-hidden"); controls.current = null;
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", requestUpdate); window.removeEventListener("resize", requestUpdate);
+      atlas.inert = false; atlas.removeAttribute("aria-hidden"); atlas.style.removeProperty("opacity");
     };
-  }, [reduced, atlasRef]);
+  }, [active, reduced, atlasRef]);
+  useEffect(() => { if (active && focusAtlas) enter(); }, [active, focusAtlas, reduced]);
 
-  useLayoutEffect(() => {
-    if (active && (focusAtlas || !wasActive.current)) controls.current?.skip(false);
-    wasActive.current = active;
-    controls.current?.refresh();
-  }, [active, focusAtlas]);
-  useEffect(() => { controls.current?.refresh(); }, [paused]);
-
-  return <section ref={root} tabIndex={-1} className={`cinematic-intro${reduced ? " cinematic-static" : ""}`} data-phase={phase} aria-label="Enter the world of ParaMyth">
+  return <section ref={root} tabIndex={-1} className={`cinematic-intro${reduced ? " cinematic-static" : ""}${paused || !active ? " cinema-paused" : ""}`} aria-label="The ParaMyth introduction">
     <div className="cinema-stage">
-      <div className="cinema-atmosphere" aria-hidden="true"><div className="cinema-world-light" /><div className="cinema-grain" /><div className="cinema-orbit orbit-one" /><div className="cinema-orbit orbit-two" /></div>
-      <div className="cinema-opening-copy"><p className="cinema-eyebrow">A LITTLE WONDER. A WORLD OF POSSIBILITY.</p><p className="cinema-prologue">Every story begins<br /><em>somewhere.</em></p></div>
+      <div className="cinema-atmosphere" aria-hidden="true"><div className="cinema-world-light" /><div className="cinema-grain" /><div className="cinema-coordinate coordinate-one">38° 02′ N<br />23° 43′ E</div><div className="cinema-coordinate coordinate-two">IMAGINATION<br />HAS A GEOGRAPHY.</div></div>
+      <div className="cinema-opening-copy"><p className="cinema-eyebrow">AN ATLAS OF STORIES. A SPACE TO MAKE YOUR OWN.</p><h1 className="paramyth-wordmark" aria-label="ParaMyth">Para<span>Myth</span><sup aria-hidden="true">✳</sup></h1><p className="cinema-prologue">The world is made of <em>stories.</em></p></div>
+      <div className="cinema-orbits" aria-hidden="true">
+        <div className="orbit-track track-one" /><div className="orbit-track track-two" />
+        <div className="orbit-item orbit-art-one"><Artwork name="castle" eager /><span>01 — THE PLACES</span></div>
+        <div className="orbit-item orbit-art-two"><Artwork name="enchanted" eager /><span>02 — THE IMPOSSIBLE</span></div>
+        <span className="orbit-star star-one">✳</span><span className="orbit-star star-two">✧</span>
+        <span className="orbit-note">A thousand places.<br /><em>One first page.</em></span>
+      </div>
       <Storybook />
-      {!reduced && <StoryParticles progress={progress} running={active && !paused && phase !== "atlas"} />}
-      <TitleReveal />
-      <div className="cinema-controls"><button onClick={() => controls.current?.skip()}>Skip intro <span aria-hidden="true">↗</span></button>{!reduced && <button onClick={() => setPaused(!paused)} aria-pressed={paused}>{paused ? "Resume animation" : "Pause animation"}</button>}</div>
-      <button className="cinema-scroll-cue" onClick={() => reduced ? controls.current?.skip() : window.scrollTo({ top: (root.current?.getBoundingClientRect().top || 0) + window.scrollY + (root.current!.offsetHeight - window.innerHeight) * .5, behavior: paused ? "instant" : "smooth" })}>
-        <span>{reduced ? "Explore the story atlas" : ready ? "Scroll to open a world" : "Watch the pages. Then follow the story."}</span><i aria-hidden="true">↓</i>
-      </button>
-      <span className="cinema-chapter" aria-hidden="true">{phase === "book" ? "01 / THE BEGINNING" : phase === "title" ? "02 / THE POSSIBILITY" : "03 / YOUR WORLD"}</span>
+      {!reduced && <LandingEarth progress={progress} running={active && !paused} />}
+      <div className="cinema-world-copy"><span className="cinema-eyebrow">EVERY STORY COMES FROM SOMEWHERE</span><h2>A whole world.<br /><em>Between the covers.</em></h2><button onClick={enter}>Explore the story atlas <span aria-hidden="true">↗</span></button></div>
+      <div className="cinema-bottom"><span className="cinema-chapter">0{chapter + 1} <i>/</i> {['THE FIRST PAGE', 'UNBOUND', 'A WORLD OF STORIES'][chapter]}</span><button className="cinema-scroll-cue" onClick={() => {
+        if (reduced || chapter === 2) { enter(); return; }
+        const section = root.current!;
+        window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY + (section.offsetHeight - window.innerHeight) * (chapter === 0 ? .46 : .76), behavior: "smooth" });
+      }}><span>{reduced ? 'Enter the atlas' : chapter === 2 ? 'Enter the atlas' : 'Scroll to turn the world'}</span><span aria-hidden="true">↓</span></button><div className="cinema-controls"><button onClick={enter}>Skip to atlas ↗</button>{!reduced && <button onClick={() => setPaused(!paused)} aria-pressed={paused} aria-label={paused ? "Resume animation" : "Pause animation"}>{paused ? '▶' : 'Ⅱ'}</button>}</div></div>
     </div>
   </section>;
 }
