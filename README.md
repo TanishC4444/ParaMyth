@@ -18,7 +18,12 @@ python -m unittest discover -s tests -v
 
 The backend-tests workflow checks contracts and storage on Python 3.11 and 3.12. The fixture-checks workflow checks fixture responses against the contracts.
 
-The sequential coordinator supports plan approval, bounded retries, character-scoped memory, atomic scene acceptance, checkpoints, chapter export, and resumable runs. Retrieval and role transports can be injected. An explicit HTTPS chat-completions adapter is available. A user interface is not included. Fixture output is synthetic test data, not generated fiction.
+The sequential coordinator supports plan approval, bounded retries, character-scoped memory, atomic scene acceptance, checkpoints, chapter export, and resumable runs. Retrieval and role transports can be injected. An explicit HTTPS chat-completions adapter is available. Fixture output is synthetic test data, not generated fiction.
+
+## Frontend
+
+The React studio and story atlas live in `frontend/`. See `frontend/README.md`
+for setup (Node.js 22.12+ and pnpm).
 
 ## Start and resume
 
