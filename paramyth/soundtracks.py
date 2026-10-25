@@ -167,7 +167,8 @@ def discover_stories(root):
     found = {root} if any((root / name).is_file() for name in markers) else set()
     for parent in (root / 'outputs', root / 'runs'):
         if parent.is_dir():
-            found.update(p for p in parent.iterdir() if p.is_dir() and any((p / name).is_file() for name in markers))
+            for name in markers:
+                found.update(path.parent for path in parent.rglob(name))
     return sorted(found)
 
 

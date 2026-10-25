@@ -62,10 +62,10 @@ class SoundtrackTests(unittest.TestCase):
         self.assertEqual(soundtracks.discover_stories(self.root), [self.root.resolve()])
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
-            for directory in ('outputs/actual', 'runs/active', 'examples/fixture-output'):
+            for directory in ('outputs/actual', 'runs/active', 'runs/studio-projects/abc', 'examples/fixture-output'):
                 (root / directory).mkdir(parents=True)
                 (root / directory / 'FINAL_STORY.txt').write_text('A story')
-            self.assertEqual(soundtracks.discover_stories(root), sorted([root / 'outputs/actual', root / 'runs/active']))
+            self.assertEqual(soundtracks.discover_stories(root), sorted([root / 'outputs/actual', root / 'runs/active', root / 'runs/studio-projects/abc']))
 
     @patch.dict(os.environ, KEY)
     def test_song_and_instrumental_score_requests(self):
