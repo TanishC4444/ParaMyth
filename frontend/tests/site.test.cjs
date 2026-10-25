@@ -53,3 +53,22 @@ test('each legal destination renders a readable page and a working route home',(
   assert.ok(html.includes('<h1>'+title+'</h1>'),route);assert.ok(html.includes('href="#/"'),route);assert.ok(html.includes('id="legal-main"'),route);
  }
 });
+
+test('contact addresses and the supplied Instagram profile are visible without third-party scripts',()=>{
+ const load=loader('#/contact');
+ const Legal=load('src/Legal.tsx').default;
+ const contact=renderToStaticMarkup(React.createElement(Legal));
+ for(const email of ['paramythofficial@gmail.com','tanishchauhan4444@gmail.com','ronminin@gmail.com','aadityathegreat07@gmail.com']) assert.ok(contact.includes('mailto:'+email));
+ const Instagram=load('src/Instagram.tsx').default;
+ const embed=renderToStaticMarkup(React.createElement(Instagram,{enabled:false}));
+ assert.ok(embed.includes('data-instgrm-permalink="https://www.instagram.com/paramythofficial/"'));
+ assert.ok(embed.includes('Open Instagram'));
+ assert.ok(!embed.includes('<script'));
+});
+test('legal and missing pages remain public while account storage is unavailable',()=>{
+ for(const route of ['terms','privacy','contact','accessibility','credits','page-that-does-not-exist']){
+  const Gate=loader('#/'+route)('src/AccountGate.tsx').default;
+  const html=renderToStaticMarkup(React.createElement(Gate,null,React.createElement('main',{id:'public-page'})));
+  assert.ok(html.includes('id="public-page"'),route);
+ }
+});

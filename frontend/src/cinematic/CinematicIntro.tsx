@@ -34,10 +34,11 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     let pendingMemory = { view: "book" as "book" | "atlas", bookProgress: 0 };
     const values = new Map<string, number>();
     const flushMemory = () => { window.clearTimeout(saveTimer); saveNavigation(pendingMemory); };
-    let geometry = { top: 0, height: 1 };
+    let geometry = { top: 0, height: 1, viewport: innerHeight };
+    let focusWorld = false;
     const measure = () => {
       if (!section.offsetHeight) return;
-      geometry = { top: section.getBoundingClientRect().top + scrollY, height: section.offsetHeight };
+      geometry = { top: section.getBoundingClientRect().top + scrollY, height: section.offsetHeight, viewport: innerHeight };
       const world = atlas.querySelector<HTMLElement>(".globe-stage");
       const object = section.querySelector<HTMLElement>(".storybook-object");
       if (world && object) {
@@ -45,7 +46,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
         const atlasTop = atlas.getBoundingClientRect().top;
         shell.style.setProperty("--book-center-x", `${object.offsetLeft}px`);
         shell.style.setProperty("--bridge-x", `${r.left + r.width / 2 - object.offsetLeft}px`);
-        shell.style.setProperty("--bridge-y", `${r.top - atlasTop + r.height / 2 - (object.offsetTop + object.offsetHeight / 2)}px`);
+        shell.style.setProperty("--bridge-y", `${Math.min(innerHeight * .72, r.top - atlasTop + r.height / 2) - (object.offsetTop + object.offsetHeight / 2)}px`);
       }
     };
     const saved = readNavigation();
@@ -86,16 +87,28 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       paint();
       if (focus) (p >= 1 ? atlas : section).focus({ preventScroll: true });
     };
-    const enter = () => place(1, true);
+    const jumpToWorld = () => {
+      const page = atlas.querySelector<HTMLElement>(".atlas-page");
+      if (!page) return;
+      window.scrollTo({ top: page.getBoundingClientRect().top + scrollY - 78, behavior: "instant" });
+      paint(); atlas.focus({ preventScroll: true }); focusWorld = false;
+    };
+    const enter = () => { focusWorld = true; place(1, true); jumpToWorld(); };
     const replay = () => place(bookmark.current, true);
     const restore = () => {
       const memory = readNavigation();
-      place(focusAtlas || memory?.view === "atlas" ? 1 : memory?.bookProgress ?? 0, false);
+      if (focusAtlas || memory?.view === "atlas") enter(); else place(memory?.bookProgress ?? 0, false);
     };
-    controls.current = { enter, replay, refresh, restore, syncWorld: () => { measure(); refresh(); }, scene: index => place(Math.min(.72, index * .12 + .025), false) };
+    controls.current = { enter, replay, refresh, restore, syncWorld: () => { measure(); if (focusWorld) jumpToWorld(); refresh(); }, scene: index => place(Math.min(.72, index * .12 + .025), false) };
     window.addEventListener("scroll", refresh, { passive: true });
     window.addEventListener("pagehide", flushMemory);
-    const resize = () => { measure(); place(shell.dataset.intro === "false" ? 1 : progress.current, false); };
+    const resize = () => {
+      const inAtlas = shell.dataset.intro === "false";
+      const pastBook = Math.max(0, scrollY - geometry.top - geometry.height + geometry.viewport);
+      measure();
+      if (inAtlas) { window.scrollTo({ top: geometry.top + geometry.height - innerHeight + pastBook, behavior: "instant" }); paint(); }
+      else place(progress.current, false);
+    };
     const observer = new ResizeObserver(() => { if (shell.dataset.intro !== "false") measure(); });
     observer.observe(atlas);
     measure();

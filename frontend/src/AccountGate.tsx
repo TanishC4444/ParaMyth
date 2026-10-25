@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { backendFetch, setAccountIdentity, studioHost } from './api'
 import { PageLoading, RecoveryPage } from './system-pages'
 import { LEGAL_ROUTES } from './legal-routes'
+import { resolveRoute } from './routes'
 import AccountPage from './AccountPage'
 
 type Account = { id: string; email: string; display_name: string }
@@ -52,8 +53,8 @@ export default function AccountGate({children}: {children:ReactNode}) {
     window.addEventListener('paramyth-sign-in-required',changed)
     return()=>{stopped=true;window.removeEventListener('focus',changed);window.removeEventListener('storage',storage);window.removeEventListener('paramyth-sign-in-required',changed)}
   },[])
-  const publicRoute=route==='' || route==='atlas' || (LEGAL_ROUTES as readonly string[]).includes(route)
   const authRoute=route==='signin' || route==='signup'
+  const publicRoute=route==='' || route==='atlas' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!authRoute && resolveRoute('#/'+route)==='notfound')
   // The public Atlas must remain usable while account storage is waking up.
   if(publicRoute)return <AccessContext.Provider value={access || {accounts_required:true,shared_keys:true,github_admin:false,authenticated:false}}><div key={account?.id||'local'}>{children}</div></AccessContext.Provider>
   if(error)return <RecoveryPage message="We couldn’t connect to your Studio. Please check your connection and try again." />
