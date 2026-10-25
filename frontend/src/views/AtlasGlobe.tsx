@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ink } from "../atlas";
 import type { AtlasPin } from "../types";
 
+export type GlobeTransition = { zoomToMap: () => { lat: number; lng: number } | null; pullOut: (center?: { lat: number; lng: number } | null) => void };
+
 type Props = {
+  transitionRef?: RefObject<GlobeTransition | null>;
   reduceMotion?: boolean;
   onReady?: () => void;
   stories: AtlasPin[];
@@ -68,7 +71,8 @@ export default function AtlasGlobe(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   latest.current = props;
-  const api = useRef<{ redraw: () => void; focus: (s: AtlasPin) => void; rotate: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void } | null>(null);
+  const api = useRef<{ redraw: () => void; focus: (s: AtlasPin) => void; rotate: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void; zoomToMap: GlobeTransition["zoomToMap"]; pullOut: GlobeTransition["pullOut"] } | null>(null);
+  useImperativeHandle(props.transitionRef, () => ({ zoomToMap: () => api.current?.zoomToMap() ?? null, pullOut: (center) => api.current?.pullOut(center) }), []);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [labels, setLabels] = useState<(MapLabel & { x: number; y: number })[]>([]);
   const [ready, setReady] = useState(false);
@@ -82,6 +86,8 @@ export default function AtlasGlobe(props: Props) {
     const abort = new AbortController();
     let disposed = false, frame = 0, lastView = "";
     let targetPosition: THREE.Vector3 | null = null;
+    let mapReturnDistance: number | null = null;
+    let restoringFromMap = false;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
     const homeDistance = () => Math.max(3.5, 1.12 / Math.sin(Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * Math.min(camera.aspect, 1))));
@@ -131,7 +137,7 @@ export default function AtlasGlobe(props: Props) {
         current.phi += (target.phi - current.phi) * t;
         current.radius += (target.radius - current.radius) * t;
         camera.position.setFromSpherical(current);
-        if (camera.position.distanceTo(targetPosition) < .001) { camera.position.copy(targetPosition); targetPosition = null; }
+        if (camera.position.distanceTo(targetPosition) < .001) { camera.position.copy(targetPosition); targetPosition = null; if (restoringFromMap) { mapReturnDistance = null; restoringFromMap = false; } }
         else redraw();
       }
       controls.enableDamping = !latest.current.reduceMotion && !matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -179,6 +185,23 @@ export default function AtlasGlobe(props: Props) {
     };
     api.current = {
       redraw, rotate, zoom,
+      zoomToMap: () => {
+        restoringFromMap = false;
+        if (mapReturnDistance === null) mapReturnDistance = camera.position.length();
+        const normal = camera.position.clone().normalize();
+        const center = { lat: THREE.MathUtils.radToDeg(Math.asin(normal.y)), lng: THREE.MathUtils.radToDeg(Math.atan2(-normal.z, normal.x)) };
+        targetPosition = normal.multiplyScalar(1.72);
+        redraw();
+        return center;
+      },
+      pullOut: (center) => {
+        if (mapReturnDistance === null && !center) return;
+        restoringFromMap = true;
+        const distance = mapReturnDistance ?? homeDistance();
+        if (center) camera.position.copy(position(center.lat, center.lng).multiplyScalar(1.72));
+        targetPosition = camera.position.clone().setLength(distance);
+        redraw();
+      },
       reset: () => { targetPosition = position(25, 25).multiplyScalar(homeDistance()); redraw(); },
       focus: (story) => { targetPosition = position(story.lat, story.lng).multiplyScalar(Math.max(2.6, homeDistance() * .75)); redraw(); },
     };

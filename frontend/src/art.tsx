@@ -2,9 +2,9 @@ import type { CSSProperties } from "react";
 import credits from "./art-credits.json";
 import type { Project } from "./types";
 
-export type Art = "britomart" | "castle" | "ruins" | "forest" | "forest-path" | "enchanted" | "palace" | "sleeping-beauty" | "moonlight" | "music" | "nebula" | "paper";
+export type Art = "krishna" | "dragon" | "phoenix" | "britomart" | "castle" | "ruins" | "forest" | "forest-path" | "enchanted" | "palace" | "sleeping-beauty" | "moonlight" | "music" | "nebula" | "paper";
 export const artUrl = (name: Art) => `${import.meta.env.BASE_URL}art/${name}.webp`;
-const positions: Partial<Record<Art, string>> = { britomart: "67% 45%", castle: "62% 55%", ruins: "60% 45%", moonlight: "50% 68%", palace: "50% 32%", music: "60% 60%" };
+const positions: Partial<Record<Art, string>> = { krishna: "50% 60%", dragon: "50% 65%", phoenix: "50% 50%", britomart: "67% 45%", castle: "62% 55%", ruins: "60% 45%", moonlight: "50% 68%", palace: "50% 32%", music: "60% 60%" };
 
 export function Artwork({ name, className = "", decorative = true, eager = false, style }: { name: Art; className?: string; decorative?: boolean; eager?: boolean; style?: CSSProperties }) {
   const credit = credits.find((c) => c.file === `${name}.webp`)!;
@@ -24,6 +24,9 @@ export function projectArt(project: Project): Art {
 }
 
 export function storyArt(title: string): Art | null {
+  if (/krishna|gita govinda|bhagavata|rasa lila/i.test(title)) return "krishna";
+  if (/shahnameh|shahnama|bahram|rustam|rostam/i.test(title)) return "dragon";
+  if (/phoenix/i.test(title)) return "phoenix";
   if (/sleeping beauty|briar rose/i.test(title)) return "sleeping-beauty";
   if (/faerie queene|britomart/i.test(title)) return "britomart";
   if (/aeneid|iliad|agamemnon|antigone|odyssey|aeschylus|ovid/i.test(title)) return "ruins";
@@ -41,5 +44,5 @@ export function StoryArtwork({ title }: { title: string }) {
 }
 
 export function ArtCredits() {
-  return <details className="art-credits"><summary>Artwork credits</summary><p>Art from our collected public-domain and CC0 works, composed for ParaMyth.</p><ul>{credits.filter((c) => c.file !== "paper.webp").map((c) => <li key={c.file}><a href={c.source_page_url} target="_blank" rel="noreferrer">{c.title}</a> · {c.creator || "Unknown artist"} · {c.license}</li>)}</ul><a href={`${import.meta.env.BASE_URL}art/manifest.json`}>Complete source and license record</a></details>;
+  return <details className="art-credits"><summary>Art & Sources</summary><p>Public-domain and CC0 artworks.</p><ul>{credits.filter((c) => c.file !== "paper.webp").map((c) => <li key={c.file}><a href={c.source_page_url} target="_blank" rel="noreferrer">{c.title}</a> · {c.creator || "Unknown artist"} · {c.license}</li>)}</ul><a href={`${import.meta.env.BASE_URL}art/manifest.json`}>Complete source and license record</a></details>;
 }

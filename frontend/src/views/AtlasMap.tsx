@@ -39,20 +39,24 @@ type Props = {
   onView: (ids: string[]) => void;
   onReady?: () => void;
   reduceMotion?: boolean;
+  view?: { lat: number; lng: number; at: number };
+  onCenter?: (center: { lat: number; lng: number }) => void;
 };
 
-export default function AtlasMap({ stories, selectedId, focus, onSelect, onView, onReady, reduceMotion = false }: Props) {
+export default function AtlasMap({ stories, selectedId, focus, onSelect, onView, onReady, reduceMotion = false, view, onCenter }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const cluster = useRef<L.MarkerClusterGroup | null>(null);
   const markers = useRef(new Map<string, { marker: L.Marker; pin: AtlasPin }>());
-  const latest = useRef({ stories, onSelect, onView, selectedId, onReady, reduceMotion });
-  latest.current = { stories, onSelect, onView, selectedId, onReady, reduceMotion };
+  const latest = useRef({ stories, onSelect, onView, selectedId, onReady, reduceMotion, onCenter });
+  latest.current = { stories, onSelect, onView, selectedId, onReady, reduceMotion, onCenter };
 
   const reportView = () => {
     const m = map.current;
     if (!m) return;
     const b = m.getBounds();
+    const center = m.getCenter();
+    latest.current.onCenter?.({ lat: center.lat, lng: center.lng });
     latest.current.onView(latest.current.stories.filter((s) => b.contains([s.lat, s.lng])).map((s) => s.id));
   };
 
@@ -62,7 +66,7 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView,
       // This view can unmount immediately when switching back to the globe.
       // Leaflet's CSS zoom timeout can otherwise fire against its removed panes.
       zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false,
-      maxBounds: [[-62, -200], [84, 200]], maxBoundsViscosity: 0.9, attributionControl: false,
+      maxBounds: [[-85, -200], [85, 200]], maxBoundsViscosity: 0.9, attributionControl: false,
     });
     map.current = m;
     m.createPane("land").style.zIndex = "200";
@@ -133,6 +137,13 @@ export default function AtlasMap({ stories, selectedId, focus, onSelect, onView,
     group.addLayers(layer);
     reportView();
   }, [stories]);
+
+  useEffect(() => {
+    if (!view || !map.current) return;
+    map.current.stop();
+    map.current.setView([view.lat, view.lng], 4, { animate: false });
+    reportView();
+  }, [view]);
 
   const shown = useRef<string | null>(null);
   useEffect(() => {

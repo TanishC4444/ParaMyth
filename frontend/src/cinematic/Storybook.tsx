@@ -1,15 +1,10 @@
 import { Artwork, type Art } from "../art";
 
-const worlds: { art: Art; title: string; chapter: string }[] = [
-  { art: "enchanted", title: "Beyond the familiar", chapter: "I" },
-  { art: "moonlight", title: "Where the quiet holds a secret", chapter: "II" },
-  { art: "castle", title: "A kingdom waiting to be found", chapter: "III" },
-  { art: "ruins", title: "And a world still to be written", chapter: "IV" },
-];
+const worlds: Art[] = ["krishna", "palace", "dragon", "nebula", "britomart", "phoenix", "castle", "enchanted"];
 
-function Illustration({ world, back = false }: { world: typeof worlds[number]; back?: boolean }) {
+function Illustration({ world, back = false }: { world: Art; back?: boolean }) {
   return <div className={`book-face ${back ? "book-verso" : "book-recto"}`}>
-    <div className="book-illustration"><Artwork name={world.art} eager /><div className="book-image-light" /></div>
+    <div className="book-illustration"><Artwork name={world} eager /><div className="book-image-light" /></div>
     <div className="book-page-shade" />
   </div>;
 }
@@ -21,11 +16,11 @@ export default function Storybook() {
       <div className="book-ground-shadow" />
       <div className="storybook-assembly">
         <div className="book-bottom-cover" />
-        <div className="book-page-block">{Array.from({ length: 15 }, (_, i) => <div className="book-page-stack" key={i} style={{ transform: `translateZ(${-i * 1.5}px)` }} />)}<Illustration world={worlds[3]} /><div className="book-edge edge-fore" /><div className="book-edge edge-top" /><div className="book-edge edge-bottom" /></div>
+        <div className="book-page-block">{Array.from({ length: 15 }, (_, i) => <div className="book-page-stack" key={i} style={{ transform: `translateZ(${-i * 1.5}px)` }} />)}<Illustration world={worlds[7]} /><div className="book-edge edge-fore" /><div className="book-edge edge-top" /><div className="book-edge edge-bottom" /></div>
 
         <div className="book-spine" />
-        {worlds.slice(0, 3).map((world, index) => <div className={`book-leaf book-leaf-${index}`} key={world.art}>
-          <Illustration world={world} /><Illustration world={world} back />
+        {worlds.slice(1, 4).map((world, index) => <div className={`book-leaf book-leaf-${index}`} key={world}>
+          <Illustration world={world} /><Illustration world={worlds[index + 4]} back />
         </div>)}
         <div className="book-cover">
           <div className="book-cover-front"><div className="book-cover-inlay">

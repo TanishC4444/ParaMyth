@@ -40,11 +40,11 @@ import { Icon, PageTitle } from "../ui"
 
 import { StoryArtwork } from "../art"
 
-import AtlasGlobe from "./AtlasGlobe"
+import AtlasGlobe, { type GlobeTransition } from "./AtlasGlobe"
 
 const AtlasMap = lazy(() => import("./AtlasMap"))
 
-const LIST_LIMIT = 80
+const LIST_LIMIT = 8
 
 export default function Atlas({ landing = false, reduceMotion = false, onReady }: { landing?: boolean; reduceMotion?: boolean; onReady?: () => void }) {
   const { store, setStore, project, ideate, notify, atlasQuery } = useStudio()
@@ -76,11 +76,31 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
 
   const [legend, setLegend] = useState(false)
 
-  const [requestedMode, setMode] = useState<"globe" | "map">("globe")
+  const [requestedMode, requestMode] = useState<"globe" | "map">("globe")
   const [mapReady, setMapReady] = useState(false)
   const [mapView, setMapView] = useState<string[]>([])
   const markMapReady = useCallback(() => setMapReady(true), [])
-  const mode = requestedMode === "map" && mapReady ? "map" : "globe"
+  const [mode, setMode] = useState<"globe" | "map">("globe")
+  const [zooming, setZooming] = useState(false)
+  const globeTransition = useRef<GlobeTransition>(null)
+  const [mapFocus, setMapFocus] = useState<{ lat: number; lng: number; at: number }>()
+  const mapCenter = useRef<{ lat: number; lng: number } | null>(null)
+  const rememberMapCenter = useCallback((center: { lat: number; lng: number }) => { mapCenter.current = center }, [])
+  useEffect(() => {
+    const reduced = reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches
+    let handoff: ReturnType<typeof setTimeout> | undefined
+    if (requestedMode === "map" && mapReady) {
+      const center = globeTransition.current?.zoomToMap()
+      if (center) setMapFocus({ ...center, at: Date.now() })
+      setZooming(!reduced)
+      if (reduced) setMode("map")
+      else handoff = setTimeout(() => { setMode("map"); setZooming(false) }, 720)
+    } else if (requestedMode === "globe") {
+      globeTransition.current?.pullOut(mode === "map" ? mapCenter.current : null)
+      setMode("globe"); setZooming(false)
+    }
+    return () => clearTimeout(handoff)
+  }, [requestedMode, mapReady, reduceMotion])
   const inView = mode === "map" ? mapView : globeView
 
   const [cluster, setCluster] = useState<string[] | null>(null)
@@ -109,9 +129,12 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
   )
 
   useEffect(() => {
+    request.current++
+    setLoading("")
+    setStory(null)
     setLimit(LIST_LIMIT)
     setCluster(null)
-  }, [q, hidden, detailedOnly, mode])
+  }, [q, hidden, detailedOnly])
 
   useEffect(() => {
     let active = true
@@ -168,6 +191,8 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
       side.current?.scrollIntoView({ behavior: reduceMotion || matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })
   }
 
+  useEffect(() => { if (story || cluster) reveal() }, [story?.id, cluster])
+
   const select = async (id: string, fly = false) => {
     if (!data) return
 
@@ -183,7 +208,6 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
       if (request.current === current) {
         setStory(result)
         if (side.current) side.current.scrollTop = 0
-        reveal()
       }
     } catch {
       if (request.current === current) notify("Couldn't load that story")
@@ -295,12 +319,6 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
     notify(`Pinned to ${project.title}`)
   }
 
-  const sourceNote = !data
-    ? ""
-    : data.origin.kind === "api"
-      ? "Live literary corpus"
-      : "Saved literary corpus · live records refresh when the studio is available"
-
   return (
     <div className={`${landing ? "atlas-landing" : "page"} atlas-page`}>
       <PageTitle
@@ -309,18 +327,18 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
             ? "EXPLORE THE WORLD"
             : "BEGIN WITH A TALE"
         }
-        title="Story atlas"
-        text="Select a place. Find a story."
+        title="Story Atlas"
+        text=""
       >
         <div className="atlas-mode" aria-label="Atlas display">
           <button
             aria-pressed={requestedMode === "globe"}
-            onClick={() => { setFocus(null); setMode("globe") }}
+            onClick={() => { requestMode("globe") }}
           >
-            3D globe
+            3D Globe
           </button>
-          <button aria-pressed={requestedMode === "map"} onClick={() => { setFocus(null); setMode("map") }}>
-            Flat map
+          <button aria-pressed={requestedMode === "map"} onClick={() => { requestMode("map") }}>
+            Flat Map
           </button>
         </div>
         {data && (
@@ -336,9 +354,10 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
           <section
             className="atlas-frame globe-frame"
           >
-            <div className="atlas-scene" data-mode={mode} aria-busy={requestedMode === "map" && !mapReady}>
+            <div className={`atlas-scene${zooming ? " zooming-in" : ""}`} data-mode={mode} aria-busy={zooming || (requestedMode === "map" && !mapReady)}>
               <div className={`atlas-layer globe-layer${mode === "globe" ? " active" : ""}`} inert={mode !== "globe"} aria-hidden={mode !== "globe"}>
                 <AtlasGlobe
+                  transitionRef={globeTransition}
                   reduceMotion={reduceMotion}
                   onReady={onReady}
                   stories={visible}
@@ -352,9 +371,8 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                     setStory(null)
                     setCluster(ids)
                     setLimit(LIST_LIMIT)
-                    reveal()
                   }}
-                  onFallback={() => setMode("map")}
+                  onFallback={() => requestMode("map")}
                 />
               </div>
               <div className={`atlas-layer map-layer${mode === "map" ? " active" : ""}`} inert={mode !== "map"} aria-hidden={mode !== "map"}>
@@ -366,6 +384,8 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                     onSelect={(id) => select(id)}
                     onView={setMapView}
                     onReady={markMapReady}
+                    view={mapFocus}
+                    onCenter={rememberMapCenter}
                     reduceMotion={reduceMotion}
                   />
                 </Suspense>
@@ -377,7 +397,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search tales, places, mechanisms"
+                placeholder="Find a story or place"
                 aria-label="Search the atlas"
               />
               {q && (
@@ -399,7 +419,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                   aria-expanded={legend}
                   onClick={() => setLegend(!legend)}
                 >
-                  <span className="eyebrow">TRADITIONS</span>
+                  <span className="eyebrow">Traditions</span>
                   <small>
                     {hidden.size
                       ? `${data.index.regions.length - hidden.size} of ${data.index.regions.length}`
@@ -457,6 +477,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                 story={story}
                 pinned={!!pinned}
                 projectTitle={project.title}
+                canPin={!!project.id}
                 onBack={() => {
                   request.current++
                   setLoading("")
@@ -477,25 +498,25 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
               <>
                 <span className="eyebrow">
                   {searching
-                    ? "SEARCH RESULTS"
+                    ? "Search Results"
                     : cluster
-                      ? "SELECTED STORIES"
-                      : "IN THIS VIEW"}
+                      ? "Selected Stories"
+                      : "In This View"}
                 </span>
                 <h2>
                   {listed.length}{" "}
                   {searching
                     ? listed.length === 1
-                      ? "match"
-                      : "matches"
+                      ? "Match"
+                      : "Matches"
                     : listed.length === 1
-                      ? "story"
-                      : "stories"}
+                      ? "Story"
+                      : "Stories"}
                 </h2>
                 <p className="hint">
                   {mode === "globe"
                     ? "Select a marker or a story."
-                    : "Pan and zoom to explore; numbered rings gather nearby tales and show their traditions. Select a pin or a title to open its record."}
+                    : "Select a marker or a story."}
                 </p>
                 {cluster && (
                   <button className="link" onClick={() => setCluster(null)}>
@@ -513,7 +534,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                       <span>
                         <b>{s.title}</b>
                         <small>
-                          {s.tradition} · {s.place}
+                          {s.region} · {s.place}
                         </small>
                       </span>
                     </button>
@@ -523,7 +544,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                       className="link"
                       onClick={() => setLimit(limit + LIST_LIMIT)}
                     >
-                      Show more stories ({listed.length - limit} remaining)
+                      More Stories ({listed.length - limit} remaining)
                     </button>
                   )}
                   {data && !listed.length && (
@@ -534,10 +555,10 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                 </div>
               </>
             )}
-            {data && <details className="atlas-provenance"><summary>About these stories</summary><p>{sourceNote}. {data.index.corpus}: model-authored analysis drafts; pins mark traditional settings or where a tale was told, collected or composed.</p></details>}
+            {data && <details className="atlas-provenance"><summary>About These Stories</summary><p>Traditional tales with draft literary analysis. Locations mark a story’s setting or where it was told, collected, or composed.</p><p>{data.origin.kind === "api" ? "Live collection" : "Saved collection"} · {all.length} stories</p></details>}
           </aside>
         </div>
-      <details className="atlas-concept atlas-idea-tools"><summary>Search by idea <span aria-hidden="true">↗</span></summary>
+      <details className="atlas-concept atlas-idea-tools"><summary>Search by Idea <span aria-hidden="true">↗</span></summary>
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -617,6 +638,7 @@ function StoryDetail({
   story: s,
   pinned,
   projectTitle,
+  canPin,
   onBack,
   onStart,
   onEpisode,
@@ -626,6 +648,7 @@ function StoryDetail({
   story: AtlasStory
   pinned: boolean
   projectTitle: string
+  canPin: boolean
   onBack: () => void
   onFocus: () => void
 
@@ -637,27 +660,27 @@ function StoryDetail({
     <article className="atlas-detail">
       <button className="link atlas-back" onClick={onBack}>
         <Icon name="arrow" size={14} />
-        All stories in view
+        Back to Stories
       </button>
       <span className="eyebrow" style={{ color: ink(s.region) }}>
-        {s.region.toUpperCase()}
+        {s.region}
       </span>
       <h2>{s.title}</h2>
       <button className="atlas-place" onClick={onFocus} title="Show on map">
         <Icon name="pin" size={14} />
         {s.place}
         <em>
-          {s.basis === "setting" ? "where it is set" : "where it was told"}
+          {s.basis === "setting" ? "Story Setting" : "Collection Site"}
         </em>
       </button>
       <p className="atlas-attr">
-        <b>{s.tradition}</b> · {s.attribution}
+        {s.attribution}
       </p>
       <StoryArtwork title={s.title} />
 
-      <p className="atlas-summary">{s.summary || s.analysis}</p>
+      <StorySummary key={s.id} text={s.summary || s.analysis} />
       <div className="atlas-engine">
-        <span className="eyebrow">STORY ENGINE</span>
+        <span className="eyebrow">The story pattern</span>
         <b>{label(s.mechanism)}</b>
         <p>{s.instruction}</p>
       </div>
@@ -665,26 +688,26 @@ function StoryDetail({
       <div className="atlas-actions">
         <button className="primary" onClick={() => onStart(s, "Retelling")}>
           <Icon name="sparkle" size={15} />
-          Ideate on this story
+          Retell This Story
         </button>
         <button className="secondary" onClick={() => onStart(s, "Inspired by")}>
           <Icon name="ideas" size={15} />
-          Draw inspiration
+          Make It Your Own
         </button>
-        <button
+        {canPin && <button
           className="text-action"
           onClick={() => onPin(s)}
           disabled={pinned}
         >
           <Icon name={pinned ? "check" : "pin"} size={14} />
           {pinned ? `Pinned to ${projectTitle}` : `Pin to ${projectTitle}`}
-        </button>
+        </button>}
       </div>
       <p className="hint">
-        Both options create a separate project. Ideate develops this tale;
-        inspiration uses its story engine for an original premise.
+        Start a new project with this tale or its central idea.
       </p>
 
+      <details className="atlas-record-extra"><summary>Explore This Story</summary>
       {s.summary && (
         <Section title="Why it works">
           <p>{s.analysis}</p>
@@ -758,7 +781,7 @@ function StoryDetail({
                   Ideate
                 </button>
                 <button onClick={() => onEpisode(s, e, "Inspired by")}>
-                  Draw inspiration
+                  Make It Your Own
                 </button>
                 <small>{label(e.mechanism)}</small>
               </div>
@@ -782,11 +805,16 @@ function StoryDetail({
           {[s.version_notes, ...s.notes].filter(Boolean).join(" ")}
         </p>
       )}
-      <p className="hint">
-        <code>{s.id}</code> · {label(s.verification)}
-      </p>
+      </details>
     </article>
   )
+}
+
+function StorySummary({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const long = text.length > 440
+  const preview = long ? text.slice(0, 420).replace(/\s+\S*$/, "") + "…" : text
+  return <div className="story-synopsis"><p className="atlas-summary">{expanded ? text : preview}</p>{long && <button className="link" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? "Show Less" : "Read Full Synopsis"}</button>}</div>
 }
 
 const Section = ({

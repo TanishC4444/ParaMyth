@@ -18,10 +18,11 @@ export function rememberIntro() {
 export function chapterMotion(p: number) {
   const ramp = (a: number, b: number) => { const t = clamp((p - a) / (b - a)); return t * t * (3 - 2 * t); };
   return {
-    open: ramp(.07, .27),
-    leaf0: ramp(.28, .39),
-    leaf1: ramp(.36, .47),
-    leaf2: ramp(.43, .54),
+    open: 1,
+    leaf0: ramp(.08, .22),
+    leaf1: ramp(.25, .39),
+    leaf2: ramp(.42, .55),
+    turn: Math.max(Math.sin(Math.PI * ramp(.08, .22)), Math.sin(Math.PI * ramp(.25, .39)), Math.sin(Math.PI * ramp(.42, .55))),
     orbitTurn: clamp(p),
     burst: 0,
     collapse: ramp(.55, .76),

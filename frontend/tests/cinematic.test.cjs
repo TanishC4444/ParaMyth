@@ -85,13 +85,13 @@ test('playback reverses at the same speed without resetting its current position
   assert.equal(advanceScene(.01, 1000, false, -1), 0);
   assert.equal(advanceScene(.99, 1000), 1);
 });
-test('cover opening and sequential page turns finish before the book collapses', () => {
+test('the book begins open and cycles its illustrations before collapsing', () => {
   const { chapterMotion } = motion();
-  const cover = chapterMotion(.27);
+  const cover = chapterMotion(0);
   assert.equal(cover.open, 1);
   assert.equal(cover.leaf0, 0);
-  assert.equal(chapterMotion(.39).leaf0, 1);
-  assert.equal(chapterMotion(.47).leaf1, 1);
-  assert.equal(chapterMotion(.54).leaf2, 1);
-  assert.equal(chapterMotion(.54).collapse, 0);
+  assert.equal(chapterMotion(.22).leaf0, 1);
+  assert.equal(chapterMotion(.39).leaf1, 1);
+  assert.equal(chapterMotion(.55).leaf2, 1);
+  assert.equal(chapterMotion(.55).collapse, 0);
 });

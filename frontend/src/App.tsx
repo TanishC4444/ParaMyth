@@ -111,7 +111,7 @@ function Shell() {
   return (
     <>
     {visitedLanding && <div hidden={!isLanding} className="workspace-view">
-      <Suspense fallback={<div className="landing-loading" role="status" style={{ background: "#030507", color: "#9ab3b6", minHeight: "100svh", fontFamily: "sans-serif", fontSize: 12 }}>Loading ParaMyth…</div>}>
+      <Suspense fallback={<div className="landing-loading" role="status" style={{ background: "#111d31", color: "#d1dfcf", minHeight: "100svh", fontFamily: "sans-serif", fontSize: 12 }}>Loading ParaMyth…</div>}>
         <Landing focusAtlas={view === "atlas"} active={isLanding} />
       </Suspense>
     </div>}
