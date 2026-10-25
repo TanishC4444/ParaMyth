@@ -1,0 +1,12 @@
+import type { Art } from "../art";
+
+export const SCENES: { label: string; left: Art; right: Art; leftTitle: string; rightTitle: string; leftText: string; rightText: string }[] = [
+  { label: "Gathering", left: "krishna", right: "palace", leftTitle: "A river of stories.", rightTitle: "A world, imagined.", leftText: "Krishna gathers with the gopis beside a lotus-filled river. A miniature painting from Rajasthan, India.", rightText: "Golden towers, patterned walls and impossible terrain turn an illustrated palace into a world of its own." },
+  { label: "Kingdoms", left: "dragon", right: "royal-court", leftTitle: "Enter the dragon.", rightTitle: "The world of kings.", leftText: "Bahram Gur confronts a dragon in an illustrated page of the Persian Shahnama, the Book of Kings.", rightText: "A royal reception unfolds across a painted landscape. Look beyond the figures to the intricate setting." },
+  { label: "Melodies", left: "ragamala-one", right: "ragamala-two", leftTitle: "Music becomes an image.", rightTitle: "Another kind of score.", leftText: "Kausa Ragaputra of Malkos, from a Ragamala: a painted interpretation of a musical mode.", rightText: "Surmananda Ragaputra of Hindol belongs to the same tradition of translating melody into a scene." },
+  { label: "Journeys", left: "edo-rain", right: "edo-moon", leftTitle: "Caught in the rain.", rightTitle: "Under an Edo moon.", leftText: "Hiroshige’s Sudden Shower sends figures hurrying across Shin-Ōhashi Bridge in Edo.", rightText: "The Moon-Viewing Promontory shifts the pace. Architecture, water and distant terrain carry the scene." },
+  { label: "Enchantment", left: "britomart", right: "enchanted", leftTitle: "Armour by the sea.", rightTitle: "Through the branches.", leftText: "Walter Crane’s Britomart sets an armoured knight against a windswept shore.", rightText: "Twisting trees and luminous figures make an illustrated woodland feel alive." },
+  { label: "Worlds", left: "nebula", right: "forest-path", leftTitle: "Beyond the painted world.", rightTitle: "Find your own way in.", leftText: "NASA’s Lagoon Nebula replaces the painted landscape with clouds of interstellar gas.", rightText: "A forest path draws the eye into another setting. The Atlas brings these journeys back to places and stories." },
+];
+export const BOOK_ART = SCENES.flatMap(scene => [scene.left, scene.right]);
+export const GALLERY_ART: Art[] = [...BOOK_ART, "moonlight", "castle", "sleeping-beauty", "ruins", "forest", "phoenix", "music", "bahram-azada"];

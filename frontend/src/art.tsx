@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import credits from "./art-credits.json";
 import type { Project } from "./types";
 
-export type Art = "krishna" | "dragon" | "phoenix" | "britomart" | "castle" | "ruins" | "forest" | "forest-path" | "enchanted" | "palace" | "sleeping-beauty" | "moonlight" | "music" | "nebula" | "paper";
+export type Art = "edo-rain" | "edo-moon" | "ragamala-one" | "ragamala-two" | "royal-court" | "bahram-azada" | "krishna" | "dragon" | "phoenix" | "britomart" | "castle" | "ruins" | "forest" | "forest-path" | "enchanted" | "palace" | "sleeping-beauty" | "moonlight" | "music" | "nebula" | "paper";
 export const artUrl = (name: Art) => `${import.meta.env.BASE_URL}art/${name}.webp`;
 const positions: Partial<Record<Art, string>> = { krishna: "50% 60%", dragon: "50% 65%", phoenix: "50% 50%", britomart: "67% 45%", castle: "62% 55%", ruins: "60% 45%", moonlight: "50% 68%", palace: "50% 32%", music: "60% 60%" };
 

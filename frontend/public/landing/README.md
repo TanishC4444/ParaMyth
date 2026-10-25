@@ -6,3 +6,5 @@
 - The book and orbit use the existing credited paintings in ../art/manifest.json.
 
 - Fraunces (SOFT 100 / WONK 1, weight 600): Undercase Type / Google Fonts, SIL Open Font License; see fraunces-OFL.txt. Served locally as fraunces.ttf.
+
+- Bodoni Moda (roman 600 and italic 500): Indestructible Type / Google Fonts. SIL Open Font License, see bodoni-OFL.txt. Locally served as editorial.ttf and editorial-italic.ttf.

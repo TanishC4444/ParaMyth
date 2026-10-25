@@ -6,92 +6,66 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const source = readFileSync(resolve(__dirname, '../src/cinematic/motion.ts'), 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-function motion(sessionStorage) {
-  const exports = {};
-  vm.runInNewContext(code, { exports, sessionStorage });
-  return exports;
-}
-test('scroll progress clamps, reverses, and adapts to the current viewport', () => {
+function motion(sessionStorage) { const exports = {}; vm.runInNewContext(code, { exports, sessionStorage }); return exports; }
+
+test('native scroll progress clamps, reverses and adapts to responsive track heights', () => {
   const { scrollProgress } = motion();
   assert.equal(scrollProgress(-10, 100, 3600, 1000), 0);
   assert.equal(scrollProgress(1400, 100, 3600, 1000), .5);
   assert.equal(scrollProgress(2700, 100, 3600, 1000), 1);
-  assert.equal(scrollProgress(1400, 100, 3600, 1000), .5);
   assert.equal(scrollProgress(1400, 100, 3600, 500), 1300 / 3100);
   assert.equal(scrollProgress(9000, 100, 3600, 1000), 1);
   assert.equal(scrollProgress(100, 100, 0, 1000), 0);
 });
-test('navigation memory is scoped to the session and storage denial is safe', () => {
-  const values = new Map();
-  const m = motion({ getItem: k => values.get(k), setItem: (k, v) => values.set(k, v) });
-  assert.equal(m.hasSeenIntro(), false);
-  m.rememberIntro();
-  assert.equal(m.hasSeenIntro(), true);
-  const blocked = motion({ getItem() { throw Error('Denied'); }, setItem() { throw Error('Denied'); } });
-  assert.equal(blocked.hasSeenIntro(), false);
-  assert.doesNotThrow(() => blocked.rememberIntro());
+test('return visits preserve the selected view and last book position', () => {
+  const values = new Map(); const m = motion({ getItem: k => values.get(k), setItem: (k, v) => values.set(k, v) });
+  assert.equal(m.readNavigation(), null);
+  m.saveNavigation({ view: 'book', bookProgress: .36 });
+  assert.equal(m.readNavigation().view, 'book'); assert.equal(m.readNavigation().bookProgress, .36);
+  m.saveNavigation({ view: 'atlas', bookProgress: .51 });
+  assert.equal(m.readNavigation().view, 'atlas'); assert.equal(m.readNavigation().bookProgress, .51);
+  m.saveNavigation({ view: 'book', bookProgress: 9 }); assert.equal(m.readNavigation().bookProgress, .72);
+  m.saveNavigation({ view: 'invalid', bookProgress: .2 }); assert.equal(m.readNavigation(), null);
 });
-
-test('chapter curves remain finite and bounded throughout fast forward and reverse scrolling', () => {
+test('invalid or denied session storage cannot break navigation', () => {
+  const blocked = motion({ getItem() { throw Error('Denied'); }, setItem() { throw Error('Denied'); } });
+  assert.equal(blocked.readNavigation(), null); assert.doesNotThrow(() => blocked.saveNavigation({view:'atlas',bookProgress:0}));
+  assert.equal(motion({getItem: () => '{broken'}).readNavigation(), null);
+});
+test('every scene is a deterministic function of scroll, with no time input', () => {
   const { chapterMotion } = motion();
   for (let i = -100; i <= 1100; i++) {
-    const p = i / 1000;
-    const state = chapterMotion(p);
-    for (const [key, value] of Object.entries(state)) {
-      assert.ok(Number.isFinite(value) && value >= 0 && value <= 1, `${key} at ${p}`);
-    }
-    assert.deepEqual(chapterMotion(p), state, 'scroll history cannot affect a frame');
+    const p = i / 1000, state = chapterMotion(p);
+    for (const [key, value] of Object.entries(state)) assert.ok(Number.isFinite(value) && value >= 0 && value <= 1, `${key} at ${p}`);
+    assert.deepEqual(chapterMotion(p), state);
   }
 });
-test('the book becomes a horizon before the Atlas controls appear', () => {
-  const { chapterMotion } = motion();
-  assert.equal(chapterMotion(0).hero, 1);
-  assert.equal(chapterMotion(0).book, 1);
-  assert.equal(chapterMotion(.76).collapse, 1);
-  assert.ok(chapterMotion(.77).horizon > .99);
-  assert.equal(chapterMotion(.8).controls, 0);
-  assert.equal(chapterMotion(.95).earth, 1);
-  assert.equal(chapterMotion(.95).book, 0);
-  assert.equal(chapterMotion(1).atlas, 1);
-  assert.equal(chapterMotion(1).controls, 1);
-  assert.equal(chapterMotion(1).horizon, 0);
-});
-test('autoplay is frame-rate independent, bounded, and a direct Atlas entry finishes promptly', () => {
-  const { advanceScene } = motion();
-  const simulate = (hz, ms, skip = false) => {
-    let p = 0; for (let i = 0; i < hz * ms / 1000; i++) p = advanceScene(p, 1000 / hz, skip); return p;
-  };
-  assert.ok(Math.abs(simulate(30, 4400) - simulate(120, 4400)) < .00001);
-  assert.ok(simulate(60, 18000) > .9999);
-  assert.ok(simulate(60, 1600, true) > .9999);
-  assert.equal(advanceScene(.4, -100), .4);
-  assert.equal(advanceScene(.99, 1000), 1);
-});
-test('the horizon bridges the book and globe without an empty visual frame', () => {
-  const { chapterMotion } = motion();
-  for (let i = 0; i <= 1000; i++) {
-    const state = chapterMotion(i / 1000);
-    assert.ok(Math.max(state.book, state.earth, state.horizon) > .35);
+test('five page turns unfold in order and retrace the same path backwards', () => {
+  const { pageTurn, chapterMotion } = motion();
+  for (let index = 0; index < 5; index++) {
+    assert.equal(pageTurn(0, index), 0); assert.equal(pageTurn(.72, index), 1);
+    let previous = 0;
+    for (let step = 0; step <= 100; step++) { const value = pageTurn(step / 100, index); assert.ok(value >= previous); previous = value; }
   }
+  const states = Array.from({length:101}, (_, i) => chapterMotion(i / 100));
+  for (let i=100;i>=0;i--) assert.deepEqual(chapterMotion(i/100),states[i]);
 });
-
-test('playback reverses at the same speed without resetting its current position', () => {
-  const { advanceScene, chapterMotion } = motion();
-  const original = .43;
-  const forward = advanceScene(original, 1500);
-  const backward = advanceScene(forward, 1500, false, -1);
-  assert.ok(Math.abs(original - backward) < 1e-12);
-  assert.deepEqual(chapterMotion(original), chapterMotion(backward));
-  assert.equal(advanceScene(.01, 1000, false, -1), 0);
-  assert.equal(advanceScene(.99, 1000), 1);
-});
-test('the book begins open and cycles its illustrations before collapsing', () => {
+test('the open book bridges to the globe without an empty visual frame', () => {
   const { chapterMotion } = motion();
-  const cover = chapterMotion(0);
-  assert.equal(cover.open, 1);
-  assert.equal(cover.leaf0, 0);
-  assert.equal(chapterMotion(.22).leaf0, 1);
-  assert.equal(chapterMotion(.39).leaf1, 1);
-  assert.equal(chapterMotion(.55).leaf2, 1);
-  assert.equal(chapterMotion(.55).collapse, 0);
+  assert.equal(chapterMotion(0).open, 1); assert.equal(chapterMotion(0).book, 1);
+  assert.equal(chapterMotion(.91).collapse, 1); assert.equal(chapterMotion(.91).horizon, 1);
+  assert.equal(chapterMotion(.98).earth, 1); assert.equal(chapterMotion(1).controls, 1); assert.equal(chapterMotion(1).book, 0);
+  for(let i=0;i<=1000;i++){const s=chapterMotion(i/1000);assert.ok(Math.max(s.book,s.earth,s.horizon)>.35);}
+});
+test('caption scenes stay bounded through fast scrolls and direct jumps', () => {
+  const { sceneAt } = motion();
+  assert.equal(sceneAt(-1),0); assert.equal(sceneAt(1),5);
+  for(let i=0;i<6;i++) assert.equal(sceneAt(i*.12+.025),i);
+});
+test('only one caption can be visible at any scroll position', () => {
+  const { chapterMotion } = motion();
+  for (let i = 0; i <= 10000; i++) {
+    const state = chapterMotion(i / 10000);
+    assert.ok(Array.from({length: 6}, (_, n) => state[`scene${n}`]).filter(v => v > 0).length <= 1);
+  }
 });
