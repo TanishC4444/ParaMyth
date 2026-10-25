@@ -252,6 +252,16 @@ can fail over to comma-separated `SERPAPI_BACKUP_KEYS`. Keys are never stored.
 Recommendations may name a real place only when a search result supports it,
 and every cited result stays a lead to verify.
 
+Export a saved plan as a tentative calendar, sheets or call sheets:
+
+```sh
+python -m paramyth.production_exports --plan runs/harbor/production/plans/<id>.json --kind calendar.ics --out harbor.ics
+```
+
+Kinds are `calendar.ics`, `schedule.csv`, `budget.csv`, `tasks.csv`,
+`call-sheets.txt` and `plan.json`. Calendar events are marked tentative, and CSV
+cells that start with `=`, `+`, `-` or `@` are quoted so spreadsheets don't run them.
+
 Plans are saved under `production/plans/` as drafts. Rates are model estimates,
 not quotes, and unknown costs are left out of totals. Permits, availability and
 legal requirements always need verification. Install the `production` extra for

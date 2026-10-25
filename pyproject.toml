@@ -17,6 +17,7 @@ production = ["tzdata>=2024.1"]
 paramyth-creative = "paramyth.creative:main"
 paramyth-images = "paramyth.image_studio:main"
 paramyth-production = "paramyth.production:main"
+paramyth-production-export = "paramyth.production_exports:main"
 paramyth-rag-ingest = "paramyth.rag.ingest:main"
 paramyth-rag-search = "paramyth.rag.search:main"
 paramyth-soundtracks = "paramyth.soundtracks:main"
