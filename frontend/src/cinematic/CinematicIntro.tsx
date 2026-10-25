@@ -85,6 +85,7 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     };
     const seek = (value: number) => {
       progress.current = reduced ? 1 : Math.max(0, Math.min(readyRef.current ? 1 : .7, value));
+      if (progress.current === 0) { direction.current = 1; setBackwards(false); }
       pausedRef.current = true; setPaused(true); entering.current = false; paint();
     };
     controls.current = { enter, replay, reverse, seek, play, wake: start };
