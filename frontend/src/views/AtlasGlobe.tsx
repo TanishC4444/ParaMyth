@@ -194,13 +194,18 @@ export default function AtlasGlobe(props: Props) {
     renderer.domElement.addEventListener("webglcontextlost", lost);
     controls.addEventListener("change", redraw);
     controls.addEventListener("start", () => { targetPosition = null; });
+    let viewportInitialized = false;
     const resize = new ResizeObserver(() => {
       const w = container.clientWidth, h = container.clientHeight;
       if (!w || !h) return;
       targetPosition = null;
       const previousDistance = homeDistance();
       camera.aspect = w / h;
-      camera.position.multiplyScalar(homeDistance() / previousDistance);
+      // Lazy-loaded styles can briefly produce a very narrow host. Keep the
+      // camera range wide enough to fit it before OrbitControls clamps distance.
+      controls.maxDistance = Math.max(8, homeDistance());
+      if (viewportInitialized) camera.position.multiplyScalar(homeDistance() / previousDistance);
+      else { camera.position.setLength(homeDistance()); viewportInitialized = true; }
       camera.updateProjectionMatrix(); controls.update(); renderer.setSize(w, h); redraw();
     });
     resize.observe(container);
