@@ -80,10 +80,23 @@ test('page turns use nearly a full viewport of the longer scroll track', () => {
 
 test('the book reaches its horizon before the visible world expands to full size', () => {
   const {chapterMotion} = motion();
-  assert.equal(chapterMotion(.85).collapse,1);
-  assert.ok(chapterMotion(.85).book > .99);
-  assert.ok(chapterMotion(.85).earth > 0);
-  assert.ok(chapterMotion(.9).earth > chapterMotion(.85).earth);
+  assert.equal(chapterMotion(.83).collapse,1);
+  assert.ok(chapterMotion(.83).book > .99);
+  assert.ok(chapterMotion(.83).earth > 0);
+  assert.ok(chapterMotion(.9).earth > chapterMotion(.83).earth);
   assert.equal(chapterMotion(.98).earth,1);
   assert.equal(chapterMotion(.98).book,0);
+});
+
+test('the book scene and About overlap without an empty or delayed handoff', () => {
+  const {chapterMotion}=motion();
+  assert.equal(chapterMotion(.88).about,0);
+  assert.equal(chapterMotion(.9).stageOpacity,1);
+  assert.equal(chapterMotion(.91).earth,1);
+  assert.equal(chapterMotion(.98).about,1);
+  assert.equal(chapterMotion(1).stageOpacity,0);
+  for(let i=880;i<=1000;i++){
+    const state=chapterMotion(i/1000);
+    assert.ok(Math.max(state.stageOpacity,state.about)>.6);
+  }
 });

@@ -37,3 +37,10 @@ on loopback, so any other host is the public site.
 - World texture loading starts before its reveal. Atlas initialization is deferred until the end of the book. The 3D preview skips identical frames while the user scrolls through later content.
 - Added a structural server-render regression check to ensure About and Instagram cannot be nested inside the Atlas again, plus tests for the visible horizon/world phases.
 - Local browser control remains disabled. TypeScript, build, behavior, and server-render checks verify the implementation; GPU appearance and responsive visual layouts still need a browser pass.
+
+### Blend the book into About
+
+- About overlaps the final viewport of the book timeline. A feathered edge and shared background replace the separate-screen handoff.
+- The final scene fades as About, workflow text, and the Instagram panel are revealed by the same reversible scroll progress.
+- The world reaches full size before the scene fades. Reduced-motion preferences suppress the text translation.
+- Cinematic and structural tests, TypeScript, and the production build pass. Browser control remains disabled, so visual verification is still outstanding.

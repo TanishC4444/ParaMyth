@@ -18,9 +18,10 @@ export function chapterMotion(p: number) {
     `scene${i}`, (i === 0 ? 1 : smooth(i * .12 - .008, i * .12 + .015, p)) * (1 - smooth((i + 1) * .12 - .03, (i + 1) * .12 - .009, p)),
   ]));
   return {
-    open: 1, collapse: smooth(.70, .85, p), hero: 1 - smooth(.68, .77, p),
-    book: 1 - smooth(.86, .94, p), earth: smooth(.84, .98, p), atlas: smooth(.84, .98, p),
-    horizon: smooth(.79, .85, p) * (1 - smooth(.88, .95, p)), controls: smooth(.94, 1, p),
+    open: 1, collapse: smooth(.70, .83, p), hero: 1 - smooth(.68, .77, p),
+    book: 1 - smooth(.84, .90, p), earth: smooth(.82, .91, p), atlas: smooth(.82, .91, p),
+    horizon: smooth(.78, .84, p) * (1 - smooth(.86, .92, p)), controls: smooth(.94, 1, p),
+    stageOpacity: 1 - smooth(.90, 1, p), about: smooth(.88, .98, p),
     turn: Math.max(...Array.from({ length: 5 }, (_, i) => Math.sin(Math.PI * pageTurn(p, i)))),
     ...Object.fromEntries(Array.from({ length: 5 }, (_, i) => [`leaf${i}`, pageTurn(p, i)])),
     ...captions,
