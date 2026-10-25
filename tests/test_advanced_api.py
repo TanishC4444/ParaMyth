@@ -110,10 +110,35 @@ class DemoApiTest(unittest.TestCase):
 
     def test_hosted_frontend_preflight_to_localhost(self):
         response = self.client.options(P + '/runs', headers={
-            'Origin': 'https://tanishc4444.github.io', 'Access-Control-Request-Method': 'GET',
+            'Origin': 'https://paramyth.tech', 'Access-Control-Request-Method': 'GET',
             'Access-Control-Request-Headers': 'authorization', 'Access-Control-Request-Private-Network': 'true'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['access-control-allow-origin'], 'https://tanishc4444.github.io')
+        self.assertEqual(response.headers['access-control-allow-origin'], 'https://paramyth.tech')
+
+    def test_shared_pages_origin_is_not_trusted(self):
+        response = self.client.options(P + '/runs', headers={
+            'Origin': 'https://tanishc4444.github.io', 'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers': 'authorization,content-type'})
+        self.assertNotIn('access-control-allow-origin', response.headers)
+
+    def test_local_studio_routes_are_not_shared_cross_origin(self):
+        for path in ('/ideas', '/api/ui/workspace', '/api/studio/workflows'):
+            response = self.client.get(path, headers={'Origin': 'https://paramyth.tech'})
+            self.assertNotIn('access-control-allow-origin', response.headers, path)
+
+    def test_server_token_requires_same_origin(self):
+        from unittest.mock import patch
+        server = {'Authorization': 'Bearer server'}
+        with patch.dict('os.environ', {'PARAMYTH_GITHUB_TOKEN': ''}):
+            foreign = self.client.get(P + '/auth/check', headers={**server, 'Origin': 'https://paramyth.tech'})
+            self.assertEqual(foreign.status_code, 403)
+            # Same-origin pages pass the gate and reach token configuration.
+            local = self.client.get(P + '/auth/check', headers={**server, 'Origin': 'http://testserver'})
+            self.assertEqual(local.status_code, 401)
+            self.assertIn('Configure GitHub', local.json()['detail'])
+            self.assertEqual(self.client.get(P + '/auth/check', headers=server).status_code, 401)
+            stream = self.client.get(P + '/runs/1/events', headers={**server, 'Origin': 'https://paramyth.tech'})
+            self.assertEqual(stream.status_code, 403)
 
     def test_token_required(self):
         self.assertEqual(self.client.get(P + '/runs').status_code, 401)
