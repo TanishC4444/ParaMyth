@@ -1,7 +1,7 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { manuscriptLabel, now, uid, validateBrief } from "../data";
 import { useStudio, blankProject } from "../store";
-import { errorText, Icon, PageTitle, Status } from "../ui";
+import { EmptyState, errorText, Icon, PageTitle, Status } from "../ui";
 import { MEDIA, type Brief, type Medium, type Project, type Scene } from "../types";
 import { ProjectCover } from "../brandArt";
 import { useAccess } from '../AccountGate';
@@ -23,24 +23,43 @@ export default function Projects() {
   const [q, setQ] = useState(""), [medium, setMedium] = useState("All"), [state, setState] = useState("All"), [mode, setMode] = useState<"grid" | "list">("grid"), [create, setCreate] = useState(false);
   const result = store.projects.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()) && (medium === "All" || p.brief.medium === medium) && (state === "All" || manuscriptLabel(p) === state));
   return <div className="page">
-    <PageTitle title={studio ? studio.name+' · Projects' : 'Projects'} text={studio ? 'Shared writing, visuals, soundtracks and production. Teammates see saved changes as you work.' : 'Your personal projects. Share a project from its workflow to work with your team.'}>{studio?.role!=='viewer'&&<button className="primary" onClick={() => setCreate(true)}><Icon name="plus" />New project</button>}</PageTitle>
+    <PageTitle eyebrow="WORKSPACE" title="Projects" text={studio ? "Your team’s writing, visuals and production, organized by story." : "A dedicated workspace for every story you’re developing."}>{studio?.role!=='viewer'&&<button className="primary" onClick={() => setCreate(true)}><Icon name="plus" />New project</button>}</PageTitle>
     <div className="toolbar">
-      <label><Icon name="search" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects" /></label>
-      <select aria-label="Medium" value={medium} onChange={(e) => setMedium(e.target.value)}><option>All</option>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select>
-      <select aria-label="Manuscript state" value={state} onChange={(e) => setState(e.target.value)}><option>All</option><option>Partial</option><option>Provisional</option><option>Final</option></select>
-      <div className="mode-buttons"><button aria-label="Grid view" className={mode === "grid" ? "selected" : ""} onClick={() => setMode("grid")}><Icon name="grid" /></button><button aria-label="List view" className={mode === "list" ? "selected" : ""} onClick={() => setMode("list")}><Icon name="list" /></button></div>
+      <label><Icon name="search" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects" aria-label="Search projects" /></label>
+      <select aria-label="Medium" value={medium} onChange={(e) => setMedium(e.target.value)}><option value="All">All formats</option>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select>
+      <select aria-label="Manuscript state" value={state} onChange={(e) => setState(e.target.value)}><option value="All">All statuses</option><option>Partial</option><option>Provisional</option><option>Final</option></select>
+      <div className="mode-buttons"><button aria-label="Grid view" aria-pressed={mode === "grid"} className={mode === "grid" ? "selected" : ""} onClick={() => setMode("grid")}><Icon name="grid" /></button><button aria-label="List view" aria-pressed={mode === "list"} className={mode === "list" ? "selected" : ""} onClick={() => setMode("list")}><Icon name="list" /></button></div>
     </div>
     {result.length ? <div className={mode === "grid" ? "project-grid" : "project-grid list-mode"}>{result.map((p) => <button className="project-card" onClick={() => selectProject(p.id)} key={p.id}>
       <div className="project-cover illustrated-cover"><ProjectCover project={p} /><span>{p.brief.medium}</span></div>
       <div className="project-card-body"><div><Status>{manuscriptLabel(p)}</Status><span>{p.brief.genre}</span></div><h3>{p.title}</h3><p>{p.owner} · {p.scenes.length} scenes · {p.canon.length} canon facts</p></div>
-    </button>)}</div> : <div className="empty"><Icon name="search" /><h3>No matching projects</h3><p>Try a different search or clear the filters.</p></div>}
-    {create && <CreateModal close={() => setCreate(false)} />}
+    </button>)}</div> : <EmptyState icon={store.projects.length ? "search" : "projects"} title={store.projects.length ? "No projects match your filters" : "Your first project starts here"} text={store.projects.length ? "Try another search or reset the format and status filters." : "Give your story a title and a short premise. Everything you create will have a place to belong."} action={store.projects.length ? <button className="secondary" onClick={() => { setQ(""); setMedium("All"); setState("All"); }}>Clear filters</button> : studio?.role !== "viewer" ? <button className="primary" onClick={() => setCreate(true)}><Icon name="plus" size={17} />Create a project</button> : undefined} />}
+    {create && <CreateProjectDialog close={() => setCreate(false)} />}
   </div>;
 }
 
-function CreateModal({ close }: { close: () => void }) {
+export function CreateProjectDialog({ close }: { close: () => void }) {
   const { createProject, selectProject, notify } = useStudio();
   const [premise, setPremise] = useState(""), [medium, setMedium] = useState<Medium | "Detect">("Detect"), [errors, setErrors] = useState<string[]>([]), [busy,setBusy]=useState(false);
+  const dialog = useRef<HTMLFormElement>(null);
+  const closeRef = useRef(close); closeRef.current = close;
+  const busyRef = useRef(busy); busyRef.current = busy;
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.current?.querySelector<HTMLElement>('input')?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busyRef.current) { event.preventDefault(); closeRef.current(); }
+      if (event.key === "Tab") {
+        const items = [...(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,textarea') || [])];
+        if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
+        else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", keydown); previous?.focus(); };
+  }, []);
   const detected = detectMedium(premise);
   const go = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,9 +75,9 @@ function CreateModal({ close }: { close: () => void }) {
     setBusy(true);
     try { const saved = await createProject(project); selectProject(saved.id, "brief"); close(); notify("Project saved to your studio"); } catch (error) { setErrors([errorText(error)]); } finally {setBusy(false)}
   };
-  return <div className="modal-wrap" role="dialog" aria-modal="true"><button className="modal-scrim" onClick={close} aria-label="Close" />
-    <form className="modal wide" onSubmit={go}><button type="button" className="modal-close" onClick={close} aria-label="Close"><Icon name="close" /></button>
-      <h2>Create a project</h2><p>Start with the basics. You can add characters, world rules and constraints on the Brief tab later.</p>
+  return <div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="create-project-title"><button className="modal-scrim" disabled={busy} onClick={close} aria-label="Close" />
+    <form ref={dialog} className="modal wide" onSubmit={go}><button type="button" className="modal-close" disabled={busy} onClick={close} aria-label="Close"><Icon name="close" /></button>
+      <span className="eyebrow">NEW PROJECT</span><h2 id="create-project-title">Start with a story.</h2><p>Start with the basics. You can add characters, world rules and constraints on the Brief tab later.</p>
       <label>Title<input name="title" required autoFocus placeholder="e.g. The Ferryman's Ledger" /></label>
       <label>Premise<textarea required value={premise} onChange={(e) => setPremise(e.target.value)} placeholder="One or two sentences: who wants what, and what stands in the way." /></label>
       <label>Medium<select value={medium} onChange={(e) => setMedium(e.target.value as Medium | "Detect")}><option value="Detect">Detect from premise{detected ? ` (${detected})` : " (Novel)"}</option>{MEDIA.map((m) => <option key={m}>{m}</option>)}</select></label>
@@ -66,6 +85,6 @@ function CreateModal({ close }: { close: () => void }) {
         <label>Chapters<input name="chapters" type="number" min={1} max={40} defaultValue={3} /></label><label>Scenes per chapter<input name="scenes" type="number" min={1} max={12} defaultValue={2} /></label>
         <label>Min words / scene<input name="wmin" type="number" defaultValue={800} /></label><label>Max words / scene<input name="wmax" type="number" defaultValue={1200} /></label></div>
       {errors.length > 0 && <ul className="errors">{errors.map((x) => <li key={x}>{x}</li>)}</ul>}
-      <div className="modal-actions"><button type="button" onClick={close}>Cancel</button><button className="primary">Create & open brief <Icon name="arrow" /></button></div>
+      <div className="modal-actions"><button type="button" disabled={busy} onClick={close}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Creating project…" : "Create project"} <Icon name="arrow" /></button></div>
     </form></div>;
 }

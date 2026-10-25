@@ -4,7 +4,7 @@ import { api, projectPath } from "../api"
 import { useStudio, useDraftState } from "../store"
 import { useMaterials } from "../materials"
 import { errorText, PageTitle } from "../ui"
-export default function Production() {
+export default function Production({ embedded = false }: { embedded?: boolean }) {
   const { project, mediaDirection, flush, refresh, setDraft, go } = useStudio()
   const { source, sourceId, sourceTitle, signature, streaming, images: availableImages, tracks: availableTracks, setSource } = useMaterials()
   const [prompt, setPrompt] = useDraftState("production.prompt", "")
@@ -125,7 +125,7 @@ export default function Production() {
   const set = (k: string, v: any) => setConfig((c: any) => ({ ...c, [k]: v }))
   return (
     <div className="page simple-workspace">
-      <PageTitle
+      <PageTitle level={embedded ? "h2" : "h1"}
         title="Production"
         text="Turn your story into a shoot schedule, budget and location plan."
       />

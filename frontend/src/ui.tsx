@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 const paths: Record<string, ReactNode> = {
+  chevron: <path d="m8 10 4 4 4-4" />,
   overview: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
   projects: <><path d="M3 7h6l2 2h10v10H3z" /><path d="M3 11h18" /></>,
   ideas: <><path d="M9 18h6M10 22h4" /><path d="M8 15a7 7 0 1 1 8 0c-1.3 1-2 2-2 3h-4c0-1-.7-2-2-3Z" /></>,
@@ -41,14 +42,14 @@ export const Icon = ({ name, size = 19 }: { name: string; size?: number }) => (
 
 export const Status = ({ children }: { children: string }) => <span className={`status ${children.toLowerCase().replace(/\s+/g, "-")}`}><i />{children}</span>;
 
-export const PageTitle = ({ eyebrow, title, text, children }: { eyebrow?: string; title: string; text: string; children?: ReactNode }) => (
-  <div className="page-title"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1>{title}</h1><p>{text}</p></div>{children && <div className="title-actions">{children}</div>}</div>
+export const PageTitle = ({ eyebrow, title, text, children, level = "h1" }: { eyebrow?: string; title: string; text: string; children?: ReactNode; level?: "h1" | "h2" }) => (
+  <div className="page-title"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}{level === "h1" ? <h1>{title}</h1> : <h2>{title}</h2>}{text && <p>{text}</p>}</div>{children && <div className="title-actions">{children}</div>}</div>
 );
 
 export const Chips = ({ items, onChange, placeholder }: { items: string[]; onChange: (v: string[]) => void; placeholder: string }) => (
   <div className="chips">
     {items.map((t, i) => <span key={t + i}>{t}<button type="button" aria-label={`Remove ${t}`} onClick={() => onChange(items.filter((_, j) => j !== i))}>×</button></span>)}
-    <input placeholder={placeholder} onKeyDown={(e) => { const v = e.currentTarget.value.trim(); if (e.key === "Enter" && v) { e.preventDefault(); onChange([...items, v]); e.currentTarget.value = ""; } }} />
+    <input aria-label={placeholder} placeholder={placeholder} onKeyDown={(e) => { const v = e.currentTarget.value.trim(); if (e.key === "Enter" && v) { e.preventDefault(); onChange([...items, v]); e.currentTarget.value = ""; } }} />
   </div>
 );
 
@@ -70,3 +71,7 @@ export const ago = (iso: string) => {
   if (m < 1440) return `${Math.round(m / 60)} h ago`;
   return `${Math.round(m / 1440)} d ago`;
 };
+
+export function EmptyState({ icon, title, text, action }: { icon: string; title: string; text: string; action?: ReactNode }) {
+  return <div className="studio-empty"><span className="empty-icon"><Icon name={icon} size={25} /></span><h2>{title}</h2><p>{text}</p>{action && <div className="empty-actions">{action}</div>}</div>
+}

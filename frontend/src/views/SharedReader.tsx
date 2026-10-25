@@ -15,5 +15,5 @@ export default function SharedReader(){
   const record=candidates.find(item=>item.id===selected)||candidates[0]
   const edit=drafts[project.id]?.['writing.edits']?.[scene?.id||'']
   const text=edit?.base===(record?.id||'manuscript')?edit.text:record?.result?.text||scene?.content||''
-  return <div className="page shared-reading"><h1>{project.title}</h1><p>{studio?.name} · View-only access</p><p>{project.brief.premise}</p><div className="toolbar"><label>Chapter<select aria-label="Shared chapter" value={scene?.id||''} onChange={event=>setScene(event.target.value)}>{project.scenes.map(item=><option key={item.id} value={item.id}>Chapter {item.chapter} · {item.title}</option>)}</select></label></div><textarea aria-label="Shared manuscript" readOnly value={text}/><TeamDiscussion /><Library /></div>
+  return <div className="page shared-reading"><h1>{project.title}</h1><p>{studio?.name} · View-only access</p><p>{project.brief.premise}</p><div className="toolbar"><label>Chapter<select aria-label="Shared chapter" value={scene?.id||''} onChange={event=>setScene(event.target.value)}>{project.scenes.map(item=><option key={item.id} value={item.id}>Chapter {item.chapter} · {item.title}</option>)}</select></label></div><textarea aria-label="Shared manuscript" readOnly value={text}/><TeamDiscussion /><Library embedded /></div>
 }

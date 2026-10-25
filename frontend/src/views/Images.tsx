@@ -5,7 +5,7 @@ import { useStudio, useDraftState } from "../store"
 import { errorText, PageTitle } from "../ui"
 import { useMaterials } from "../materials"
 import { BrandSpot } from "../brandArt"
-export default function Images() {
+export default function Images({ embedded = false }: { embedded?: boolean }) {
   const { project, flush, refresh, go, setMediaDirection, mediaDirection, setDraft } =
     useStudio()
   const { source, sourceId, signature, streaming } = useMaterials()
@@ -51,7 +51,7 @@ export default function Images() {
           setModel((previous) => v.models.some((m: any) => m.id === previous) ? previous : v.models[0]?.id || "")
         }
       })
-      .catch((e) => live && setError(e.message))
+      .catch(() => live && setError("Image generation isn’t connected yet. Check Connections for service availability."))
     const changed = () => { void api(path("/api/images")).then((v) => { if (live) setImages(v.images); }).catch(() => {}); }
     window.addEventListener("studio-refresh", changed)
     window.addEventListener("studio-shared-update", changed)
@@ -117,8 +117,8 @@ export default function Images() {
   }
   return (
     <div className="page">
-      <PageTitle
-        title="Images"
+      <PageTitle level={embedded ? "h2" : "h1"}
+        title="Visuals"
         text="Turn a character, place or moment from your story into a visual. Review the prompt before rendering."
       />
       {streaming && <p className="hint" role="status">Following your live writing. Prepare a prompt to use its latest details.</p>}

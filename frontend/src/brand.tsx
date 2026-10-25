@@ -12,11 +12,12 @@ export function Emblem({ className = "" }: { className?: string }) {
   </svg>
 }
 
+export function BrandLogo({ className = "" }: { className?: string }) {
+  return <img className={`studio-logo ${className}`} src="/brand/studio-symbol.png" width="1280" height="720" alt="ParaMyth" />
+}
+
 export function Wordmark({ href = "#/" }: { href?: string }) {
-  return <a className="pm-wordmark" href={href} aria-label="ParaMyth home">
-    <Emblem />
-    <span className="pm-wordmark-name">Para<em>Myth</em></span>
-  </a>
+  return <a className="pm-wordmark" href={href} aria-label="ParaMyth home"><BrandLogo /></a>
 }
 
 export const STUDIO_STEPS: [string, string][] = [

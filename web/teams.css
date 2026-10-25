@@ -10,3 +10,19 @@ a{color:var(--navy);text-underline-offset:4px}button,input,select,textarea{font:
 @media(max-width:380px){.top-nav>.nav-link:first-child{display:none}.brand img{width:118px}.account-story h1{font-size:36px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 .account-tabs{display:flex;gap:4px;background:#eef0e9;border-radius:10px;padding:4px;margin:0 0 26px}.account-tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:10px}.account-tabs button[aria-pressed=true]{color:var(--navy);background:white;box-shadow:0 2px 6px #2039700a}.inline-link{border:0;background:none!important;color:var(--navy);padding:0;text-decoration:underline;box-shadow:none!important}
+
+/* Account and team administration share the studio’s measured spacing and surfaces. */
+body:has(#workspace:not([hidden])),body:has(#profile){background:#fff7ea}
+body:has(#workspace:not([hidden])) .top,body:has(#profile) .top{max-width:none;padding:16px max(28px,calc((100vw - 1160px)/2));border-bottom:1px solid #e5dfd3;background:#fffdf8;min-height:96px}
+body:has(#workspace:not([hidden])) .brand>span{display:none}
+body:has(#workspace:not([hidden])) h2,body:has(#profile) h1{font:700 24px/1.4 Manrope,Inter,system-ui,sans-serif;letter-spacing:-.035em}
+body:has(#workspace:not([hidden])) .teams-layout,body:has(#profile) .teams-layout{max-width:1160px;margin:32px auto;padding:0 28px 48px}
+body:has(#workspace:not([hidden])) .panel,body:has(#profile) .panel{padding:28px;border:1px solid #e5dfd3;border-radius:12px;box-shadow:0 2px 8px #24334e04}
+body:has(#workspace:not([hidden])) .team-list li{padding:18px 0;gap:16px}
+body:has(#workspace:not([hidden])) .team-columns{gap:32px}
+body:has(#workspace:not([hidden])) .hint,body:has(#profile) .hint{font-size:12px;line-height:1.7}
+body:has(#workspace:not([hidden])) form,body:has(#profile) form{gap:18px;max-width:760px}
+body:has(#workspace:not([hidden])) input,body:has(#profile) input{border-color:#c9c6bf;background:#fffefa}
+body:has(#workspace:not([hidden])) button,body:has(#profile) button{border-radius:7px;background:#24427f}
+body:has(#workspace:not([hidden])) button.secondary,body:has(#profile) button.secondary{background:#fffdf8;color:#24427f;border-color:#c9c6bf}
+@media(max-width:750px){body:has(#workspace:not([hidden])) .top,body:has(#profile) .top{padding:14px 20px;gap:16px}.brand img{width:120px}body:has(#workspace:not([hidden])) .teams-layout,body:has(#profile) .teams-layout{padding:0 20px}body:has(#workspace:not([hidden])) .panel,body:has(#profile) .panel{padding:22px}}

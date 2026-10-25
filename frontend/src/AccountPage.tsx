@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import './account.css'
 import { backendFetch } from './transport'
 
 export default function AccountPage({ signup, available, onSignedIn, invitation='' }: { signup: boolean; available: boolean; onSignedIn: () => Promise<void>; invitation?:string }) {
+  useEffect(() => { document.title = signup ? "Create an account · ParaMyth" : "Sign in · ParaMyth" }, [signup])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -32,13 +33,13 @@ export default function AccountPage({ signup, available, onSignedIn, invitation=
     } finally { setBusy(false) }
   }
   return <main className="account-entry">
-    <a className="account-home" href="#/" aria-label="ParaMyth home">ParaMyth <span>Back to the story atlas</span></a>
+    <a className="account-home" href="#/" aria-label="ParaMyth home"><img src="/brand/studio-symbol.png" width="1280" height="720" alt="ParaMyth" /><span>Back to the story atlas</span></a>
     <section className="account-picture" aria-label="A world of stories">
       <div><p className="eyebrow">YOUR NEXT CHAPTER</p><h1>A world of stories.<br />A space for yours.</h1><p>Bring your ideas, writing, images and sound together. Your work will be here when you return.</p></div>
     </section>
     <section className="account-form-panel" aria-labelledby="account-title">
       <div className="account-tabs" aria-label="Account options"><a aria-current={!signup ? 'page' : undefined} href={'#/signin'+(invitation?'?invite='+encodeURIComponent(invitation):'')}>Sign in</a><a aria-current={signup ? 'page' : undefined} href={'#/signup'+(invitation?'?invite='+encodeURIComponent(invitation):'')}>Create account</a></div>
-      <p className="eyebrow">YOUR PARAMYTH STUDIO</p>
+      <p className="eyebrow">YOUR CREATIVE WORKSPACE</p>
       <h2 id="account-title">{signup ? 'Start your story.' : 'Welcome back.'}</h2>
       <p>{signup ? 'Create an account to save everything you make.' : 'Sign in to pick up where you left off.'}</p>
       {invitation && <p className="account-notice">Sign in with your invited email address. You’ll join the team and go straight to its projects.</p>}

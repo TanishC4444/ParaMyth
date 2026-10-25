@@ -1,4 +1,4 @@
-import { lazy, type ReactElement, Suspense, useEffect, useState } from "react"
+import { lazy, type ReactElement, Suspense, useEffect, useRef, useState } from "react"
 
 import { StudioProvider, useStudio } from "./store"
 import AccountGate, { useAccess } from './AccountGate'
@@ -6,7 +6,8 @@ import { WorkspacePicker, SharedConflicts } from './TeamWorkspace'
 
 import type { View } from "./types"
 
-import { Icon } from "./ui"
+import { EmptyState, Icon, PageTitle } from "./ui"
+import { BrandLogo } from "./brand"
 
 import Journey from "./Journey"
 
@@ -51,41 +52,18 @@ const TITLES: Partial<Record<View, string>> = {
   overview: "Studio overview",
   projects: "Projects",
   workflow: "Project workflow",
-  runs: "Pipelines & runs",
-  retrieval: "Literary retrieval",
-  library: "File library",
+  runs: "Activity",
+  retrieval: "Story atlas",
+  library: "Project files",
   news: "Industry news",
   connections: "Connections",
   notfound: "Page not found",
 }
 
 const NAV: { group: string; items: [View, string, string][] }[] = [
-  {
-    group: "Write",
-    items: [
-      ["overview", "overview", "Overview"],
-      ["projects", "projects", "Projects"],
-      ["atlas", "atlas", "Story atlas"],
-      ["workflow", "ideas", "Project workflow"],
-      ["runs", "runs", "Pipelines & runs"],
-    ],
-  },
-
-  {
-    group: "Develop",
-    items: [
-      ["retrieval", "retrieval", "Literary retrieval"],
-      ["news", "news", "Industry news"],
-    ],
-  },
-
-  {
-    group: "Workspace",
-    items: [
-      ["library", "library", "File library"],
-      ["connections", "connections", "Connections"],
-    ],
-  },
+  { group: "Workspace", items: [["overview", "overview", "Overview"], ["projects", "projects", "Projects"], ["workflow", "pen", "Project workspace"]] },
+  { group: "Discover", items: [["retrieval", "atlas", "Story atlas"], ["news", "news", "Industry news"]] },
+  { group: "Manage", items: [["runs", "runs", "Activity"], ["library", "library", "Project files"], ["connections", "connections", "Connections"]] },
 ]
 
 function Shell() {
@@ -104,6 +82,34 @@ function Shell() {
   } = useStudio()
 
   const [mobile, setMobile] = useState(false)
+  const sidebar = useRef<HTMLElement>(null)
+  const menu = useRef<HTMLButtonElement>(null)
+  const content = useRef<HTMLElement>(null)
+  useEffect(() => { setMobile(false) }, [view])
+  useEffect(() => {
+    const screen = matchMedia("(min-width: 761px)")
+    const close = () => { if (screen.matches) setMobile(false) }
+    screen.addEventListener("change", close)
+    return () => screen.removeEventListener("change", close)
+  }, [])
+  useEffect(() => {
+    if (!mobile) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const focusable = () => [...(sidebar.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],select:not(:disabled)') || [])].filter(element => element.getClientRects().length)
+    let focusFrame = 0;
+    const firstFrame = requestAnimationFrame(() => { focusFrame = requestAnimationFrame(() => focusable()[0]?.focus()) })
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setMobile(false) }
+      if (event.key === "Tab") {
+        const items = focusable(), first = items[0], last = items.at(-1)
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
+    }
+    document.addEventListener("keydown", key)
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(focusFrame); document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", key); menu.current?.focus() }
+  }, [mobile])
 
   useEffect(() => {
     if (view === "legal") return
@@ -157,32 +163,18 @@ function Shell() {
     {legal && <AppErrorBoundary resetKey={location.hash}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><Legal key={location.hash} /></Suspense></AppErrorBoundary>}
     {STATIC_SITE ? !isLanding && !missing && !legal && <AppErrorBoundary resetKey={view}><Suspense fallback={<div className="night-page"><PageLoading /></div>}><StaticStudio /></Suspense></AppErrorBoundary> :
     <div className="app-shell" hidden={isLanding || missing || legal}>
-      <aside className={`sidebar ${mobile ? "open" : ""}`}>
-        <button
-          className="workspace-switch branded-workspace"
-          aria-label="ParaMyth home"
-          onClick={() => go("landing")}
-        >
-          <img
-            className="brand-logo"
-            src="/brand/paramyth-logo.webp"
-            width="400"
-            height="225"
-            loading="lazy"
-            alt="ParaMyth"
-          />
-          <small>Back to a world of stories</small>
-        </button>
+      <a className="studio-skip" href="#studio-content" onClick={event => { event.preventDefault(); content.current?.focus() }}>Skip to workspace</a>
+      <aside ref={sidebar} id="studio-navigation" className={`sidebar ${mobile ? "open" : ""}`} aria-label="Workspace navigation" role={mobile ? "dialog" : undefined} aria-modal={mobile || undefined}>
+        <div className="sidebar-brand-row">
+          <button className="studio-brand" aria-label="ParaMyth home" onClick={() => go("landing")}><BrandLogo /><span className="studio-badge">Studio</span></button>
+          <button className="sidebar-close icon-button" aria-label="Close navigation" onClick={() => setMobile(false)}><Icon name="close" /></button>
+        </div>
         <WorkspacePicker />
         <nav aria-label="Primary">
-          {(!access.teams?.length || access.teams.some(team=>['owner','admin'].includes(team.role))) && <a className="studio-team-link" href="/studio/teams.html">
-            <Icon name="connections" />
-            <span>Manage teams</span>
-          </a>}
           {NAV.map((g) => (
             <div key={g.group} className="nav-group">
               <span>{g.group}</span>
-              {g.items.map(([id, icon, label]) => (
+              {g.items.filter(([id]) => id !== "workflow" || project.id).map(([id, icon, label]) => (
                 <button
                   key={id}
                   className={
@@ -190,6 +182,7 @@ function Shell() {
                       ? "active"
                       : ""
                   }
+                  aria-current={view === id || (id === "projects" && view === "project") ? "page" : undefined}
                   onClick={() => {
                     go(id)
                     setMobile(false)
@@ -204,11 +197,9 @@ function Shell() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="current-project">
-            <small>Current project</small>
-            <b>{project.title}</b>
-            <span>{project.brief.medium}</span>
-          </div>
+          {project.id && <button className="current-project" onClick={() => go("workflow")}><span className="current-project-icon"><Icon name="canon" /></span><span><small>Current project</small><b>{project.title}</b><small>{project.brief.medium}</small></span><Icon name="arrow" size={15} /></button>}
+          {(!access.teams?.length || access.teams.some(team=>['owner','admin'].includes(team.role))) && <a className="studio-team-link" href="/studio/teams.html"><Icon name="connections" size={17} /><span>Team settings</span><span aria-hidden="true">↗</span></a>}
+          <a className="sidebar-help" href="#/contact"><Icon name="message" size={17} />Help & support</a>
         </div>
       </aside>
       {mobile && (
@@ -218,38 +209,13 @@ function Shell() {
           onClick={() => setMobile(false)}
         />
       )}
-      <main>
-        <header>
-          <button
-            className="mobile-menu"
-            aria-label="Open menu"
-            onClick={() => setMobile(true)}
-          >
-            <Icon name="menu" />
-          </button>
-          <a className="mobile-brand" href="#/" aria-label="ParaMyth home">
-            <img
-              className="brand-logo"
-              src="/brand/paramyth-logo.webp"
-              width="400"
-              height="225"
-              loading="lazy"
-              alt="ParaMyth"
-            />
-          </a>
-          <span className={saving ? "local-label saving" : "local-label"}>
-            {saving ? "Saving…" : "All changes saved"}
-          </span>
+      <main ref={content} id="studio-content" className="studio-content" tabIndex={-1} inert={mobile}>
+        <header className="studio-topbar">
+          <button ref={menu} className="mobile-menu icon-button" aria-label="Open navigation" aria-expanded={mobile} aria-controls="studio-navigation" onClick={() => setMobile(true)}><Icon name="menu" /></button>
+          <div className="workspace-context"><Icon name={access.studio ? "connections" : "projects"} size={18} /><span>{access.studio?.name || "Personal workspace"}</span>{access.studio?.role === "viewer" && <span className="workspace-role">View only</span>}</div>
           <div className="header-actions">
-            <button
-              aria-label="Connections"
-              className="icon-button"
-              onClick={() => go("connections")}
-            >
-              <Icon name="settings" />
-            </button>
-            <a className="text-action" href={access.authenticated ? "/studio/account.html" : "#/signin"}>{access.authenticated ? "Account" : "Sign in"}</a>
-            {!access.authenticated && <a className="text-action" href="#/signup">Create account</a>}
+            <span role="status" className={`local-label${saving ? " saving" : ""}${error ? " save-error" : ""}`}><Icon name={error ? "alert" : saving ? "refresh" : "check"} size={14} />{error ? "Changes need attention" : saving ? "Saving changes…" : "All changes saved"}</span>
+            <a className="studio-account" href={access.authenticated ? "/studio/account.html" : "#/signin"} aria-label={access.authenticated ? "Manage account and sign out" : "Sign in"}><span className="account-initials" aria-hidden="true">{access.account?.display_name.split(/\s+/).map(part => part[0]).slice(0,2).join("").toUpperCase() || "U"}</span><span>{access.authenticated ? access.account?.display_name || "Account" : "Sign in"}</span><Icon name="chevron" size={14} /></a>
           </div>
         </header>
         <SharedConflicts />
@@ -265,23 +231,14 @@ function Shell() {
           <PageLoading label="Opening your saved workspace…" light />
         ) : (
           <>
-            {!["workflow", "projects", "overview", "connections", "retrieval", "news"].includes(
+            {!["workflow", "projects", "overview", "connections", "retrieval", "news", "library", "runs"].includes(
               view,
             ) && <Journey />}
             {!project.id &&
             ["workflow", "project", "images", "music", "production", "library"].includes(
               view,
             ) ? (
-              <div className="story-empty">
-                <h2>Start with your story</h2>
-                <p>
-                  Create a project to keep your writing, images and sound
-                  together.
-                </p>
-                <button className="primary" onClick={() => go("projects")}>
-                  Create a story
-                </button>
-              </div>
+              <div className="page"><PageTitle title={TITLES[view] || "Project workspace"} text="" /><EmptyState icon="projects" title="A home for your next story" text="Create a project to keep your writing, visuals, sound and production plans together." action={<button className="primary" onClick={() => go("projects")}><Icon name="plus" size={17} />Create a project</button>} /></div>
             ) : (
               <AppErrorBoundary resetKey={view}>
                 <Suspense fallback={<PageLoading light />}>
