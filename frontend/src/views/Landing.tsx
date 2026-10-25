@@ -25,7 +25,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
       <CinematicIntro atlasRef={atlas} actionsRef={intro} active={active} focusAtlas={focusAtlas} reduceMotion={reduceMotion} worldReady={worldReady} />
       <section ref={atlas} tabIndex={-1} className="landing-atlas-section cinematic-atlas" aria-label="Explore the story atlas">
         <Suspense fallback={<div className="atlas-loading" role="status">Charting a world of stories…</div>}><Atlas landing reduceMotion={reduceMotion} onReady={revealWorld} /></Suspense>
-        <div className="cinema-preferences"><button onClick={() => intro.current?.replay()}>Replay intro</button><button aria-pressed={reduceMotion} onClick={() => setReduceMotion(!reduceMotion)}>Reduce motion</button></div>
+        <div className="cinema-preferences"><button onClick={() => intro.current?.replay()} disabled={reduceMotion}>Return to book</button><button aria-pressed={reduceMotion} onClick={() => setReduceMotion(!reduceMotion)}>Reduce motion</button></div>
       </section>
     </main>
     <footer className="landing-footer"><div><a className="footer-brand" href="#/">ParaMyth</a></div><ArtCredits /></footer>

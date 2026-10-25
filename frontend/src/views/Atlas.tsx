@@ -3,6 +3,7 @@ import {
   Suspense,
   type ReactNode,
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -59,7 +60,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
 
   const [story, setStory] = useState<AtlasStory | null>(null),
     [loading, setLoading] = useState(""),
-    [inView, setInView] = useState<string[]>([])
+    [globeView, setGlobeView] = useState<string[]>([])
 
   const [idea, setIdea] = useState(atlasQuery),
     [retrieved, setRetrieved] = useState<any[]>([]),
@@ -75,7 +76,12 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
 
   const [legend, setLegend] = useState(false)
 
-  const [mode, setMode] = useState<"globe" | "map">("globe")
+  const [requestedMode, setMode] = useState<"globe" | "map">("globe")
+  const [mapReady, setMapReady] = useState(false)
+  const [mapView, setMapView] = useState<string[]>([])
+  const markMapReady = useCallback(() => setMapReady(true), [])
+  const mode = requestedMode === "map" && mapReady ? "map" : "globe"
+  const inView = mode === "map" ? mapView : globeView
 
   const [cluster, setCluster] = useState<string[] | null>(null)
 
@@ -308,12 +314,12 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
       >
         <div className="atlas-mode" aria-label="Atlas display">
           <button
-            aria-pressed={mode === "globe"}
+            aria-pressed={requestedMode === "globe"}
             onClick={() => { setFocus(null); setMode("globe") }}
           >
             3D globe
           </button>
-          <button aria-pressed={mode === "map"} onClick={() => { setFocus(null); setMode("map") }}>
+          <button aria-pressed={requestedMode === "map"} onClick={() => { setFocus(null); setMode("map") }}>
             Flat map
           </button>
         </div>
@@ -326,12 +332,12 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
       </PageTitle>
 
 
-        <div className={`atlas-layout${story ? " has-story" : ""}${mode === "map" ? " is-map" : ""}`}>
+        <div className={`atlas-layout${story ? " has-story" : ""}`}>
           <section
-            className={`atlas-frame ${mode === "globe" ? "globe-frame" : ""}`}
+            className="atlas-frame globe-frame"
           >
-            {data ? (
-              mode === "globe" ? (
+            <div className="atlas-scene" data-mode={mode} aria-busy={requestedMode === "map" && !mapReady}>
+              <div className={`atlas-layer globe-layer${mode === "globe" ? " active" : ""}`} inert={mode !== "globe"} aria-hidden={mode !== "globe"}>
                 <AtlasGlobe
                   reduceMotion={reduceMotion}
                   onReady={onReady}
@@ -339,7 +345,7 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                   selectedId={story?.id ?? null}
                   focus={focus}
                   onSelect={(id) => select(id)}
-                  onView={setInView}
+                  onView={setGlobeView}
                   onCluster={(ids) => {
                     request.current++
                     setLoading("")
@@ -350,26 +356,22 @@ export default function Atlas({ landing = false, reduceMotion = false, onReady }
                   }}
                   onFallback={() => setMode("map")}
                 />
-              ) : (
-                <Suspense
-                  fallback={
-                    <div className="atlas-map loading">Unrolling the map…</div>
-                  }
-                >
+              </div>
+              <div className={`atlas-layer map-layer${mode === "map" ? " active" : ""}`} inert={mode !== "map"} aria-hidden={mode !== "map"}>
+                <Suspense fallback={null}>
                   <AtlasMap
                     stories={visible}
                     selectedId={story?.id ?? null}
                     focus={focus}
                     onSelect={(id) => select(id)}
-                    onView={setInView}
+                    onView={setMapView}
+                    onReady={markMapReady}
+                    reduceMotion={reduceMotion}
                   />
                 </Suspense>
-              )
-            ) : (
-              <div className="atlas-map loading">
-                <span>Charting a world of stories…</span>
               </div>
-            )}
+              {requestedMode === "map" && !mapReady && <span className="atlas-view-loading" role="status">Preparing map…</span>}
+            </div>
             <div className="atlas-search">
               <Icon name="search" size={16} />
               <input

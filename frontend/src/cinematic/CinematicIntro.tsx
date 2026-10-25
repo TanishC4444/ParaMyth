@@ -5,20 +5,22 @@ import { chapterMotion, advanceScene } from "./motion";
 import "./cinematic.css";
 
 export type IntroActions = { replay: () => void; enter: () => void };
+type Playback = IntroActions & { wake: () => void; reverse: () => void; seek: (value: number) => void; play: () => void };
 type Props = { atlasRef: RefObject<HTMLElement | null>; actionsRef: RefObject<IntroActions | null>; active: boolean; focusAtlas: boolean; reduceMotion: boolean; worldReady: boolean };
 
 export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtlas, reduceMotion, worldReady }: Props) {
   const root = useRef<HTMLElement>(null);
-  const readyRef = useRef(worldReady); readyRef.current = worldReady;
+  const slider = useRef<HTMLInputElement>(null);
   const progress = useRef(focusAtlas ? 1 : 0);
+  const direction = useRef<1 | -1>(1);
+  const pausedRef = useRef(false), entering = useRef(false);
   const activeRef = useRef(active); activeRef.current = active;
-  const pausedRef = useRef(false);
-  const entering = useRef(false);
-  const focusOnComplete = useRef(false);
+  const readyRef = useRef(worldReady); readyRef.current = worldReady;
   const [paused, setPaused] = useState(false);
+  const [backwards, setBackwards] = useState(false);
   const [systemReduced, setSystemReduced] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
   const reduced = systemReduced || reduceMotion;
-  const controls = useRef<IntroActions | null>(null);
+  const controls = useRef<Playback | null>(null);
   useImperativeHandle(actionsRef, () => ({ enter: () => controls.current?.enter(), replay: () => controls.current?.replay() }), []);
   useEffect(() => {
     const preference = matchMedia("(prefers-reduced-motion: reduce)");
@@ -31,64 +33,73 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
     let frame = 0, last = 0, disposed = false;
     const paint = () => {
       const p = progress.current;
-      const state = chapterMotion(p);
-      Object.entries(state).forEach(([key, value]) => shell.style.setProperty(`--${key}`, String(value)));
-      const finishing = shell.dataset.intro === "true" && p >= 1;
+      Object.entries(chapterMotion(p)).forEach(([key, value]) => shell.style.setProperty(`--${key}`, String(value)));
+      if (shell.dataset.intro === "true" && p >= 1) window.scrollTo({ top: 0, behavior: "instant" });
       shell.dataset.intro = String(p < 1);
-      if (finishing) window.scrollTo({ top: 0, behavior: "instant" });
       shell.dataset.reduced = String(reduced);
-      section.dataset.pastHero = String(p >= .52);
       section.dataset.progress = p.toFixed(3);
       section.dataset.finished = String(p >= 1);
       section.inert = p >= 1;
-      atlas.inert = p < .94;
+      atlas.inert = p < 1;
       if (atlas.inert) atlas.setAttribute("aria-hidden", "true"); else atlas.removeAttribute("aria-hidden");
-      if (p >= 1 && focusOnComplete.current) {
-        focusOnComplete.current = false;
-        atlas.focus({ preventScroll: true });
-      }
+      if (slider.current) slider.current.value = String(Math.round(p * 1000));
+      if (p >= 1 && section.contains(document.activeElement)) atlas.focus({ preventScroll: true });
     };
     const start = () => { if (!frame && !disposed) { last = 0; frame = requestAnimationFrame(tick); } };
     const tick = (time: number) => {
       frame = 0;
-      const delta = last ? Math.min(time - last, 1000) : 0; last = time;
-      if (activeRef.current && !document.hidden && (!pausedRef.current || entering.current)) {
-        const next = reduced ? 1 : advanceScene(progress.current, delta, entering.current);
-        // Hold at the horizon until the globe is textured (or its fallback is ready).
-        progress.current = readyRef.current || reduced ? next : Math.min(next, .5);
+      const delta = last ? Math.min(time - last, 64) : 0; last = time;
+      if (activeRef.current && !document.hidden && !pausedRef.current) {
+        const next = reduced ? 1 : advanceScene(progress.current, delta, entering.current, direction.current);
+        progress.current = readyRef.current || reduced || direction.current < 0 ? next : Math.min(next, .7);
         paint();
+        if (progress.current <= 0 && direction.current < 0) {
+          pausedRef.current = true; setPaused(true);
+          direction.current = 1; setBackwards(false);
+        }
       }
-      if (progress.current < 1 && !disposed) frame = requestAnimationFrame(tick);
+      if (!disposed && activeRef.current && !document.hidden && !pausedRef.current && (direction.current < 0 ? progress.current > 0 : progress.current < 1)) frame = requestAnimationFrame(tick);
+    };
+    const play = () => {
+      pausedRef.current = !pausedRef.current; setPaused(pausedRef.current);
+      entering.current = false;
+      if (!pausedRef.current) start();
+    };
+    const reverse = () => {
+      direction.current = direction.current === 1 ? -1 : 1; setBackwards(direction.current < 0);
+      entering.current = false; pausedRef.current = false; setPaused(false); start();
     };
     const enter = () => {
-      entering.current = true; focusOnComplete.current = true;
+      direction.current = 1; setBackwards(false); entering.current = true;
+      pausedRef.current = false; setPaused(false);
       window.scrollTo({ top: 0, behavior: "instant" });
-      if (reduced) { progress.current = 1; paint(); } else start();
+      if (reduced) { progress.current = 1; paint(); atlas.focus({ preventScroll: true }); } else start();
     };
     const replay = () => {
-      entering.current = false; focusOnComplete.current = false; pausedRef.current = false; setPaused(false);
-      progress.current = reduced ? 1 : 0;
+      if (reduced) return;
+      // Return along exactly the same path, without resetting the current frame.
+      direction.current = -1; setBackwards(true); entering.current = false;
+      pausedRef.current = false; setPaused(false);
       window.scrollTo({ top: 0, behavior: "instant" }); paint(); start();
-      if (!reduced) section.focus({ preventScroll: true });
+      section.focus({ preventScroll: true });
     };
-    controls.current = { enter, replay };
-    // Scroll is never used as the animation timeline.
-    const leave = () => { if (progress.current < 1) { entering.current = true; start(); } };
-    const key = (e: KeyboardEvent) => { if (["PageDown", "End"].includes(e.key)) leave(); };
-    const visibility = () => { last = 0; start(); };
-    window.addEventListener("wheel", leave, { passive: true });
-    window.addEventListener("touchmove", leave, { passive: true });
-    window.addEventListener("keydown", key);
+    const seek = (value: number) => {
+      progress.current = reduced ? 1 : Math.max(0, Math.min(readyRef.current ? 1 : .7, value));
+      pausedRef.current = true; setPaused(true); entering.current = false; paint();
+    };
+    controls.current = { enter, replay, reverse, seek, play, wake: start };
+    const visibility = () => { last = 0; if (!document.hidden) start(); };
     document.addEventListener("visibilitychange", visibility);
+    if (reduced) { direction.current = 1; pausedRef.current = false; setPaused(false); setBackwards(false); }
     if (reduced || focusAtlas) progress.current = 1;
     paint(); start();
     return () => {
       disposed = true; cancelAnimationFrame(frame);
-      window.removeEventListener("wheel", leave); window.removeEventListener("touchmove", leave); window.removeEventListener("keydown", key); document.removeEventListener("visibilitychange", visibility);
+      document.removeEventListener("visibilitychange", visibility);
       atlas.inert = false; atlas.removeAttribute("aria-hidden"); controls.current = null;
     };
   }, [reduced, atlasRef]);
-  useEffect(() => { if (active && focusAtlas) controls.current?.enter(); }, [active, focusAtlas]);
+  useEffect(() => { if (active) { if (focusAtlas) controls.current?.enter(); else controls.current?.wake(); } }, [active, focusAtlas]);
   return <section ref={root} tabIndex={-1} className={`cinematic-intro${paused || !active ? " cinema-paused" : ""}`} aria-label="ParaMyth introduction">
     <div className="cinema-stage">
       <h1 className="paramyth-wordmark" aria-label="ParaMyth">PARA<span>MYTH</span><i aria-hidden="true" /></h1>
@@ -99,8 +110,12 @@ export default function CinematicIntro({ atlasRef, actionsRef, active, focusAtla
       </div>
       <Storybook />
       <div className="book-horizon" aria-hidden="true" />
-      <button className="intro-enter" onClick={() => controls.current?.enter()}>Explore atlas <span aria-hidden="true">↗</span></button>
-      <button className="intro-pause" aria-label={paused ? "Resume animation" : "Pause animation"} aria-pressed={paused} onClick={() => { pausedRef.current = !paused; setPaused(!paused); }}>{paused ? "▶" : "Ⅱ"}</button>
+      <div className="intro-playback" role="group" aria-label="Book animation controls">
+        <button aria-label={backwards ? "Play forward" : "Reverse animation"} aria-pressed={backwards} onClick={() => controls.current?.reverse()}>↶</button>
+        <button aria-label={paused ? "Resume animation" : "Pause animation"} aria-pressed={paused} onClick={() => controls.current?.play()}>{paused ? "▶" : "Ⅱ"}</button>
+        <input ref={slider} type="range" min="0" max="1000" step="1" defaultValue="0" aria-label="Animation position" onChange={e => controls.current?.seek(Number(e.target.value) / 1000)} />
+        <button className="playback-enter" onClick={() => controls.current?.enter()}>Atlas ↗</button>
+      </div>
     </div>
   </section>;
 }

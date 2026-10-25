@@ -18,18 +18,22 @@ export function rememberIntro() {
 export function chapterMotion(p: number) {
   const ramp = (a: number, b: number) => { const t = clamp((p - a) / (b - a)); return t * t * (3 - 2 * t); };
   return {
-    open: ramp(.06, .28),
-    burst: ramp(.16, .28) * (1 - ramp(.3, .47)),
-    collapse: ramp(.22, .62),
-    hero: 1 - ramp(.25, .52),
-    book: 1 - ramp(.55, .7),
-    orbit: 1 - ramp(.35, .57),
-    earth: ramp(.5, .82),
-    horizon: ramp(.42, .62) * (1 - ramp(.78, 1)),
-    atlas: ramp(.5, .82),
-    controls: ramp(.75, 1),
+    open: ramp(.07, .27),
+    leaf0: ramp(.28, .39),
+    leaf1: ramp(.36, .47),
+    leaf2: ramp(.43, .54),
+    orbitTurn: clamp(p),
+    burst: 0,
+    collapse: ramp(.55, .76),
+    hero: 1 - ramp(.49, .64),
+    book: 1 - ramp(.74, .84),
+    orbit: 1 - ramp(.51, .7),
+    earth: ramp(.73, .95),
+    horizon: ramp(.64, .77) * (1 - ramp(.9, 1)),
+    atlas: ramp(.73, .95),
+    controls: ramp(.88, 1),
   };
 }
-export function advanceScene(progress: number, deltaMs: number, entering = false) {
-  return clamp(progress + Math.max(0, deltaMs) / (entering ? 900 : 8800));
+export function advanceScene(progress: number, deltaMs: number, entering = false, direction: 1 | -1 = 1) {
+  return clamp(progress + direction * Math.max(0, deltaMs) / (entering ? 1600 : 18000));
 }

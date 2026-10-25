@@ -20,8 +20,9 @@ export default function Storybook() {
     <div className="storybook-perspective">
       <div className="book-ground-shadow" />
       <div className="storybook-assembly">
-        <div className="book-left-block"><Illustration world={worlds[0]} /></div>
-        <div className="book-right-block"><Illustration world={worlds[3]} /></div>
+        <div className="book-bottom-cover" />
+        <div className="book-page-block">{Array.from({ length: 15 }, (_, i) => <div className="book-page-stack" key={i} style={{ transform: `translateZ(${-i * 1.5}px)` }} />)}<Illustration world={worlds[3]} /><div className="book-edge edge-fore" /><div className="book-edge edge-top" /><div className="book-edge edge-bottom" /></div>
+
         <div className="book-spine" />
         {worlds.slice(0, 3).map((world, index) => <div className={`book-leaf book-leaf-${index}`} key={world.art}>
           <Illustration world={world} /><Illustration world={world} back />
@@ -32,6 +33,7 @@ export default function Storybook() {
             <strong>PM</strong>
           </div></div>
           <div className="book-cover-back"><Illustration world={worlds[0]} /></div>
+          <div className="cover-edge cover-fore" /><div className="cover-edge cover-top" /><div className="cover-edge cover-bottom" />
         </div>
       </div>
     </div>
