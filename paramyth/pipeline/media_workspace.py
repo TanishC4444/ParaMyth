@@ -32,6 +32,7 @@ def writings(folder, include_live=False):
 
 
 def material(folder, source='latest', manual='', use_story=True):
+    if not isinstance(source,str):raise ValueError('Choose a writing source from this project')
     if not isinstance(manual,str) or len(manual)>20000:raise ValueError('Keep the brief under 20,000 characters')
     follow_latest=source=='latest'
     rows=writings(folder,True);sources=[];title='Your brief';selected='manual';status='complete'
@@ -158,9 +159,21 @@ def music_models():
     return []
 
 
+def validate_music_input(data):
+    if 'seconds' in data and (type(data['seconds']) is not int or not 5<=data['seconds']<=360):
+        raise ValueError('Duration must be 5–360 seconds')
+    if 'mode' in data and data['mode'] not in ('score','song','ambience'):
+        raise ValueError('Choose a soundtrack type')
+    if not isinstance(data.get('prompt',''),str) or len(data.get('prompt',''))>4000:
+        raise ValueError('Keep the soundtrack description under 4000 characters')
+    if not isinstance(data.get('lyrics',''),str) or len(data.get('lyrics',''))>12000:
+        raise ValueError('Keep song lyrics under 12,000 characters')
+
+
 def create_music(folder, data, progress, *, selected=None):
+    validate_music_input(data)
     folder=Path(folder);progress('Preparing your soundtrack direction')
-    models=music_models() if data.get('automatic',True) or data.get('mode')!='ambience' else []
+    models=music_models() if data.get('mode')!='ambience' else []
     selected=selected or material(folder,data.get('source','latest'),str(data.get('prompt','')),data.get('use_story',True))
     cache_key=hashlib.sha256(json.dumps({'request':data,'source':selected['signature'],'models':models},sort_keys=True).encode()).hexdigest()
     cache_path=folder/'.music-directions'/(cache_key+'.json')

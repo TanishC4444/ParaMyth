@@ -8,7 +8,7 @@ import secrets
 import time
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Body, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 
 from ..pipeline.production import budget, create_plan, normalize_config, schedule, validate_breakdown
@@ -24,7 +24,10 @@ OAUTH_SECONDS = 600
 def read_plan(current, ident):
     if not PLAN_ID.fullmatch(str(ident)):
         raise ValueError('Invalid plan ID')
-    return load(current / 'production' / 'plans' / (ident + '.json'))
+    try:
+        return load(current / 'production' / 'plans' / (ident + '.json'))
+    except FileNotFoundError:
+        raise HTTPException(404, 'Production plan not found in this project') from None
 
 
 def callback_url(request):

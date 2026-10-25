@@ -12,7 +12,7 @@ class SoundtracksTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         (self.root / 'request.json').write_text(json.dumps({'title':'Harbor', 'characters':[{'name':'Mara','description':'afraid of storms'}], 'world_rules':['The harbor floods'], 'api_key':'must-not-leak'}))
         (self.root / 'story.txt').write_text('Wind and rain crossed the ocean. A fire burned.')
 
@@ -49,7 +49,7 @@ class SoundtracksTests(unittest.TestCase):
     def test_discover_real_runs_excludes_examples(self):
         self.assertEqual(discover_stories(self.root), [self.root])
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             for directory in ('outputs/actual', 'runs/active', 'examples/fixture-output'):
                 target = root / directory
                 target.mkdir(parents=True)

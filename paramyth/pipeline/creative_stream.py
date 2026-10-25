@@ -2,9 +2,10 @@
 import json
 import os
 import re
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener
 from urllib.error import HTTPError, URLError
 from .production_research import ProviderError
+from ..providers import NoRedirect
 
 
 class StreamError(ProviderError):
@@ -133,7 +134,7 @@ def completion(provider, model, messages, temperature, on_chunk, *, schema=None,
     raw='';finish=None;usage={}
     try:
         request=Request(url,data=json.dumps(payload).encode(),headers=headers)
-        with urlopen(request,timeout=180) as response:
+        with build_opener(NoRedirect()).open(request,timeout=180) as response:
             for data in events(response):
                 if data=='[DONE]':break
                 value=json.loads(data)
@@ -156,6 +157,7 @@ def completion(provider, model, messages, temperature, on_chunk, *, schema=None,
         if finish!='stop':raise StreamError('Drafting stopped before completion. Your partial draft is saved.',retryable=finish in (None,'length'))
         return {'choices':[{'message':{'content':raw},'finish_reason':finish}],'usage':usage}
     except HTTPError as exc:
+        exc.close()
         raise StreamError(f'Writing provider HTTP {exc.code}. Check Connections if this continues.',retryable=exc.code in (408,429,500,502,503,504)) from None
     except (URLError,TimeoutError,OSError,ValueError) as exc:
         if isinstance(exc,ProviderError):raise

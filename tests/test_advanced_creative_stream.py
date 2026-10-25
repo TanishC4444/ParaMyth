@@ -77,7 +77,9 @@ class StreamTests(unittest.TestCase):
     def provider(self, provider, values):
         wire=''.join('data: '+json.dumps(v)+'\n\n' for v in values).encode()
         seen=[]
-        with patch('paramyth.pipeline.creative_stream.urlopen',return_value=io.BytesIO(wire)) as call:
+        with patch('paramyth.pipeline.creative_stream.build_opener') as opener:
+            call=opener.return_value.open
+            call.return_value=io.BytesIO(wire)
             result=creative_stream.completion(provider,'model',[{'content':'system'},{'content':'prompt'}],.6,seen.append)
         return result,seen,call
 

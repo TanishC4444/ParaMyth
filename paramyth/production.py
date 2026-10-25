@@ -154,7 +154,8 @@ def validate_breakdown(value):
 
 class Muse:
     def __init__(self):
-        self.headers = vultr.headers()
+        key = os.getenv('VULTR_PRODUCTION_API_KEY', '').strip() or vultr.require_key()
+        self.headers = {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'}
         self.calls = []
 
     def ask(self, instruction, data, images=()):

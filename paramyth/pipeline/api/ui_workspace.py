@@ -252,7 +252,8 @@ def image_source(ident:str,request:Request,data:dict=Body(...),runtime=RT):
 
 @router.post('/music',dependencies=[Depends(write)],status_code=202)
 def current_music(request:Request,data:dict=Body(...),runtime=RT):
-    from ..media_workspace import create_music,material
+    from ..media_workspace import create_music,material,validate_music_input
+    validate_music_input(data)
     current=folder(request,runtime)
     selected=material(current,data.get('source','latest'),str(data.get('prompt','')),data.get('use_story',True))
     return {'job_id':runtime.submit('music',current,lambda progress:create_music(current,data,progress,selected=selected),local=True),'local':True}
@@ -265,7 +266,9 @@ def current_production(request:Request,data:dict=Body(...),runtime=RT):
     from ..production import create_plan,normalize_config
     current=folder(request,runtime)
     selected=media_workspace.material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
-    cfg=normalize_config({**data.get('config',{}),'brief':data.get('prompt','')})
+    config=data.get('config',{})
+    if not isinstance(config,dict):raise ValueError('Production constraints must be an object')
+    cfg=normalize_config({**config,'brief':data.get('prompt','')})
     available=media_workspace.catalog(current) if data.get('automatic_assets') else None
     ids=[i['id'] for i in available['images'][:3]] if available else data.get('image_ids',[])
     if not isinstance(ids,list) or len(ids)>3 or any(not isinstance(i,str) for i in ids):raise ValueError('Choose up to three project images')
@@ -294,7 +297,9 @@ def prepare_production(request:Request,data:dict=Body(...),runtime=RT):
     from ..production import prepare_direction,normalize_config
     current=folder(request,runtime)
     selected=material(current,data.get('source','latest'),data.get('prompt',''),data.get('use_story',True))
-    config=normalize_config({**data.get('config',{}),'brief':data.get('prompt','')})
+    raw=data.get('config',{})
+    if not isinstance(raw,dict):raise ValueError('Production constraints must be an object')
+    config=normalize_config({**raw,'brief':data.get('prompt','')})
     def operation(progress):
         progress('Developing production direction from your writing')
         return {**prepare_direction(selected['sources'],config,folder=current,progress=progress),'source_id':selected['source_id'],'source_signature':selected['signature']}
@@ -303,8 +308,8 @@ def prepare_production(request:Request,data:dict=Body(...),runtime=RT):
 
 @router.put('/notes',dependencies=[Depends(write)])
 def notes(data:dict=Body(...),runtime=RT):
-    if len(json.dumps(data))>1000000:raise ValueError('Notes are too large')
-    save(runtime.root/'runs'/'paramyth-workspace.json',{'ideas':data.get('ideas',[]),'pins':data.get('pins',[])})
+    from ...workspace_notes import validate_notes
+    save(runtime.root/'runs'/'paramyth-workspace.json',validate_notes(data))
     return {'saved':True}
 
 @router.put('/projects/{ident}',dependencies=[Depends(write)])
@@ -347,7 +352,7 @@ def runner_request(ident:str,runtime=RT):
     meta=read(runtime.root/'runs'/'paramyth-workspace.json',{})
     references={r['record_id']:r for r in result.get('references',[]) if isinstance(r,dict) and 'record_id' in r}
     for pin in meta.get('pins',[]):
-        if pin.get('projectId')==ident:
+        if isinstance(pin,dict) and isinstance(pin.get('recordId'),str) and pin.get('projectId')==ident:
             references[pin['recordId']]={'record_id':pin['recordId'],'scope':'story','purpose':pin.get('purpose') or 'Literary inspiration'}
     result['references']=list(references.values())
     return result
