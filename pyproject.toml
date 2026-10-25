@@ -12,7 +12,8 @@ dependencies = []
 [project.optional-dependencies]
 rag = ["numpy>=2,<3", "python-dotenv>=1,<2"]
 production = ["tzdata>=2024.1"]
-studio = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1", "httpx>=0.27,<1", "tzdata>=2024.1"]
+studio = ["fastapi>=0.121,<1", "uvicorn[standard]>=0.30,<1", "httpx>=0.27,<1", "tzdata>=2024.1"]
+tiger = ["psycopg[binary]>=3.2,<4", "certifi>=2024.2"]
 
 [project.scripts]
 paramyth-creative = "paramyth.creative:main"
@@ -26,3 +27,6 @@ paramyth-studio = "paramyth.studio.serve:main"
 
 [tool.setuptools.packages.find]
 include = ["paramyth*"]
+
+[tool.setuptools.package-data]
+"paramyth.studio" = ["migrations/*.sql"]

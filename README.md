@@ -318,6 +318,15 @@ and any invented visual choices as assumptions. Tests use synthetic PNGs
 and mocked provider responses; they do not establish live account access or
 image quality.
 
+## Tiger accounts and shared studios
+
+The optional Tiger/PostgreSQL backend adds accounts, revocable sessions, studio
+memberships and invitations, shared projects, version history, and comments to
+the studio API. Install `.[studio,tiger]` and follow [database setup](docs/TIGER.md)
+for the explicit migration, restricted runtime role, verified TLS, and API routes.
+Existing local projects remain file-backed; shared-account frontend integration
+is separate work. No cloud database is created or migrated by application startup.
+
 ## Role guidance
 
 Role prompts for the architect, writer and reviewers live in `skills/`:
