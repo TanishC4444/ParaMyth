@@ -43,24 +43,34 @@ test('chapter curves remain finite and bounded throughout fast forward and rever
     assert.deepEqual(chapterMotion(p), state, 'scroll history cannot affect a frame');
   }
 });
-test('the book assembles before Earth takes over, and Atlas is fully visible at the destination', () => {
+test('the book becomes a horizon before the Atlas controls appear', () => {
   const { chapterMotion } = motion();
   assert.equal(chapterMotion(0).hero, 1);
   assert.equal(chapterMotion(0).book, 1);
-  assert.ok(chapterMotion(.27).burst > .99);
-  assert.equal(chapterMotion(.58).burst, 0);
-  assert.equal(chapterMotion(.58).unfold, 1);
-  assert.equal(chapterMotion(.58).book, 1);
-  assert.equal(chapterMotion(.78).earth, 1);
-  assert.equal(chapterMotion(.78).book, 0);
+  assert.equal(chapterMotion(.62).collapse, 1);
+  assert.ok(chapterMotion(.62).horizon > .99);
+  assert.equal(chapterMotion(.62).controls, 0);
+  assert.equal(chapterMotion(.82).earth, 1);
+  assert.equal(chapterMotion(.82).book, 0);
   assert.equal(chapterMotion(1).atlas, 1);
-  assert.equal(chapterMotion(1).earth, 0);
-  assert.equal(chapterMotion(0).atlas, 0);
+  assert.equal(chapterMotion(1).controls, 1);
+  assert.equal(chapterMotion(1).horizon, 0);
 });
-test('the reveal has no blank chapter between book and Earth', () => {
+test('autoplay is frame-rate independent, bounded, and a direct Atlas entry finishes promptly', () => {
+  const { advanceScene } = motion();
+  const simulate = (hz, ms, skip = false) => {
+    let p = 0; for (let i = 0; i < hz * ms / 1000; i++) p = advanceScene(p, 1000 / hz, skip); return p;
+  };
+  assert.ok(Math.abs(simulate(30, 4400) - simulate(120, 4400)) < .00001);
+  assert.ok(simulate(60, 8800) > .9999);
+  assert.ok(simulate(60, 900, true) > .9999);
+  assert.equal(advanceScene(.4, -100), .4);
+  assert.equal(advanceScene(.99, 1000), 1);
+});
+test('the horizon bridges the book and globe without an empty visual frame', () => {
   const { chapterMotion } = motion();
   for (let i = 0; i <= 1000; i++) {
     const state = chapterMotion(i / 1000);
-    assert.ok(Math.max(state.book, state.earth, state.atlas) > .35);
+    assert.ok(Math.max(state.book, state.earth, state.horizon) > .35);
   }
 });

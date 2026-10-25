@@ -14,20 +14,22 @@ export function rememberIntro() {
   try { sessionStorage.setItem(INTRO_KEY, "1"); } catch { /* Private storage is optional. */ }
 }
 
-/** The same reversible chapter curve drives the book, orbit and globe. */
+/** Time based, reversible visual curves. No scene owns or captures page scrolling. */
 export function chapterMotion(p: number) {
   const ramp = (a: number, b: number) => { const t = clamp((p - a) / (b - a)); return t * t * (3 - 2 * t); };
-  const burst = ramp(.06, .27) * (1 - ramp(.32, .55));
   return {
-    burst,
-    unfold: ramp(.28, .57),
-    hero: 1 - ramp(.03, .23),
-    book: 1 - ramp(.61, .74),
-    orbit: 1 - ramp(.27, .5),
-    earth: ramp(.58, .73) * (1 - ramp(.91, 1)),
-    worldcopy: ramp(.67, .77) * (1 - ramp(.86, .96)),
-    zoom: ramp(.78, .97),
-    atlas: ramp(.89, .99),
-    warmth: ramp(.1, .35) * (1 - ramp(.56, .78)),
+    open: ramp(.06, .28),
+    burst: ramp(.16, .28) * (1 - ramp(.3, .47)),
+    collapse: ramp(.22, .62),
+    hero: 1 - ramp(.25, .52),
+    book: 1 - ramp(.55, .7),
+    orbit: 1 - ramp(.35, .57),
+    earth: ramp(.5, .82),
+    horizon: ramp(.42, .62) * (1 - ramp(.78, 1)),
+    atlas: ramp(.5, .82),
+    controls: ramp(.75, 1),
   };
+}
+export function advanceScene(progress: number, deltaMs: number, entering = false) {
+  return clamp(progress + Math.max(0, deltaMs) / (entering ? 900 : 8800));
 }

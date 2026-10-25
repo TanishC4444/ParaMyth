@@ -10,7 +10,6 @@ const worlds: { art: Art; title: string; chapter: string }[] = [
 function Illustration({ world, back = false }: { world: typeof worlds[number]; back?: boolean }) {
   return <div className={`book-face ${back ? "book-verso" : "book-recto"}`}>
     <div className="book-illustration"><Artwork name={world.art} eager /><div className="book-image-light" /></div>
-    <div className="book-page-caption"><small>{world.chapter}</small><span>{world.title}</span></div>
     <div className="book-page-shade" />
   </div>;
 }
@@ -29,9 +28,8 @@ export default function Storybook() {
         </div>)}
         <div className="book-cover">
           <div className="book-cover-front"><div className="book-cover-inlay">
-            <span className="book-edition">A COLLECTION OF POSSIBILITIES</span>
             <svg className="book-emblem" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="46" /><circle cx="60" cy="60" r="36" /><path d="M60 5v110M5 60h110M21 21l78 78M21 99l78-78" /><path d="m60 22 9 29 29 9-29 9-9 29-9-29-29-9 29-9Z" /><circle cx="60" cy="60" r="7" /></svg>
-            <strong>ParaMyth</strong><em>Every story begins somewhere.</em><span className="book-cover-rule" /><small>OPEN A WORLD OF STORIES</small>
+            <strong>PM</strong>
           </div></div>
           <div className="book-cover-back"><Illustration world={worlds[0]} /></div>
         </div>
