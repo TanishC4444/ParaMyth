@@ -21,7 +21,7 @@ class Input(BaseModel):
 
 class Credentials(Input):
     email: str = Field(min_length=3, max_length=254)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=1, max_length=128)
 
     @field_validator('email')
     @classmethod
@@ -70,7 +70,7 @@ class MemberInput(Input):
 
 class PasswordInput(Input):
     current_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=12, max_length=128)
+    new_password: str = Field(min_length=1, max_length=128)
 
 
 class ProjectInput(Input):

@@ -30,7 +30,7 @@
       <form id="account-form">
         <label>API URL <input id="team-api" type="url" required autocomplete="url" placeholder="https://your-paramyth-api.example"></label>
         <label>Email address <input id="email" type="email" required autocomplete="username" maxlength="254" placeholder="you@example.com"></label>
-        <label>Password <input id="password" type="password" required autocomplete="current-password" minlength="12" maxlength="128" placeholder="At least 12 characters" aria-describedby="password-hint"></label>
+        <label>Password <input id="password" type="password" required autocomplete="current-password" minlength="1" maxlength="128" placeholder="Password" aria-describedby="password-hint"></label>
         <p class="hint" id="password-hint">Your session lasts until you reload or leave this page.</p>
         <label id="display-name-field" hidden>Display name<input id="display-name" autocomplete="nickname" maxlength="100" placeholder="What should we call you?"></label>
         <p id="account-message" class="error" role="alert" aria-live="polite"></p>
@@ -88,7 +88,7 @@
       <details class="panel"><summary>Account settings</summary>
         <form id="password-form">
           <label>Current password <input id="current-password" type="password" required autocomplete="current-password" maxlength="128"></label>
-          <label>New password <input id="new-password" type="password" required autocomplete="new-password" minlength="12" maxlength="128"></label>
+          <label>New password <input id="new-password" type="password" required autocomplete="new-password" minlength="1" maxlength="128"></label>
           <button>Change password and sign out everywhere</button>
         </form>
       </details>

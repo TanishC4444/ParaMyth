@@ -148,7 +148,8 @@ the new server. Do not put the owner connection or credentials in the frontend.
 The account page is `/studio/teams.html?mode=signup`, served by both API entry
 points when running from the repository, with or without a frontend build. Its
 form submits to `/api/v1/accounts/signup` on the same origin. A name, valid email,
-and a 12–128 character password are required. Existing email addresses return
+and a nonempty password (up to 128 characters) are required. The minimum length
+is temporarily relaxed for development. Existing email addresses return
 409 and switch the form to sign-in. Password recovery is still not implemented.
 
 The legacy migration tests require an **empty disposable database** and an owner
