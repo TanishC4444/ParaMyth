@@ -13,6 +13,7 @@ dependencies = []
 rag = ["numpy>=2,<3", "python-dotenv>=1,<2"]
 
 [project.scripts]
+paramyth-images = "paramyth.image_studio:main"
 paramyth-rag-ingest = "paramyth.rag.ingest:main"
 paramyth-rag-search = "paramyth.rag.search:main"
 

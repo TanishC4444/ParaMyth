@@ -177,6 +177,47 @@ context budget; hierarchical long-book auditing is not implemented.
 This run format uses schema version 2. Retain earlier run folders as historical
 checkpoints and start a fresh folder rather than silently reinterpreting older state.
 
+## Meta image generation
+
+The image backend prepares story-aware prompts locally and generates one PNG per
+request using Meta's `muse-image-1.0` model. It uses the Python standard library.
+Set `MUSE_IMAGE_API_KEY` (or `MODEL_API_KEY`) in the process environment before
+generation. The image backend does not load `.env` automatically.
+
+Prepare a prompt from a run folder, inspect the saved request, then generate:
+
+```sh
+python -m paramyth.image_studio --folder runs/harbor prepare --request examples/image-brief.json --out runs/harbor/image-request.json
+python -m paramyth.image_studio --folder runs/harbor generate --request runs/harbor/image-request.json
+python -m paramyth.image_studio --folder runs/harbor gallery
+```
+
+The installed `paramyth-images` command offers the same operations. `prepare`
+makes no provider calls. It selects story passages for the subject and applies
+automatic or explicit art direction. Supported kinds are character, scene,
+location, prop, storyboard, and custom. Set `use_story` to false with a subject or
+direction to prepare a standalone image prompt. Story context reads an allowlist
+of narrative files and excludes provider logs and environment files.
+
+`generate` sends the prompt to Meta's Responses API with `store: false`. It can
+incur provider charges. Use `aspect_ratio` of `1:1`, `3:2`, or `2:3` and `resolution`
+of `1K` in the saved request. Shape guides composition; actual pixel dimensions
+can differ. This backend accepts one image per request and rejects seed and step
+controls. See [Meta's image API documentation](https://dev.meta.ai/docs/image-generation).
+
+Each attempt gets a record in `images/` with generating, completed, or failed
+status. Successful PNGs have checked chunk framing, checksums, bounded dimensions,
+and a saved SHA-256 digest. Gallery records retain the prompt, model, actual
+dimensions, and available token counts. Keys and raw provider errors are not
+saved. A timeout may leave billing uncertain; there are no automatic retries or
+provider fallbacks. Interrupted processes may leave a generating record for
+manual inspection.
+
+This phase exposes Python functions and a CLI. Studio HTTP routes, prompt
+enhancement, and Vultr integration are separate work. Tests use synthetic PNGs
+and mocked provider responses; they do not establish live account access or
+image quality.
+
 ## Role guidance
 
 Role prompts for the architect, writer and reviewers live in `skills/`:
