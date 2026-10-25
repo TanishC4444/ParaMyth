@@ -3,14 +3,14 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-from . import contracts
+from . import contracts, canon
+from .retrieval import retrieve
 from .executor import Executor
 from .storage import export, load, lock, save
 
 
 def visible(memories, character=None):
-    return [m for m in memories if 'public' in m['known_by'] or
-            (character is not None and character in m['known_by'])]
+    return canon.current(memories, character)
 
 
 def fixture_retrieval(req):
@@ -37,12 +37,12 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             contracts.require(state.get('transport_identity') == identity, 'Provider settings changed; use a new run folder')
         else:
             state = {'transport_identity': identity, 'version': 0, 'backend': backend, 'request_hash': fingerprint,
-                     'accepted': [], 'memories': copy.deepcopy(req['initial_facts'])}
+                     'accepted': [], 'memories': canon.initialize(req['initial_facts'])}
             save(folder / 'request.json', req)
             save(path, state)
         executor = Executor(req, folder, transport)
         if 'retrieval' not in state:
-            state['retrieval'] = (retrieval or fixture_retrieval)(req)
+            state['retrieval'] = (retrieval(req) if retrieval else retrieve(req['retrieval_index'], req['premise'], expected_hash=req.get('corpus_hash')) if req.get('retrieval_index') else fixture_retrieval(req))
             save(folder / 'retrieval.json', state['retrieval'])
             save(path, state)
         if 'plan' not in state:
@@ -61,13 +61,15 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
         for card in state['plan']['scenes'][len(state['accepted']):]:
             work = folder / 'work' / card['id']
             packet = {'scene': card, 'premise': req['premise'], 'world_rules': req['world_rules'],
-                      'pov_visible_memory': visible(state['memories'], card['pov']),
+                      'pov_visible_memory': canon.select(state['memories'], card['pov'])['facts'],
+                      'memory_selection': canon.select(state['memories'], card['pov']),
+                      'inspiration': state['retrieval'],
                       'target_words': req['words_per_scene']}
             proposals = []
             for character in req['characters']:
                 if character['id'] in card['participants']:
                     actor_packet = {'character': character, 'location': card['location'], 'time': card['time'],
-                                    'visible_memory': visible(state['memories'], character['id'])}
+                                    'visible_memory': canon.select(state['memories'], character['id'])['facts']}
                     proposals.append({'character_id': character['id'],
                                       'proposal': executor.call('character', actor_packet)})
             cast = [{k: c[k] for k in ('id', 'name', 'role', 'public_identity') if k in c} for c in req['characters']]
@@ -106,7 +108,7 @@ def run(value, folder, backend='fixture', *, stop_after=None, approve_plan=False
             next_state['version'] += 1
             next_state['accepted'].append({**card, 'prose': accepted, 'review': verdict,
                                            'state_version': next_state['version']})
-            next_state['memories'].extend({**m, 'source': card['id']} for m in memory['memories'])
+            next_state['memories'] = canon.append(state['memories'], memory['memories'], accepted, card, [c['id'] for c in req['characters']])
             next_state['complete'] = len(next_state['accepted']) == len(next_state['plan']['scenes'])
             save(path, next_state)
             state = next_state

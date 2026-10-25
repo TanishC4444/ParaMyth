@@ -45,6 +45,7 @@ def lock(folder):
 def export(folder, state, req):
     folder = Path(folder)
     prefix = 'FIXTURE / PLUMBING TEST — NOT MODEL-GENERATED FICTION\n\n' if state['backend'] == 'fixture' else ''
+    save(folder / 'canon.json', {'version': state['version'], 'history': state['memories']})
     chapters = []
     for chapter in range(1, req['chapters'] + 1):
         scenes = [s for s in state['accepted'] if s['chapter'] == chapter]
