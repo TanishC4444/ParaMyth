@@ -1,366 +1,299 @@
 # ParaMyth
 
-File-backed storytelling, creative tools, production planning and shared studios.
+### Build a world together. Write it, visualize it, score it, and bring it into production.
 
-For sign-in, account-owned saved work and deployment to your own HTTPS domain,
-see [Public hosting and persistent workspaces](docs/HOSTING.md).
+![ParaMyth](web/assets/paramyth-banner.webp)
 
-## Advanced pipelines
+[Explore ParaMyth](https://paramyth.tech) · [Architecture](#architecture) · [Run locally](#run-locally) · [Advanced pipelines](docs/pipeline/README.md)
 
-The complete orchestration engine lives in `paramyth.pipeline`: sequential and
-parallel story generation, living universes, chapter review, continuation,
-recovery, hosted inference, and explicit GitHub Actions runners. Its run format
-is separate from the foundation coordinator's schema-version-2 checkpoints.
-Keep each run folder with the engine that created it.
+ParaMyth is a collaborative creative platform that carries an idea from its first premise to a shared manuscript, visual world, soundtrack, research dossier, and production plan. Writers and filmmakers work from the same evolving project instead of rebuilding context across disconnected tools.
 
-From a checkout, install `python -m pip install -e '.[api,rag,production,tiger,test]'`.
-Run a provider-free pipeline with:
+The implementation combines streaming generation, literary retrieval, scoped model roles, evidence-linked story memory, shared workspaces, multimodal reference materials, and research-backed production logistics. Its advanced execution engine coordinates planning, writing, critique, repair, and memory verification across explicit workflow stages and independent inference runners.
 
-```sh
-python -m paramyth.pipeline.cli --request examples/harbor.json --out runs/pipeline-harbor --approve-plan
+## The creative journey
+
+1. **Discover an idea.** Explore literary traditions on a 3D Story Atlas, search by narrative situation, or begin with an original premise.
+2. **Develop it.** Identify missing brief details, request targeted suggestions, and define characters, world rules, medium, and pacing.
+3. **Write together.** Stream chapters into an editable manuscript, compare draft versions, review passages, and revise with continuity from earlier writing.
+4. **Build the world around it.** Prepare story-aware visuals with Meta Muse Image and generate soundtrack direction and audio with Vultr.
+5. **Research and plan.** Develop documentary research dossiers or turn the story into scenes, schedules, budget ranges, travel allowances, and production tasks.
+6. **Share the work.** Collaborate in a permissioned studio and explicitly publish project, story, or character snapshots to community Discovery.
+
+## HackTX 2026: implementation highlights
+
+The order below leads with the social creative experience and the integrations that make the most visible, demonstrable contributions to it. Each section links to implementation evidence.
+
+### 1. Meta: a shared visual language for creative collaboration
+
+**Challenge alignment: Bringing People Closer Together with AI.** ParaMyth gives people a shared space to develop stories, discuss ideas, and turn written descriptions into visual references they can understand and build on together.
+
+- **Muse Image integration:** the main studio calls Meta's Responses API with `muse-image-1.0`, an `image_generation` tool request, PNG output, and `store: false`.
+- **Narrative-conditioned prompts:** character, scene, location, prop, storyboard, and custom briefs draw on selected project writing and art direction. Optional text-model enhancement separates established descriptions from proposed visual choices.
+- **Persistent visual artifacts:** generated files retain their prompt, provider/model, dimensions, status, and SHA-256 digest. Project media can also retain its writing-source identity and signature.
+- **Team interpretation:** permissioned studios bring manuscripts, imagery, sound, and production materials into one shared workflow, with discussions and revision conflict handling.
+- **Community Discovery:** creators explicitly publish project, story, or character snapshots. Posts support attribution, tags, search, editing, unpublishing, and reporting; publishing a snapshot is separate from exposing a private manuscript.
+
+**Demo:** two creators develop one scene, generate its visual reference, discuss the result, and share an intentional snapshot with the community.
+
+Implementation: [Meta generation](paramyth/image_studio.py), [media source resolution](paramyth/pipeline/media_workspace.py), [team workspaces](paramyth/studio/team_workspace.py), [Discovery](paramyth/studio/discovery.py).
+
+### 2. SerpAPI: production intelligence connected to the real world
+
+**Challenge alignment: Best Use of SerpApi.** ParaMyth translates fictional requirements into dated, regional research and practical production allowances using four search engines.
+
+| Engine | Implementation in ParaMyth |
+| --- | --- |
+| `google` | Film offices, permit research, published rates, location discovery, documentary source leads. |
+| `google_maps` | Catering, passenger transport, camera/lighting/sound suppliers, and nearby medical facilities. |
+| `google_hotels` | Dated accommodation searches with room-night rates, amenities, ratings, and location information. |
+| `google_flights` | Return-fare leads with airport/date parameters, itinerary information, and travel duration. |
+
+The planner derives travel dates from the shoot schedule, estimates room counts from headcount, and turns structured hotel and flight results into explicit budget allowances. It retains alternatives rather than presenting one result's price as another result's offering.
+
+Research runs through a shared adapter with engine-specific normalization, parameter allowlists, SQLite caching, per-plan and rolling daily limits, credential cooldowns, and ordered key failover. Evidence records preserve public links, retrieval times, and source IDs. Recommendations can cite only supplied IDs; published-rate extraction checks the quote, amount, currency, and billing unit before replacing an estimate.
+
+The documentary workflow adds topic-specific searches for original records, archives, research, and current developments. Optional model synthesis produces a provisional angle, cited claims, timeline, interview questions, proposed sequences, archive leads, and verification tasks. Dossiers export to PDF and Word.
+
+**Demo:** give a scene a real filming region and future shoot dates; inspect local suppliers, hotel/flight leads, the schedule, and the budget they inform. For documentary work, trace a provisional claim to its source lead.
+
+Implementation: [search adapter](paramyth/production_research.py), [production logistics](paramyth/pipeline/production_operations.py), [price evidence](paramyth/pipeline/production_intelligence.py), [documentary research](paramyth/studio/research.py).
+
+### 3. Northmark Compute & Cloud: reusable agent infrastructure
+
+**Challenge alignment: Build the Platform Behind the Agent.** ParaMyth's advanced engine makes model setup, context assembly, role instructions, output contracts, monitoring, and recovery reusable across creative workflows.
+
+- **A common role executor:** `Executor.call(role, packet, instruction, ...)` binds a stage to its context, model policy, output budget, schema, and validator.
+- **Composable role responsibilities:** refinement, architecture, character proposals, direction, writing, editing, story/rhetoric review, memory extraction, and independent memory verification.
+- **Scoped context construction:** character actors receive visible facts; role-specific literary and craft packets keep inputs relevant to the current task.
+- **Policy-driven execution:** configurable hosted/CPU routes, bounded retries, concurrency controls, stage deadlines, model cooldowns, and provider request budgets.
+- **Inspectable execution:** saved input packets, model outputs, timing/usage records, event timelines, checkpoints, and explicit failure reports.
+- **Reusable workflow families:** sequential canon, parallel-scene reconciliation, living universes, continuation, and targeted recovery.
+- **Distributed stages:** GitHub Actions dependencies and matrices execute role stages on separate runners and transfer versioned artifacts between them.
+
+These capabilities form a reusable execution substrate: the same role interface and lifecycle support multiple story modes, model configurations, review policies, and recovery paths. Workflow authors define the intended creative process while the infrastructure handles the repeated mechanics of model invocation, state handoff, validation, and observability.
+
+**Demo:** inspect a scene's role graph, open a scoped input packet, follow an evidence-linked review into a repair, and compare the provisional draft with the accepted checkpoint.
+
+Implementation: [executor](paramyth/pipeline/inference.py), [stage dispatcher](paramyth/pipeline/dag.py), [character proposals](paramyth/pipeline/character_proposals.py), [execution policies](paramyth/pipeline/worker_policy.py), [workflow browser](paramyth/pipeline/api/workflow_browser.py).
+
+### 4. Gemini: semantic discovery and structured narrative intelligence
+
+**Challenge alignment: Best Use of Gemini API.** Gemini powers both retrieval and configurable text-generation stages.
+
+- **Literary embeddings:** `gemini-embedding-001` generates normalized 768-dimensional vectors with separate `RETRIEVAL_DOCUMENT` and `RETRIEVAL_QUERY` task types.
+- **Hybrid retrieval:** NumPy cosine comparison combines with SQLite FTS5/BM25 keyword rankings. Advanced retrieval supports weighted query facets, narrative-mechanism overlap, explicit references, and source grouping.
+- **Relevance explanations:** the hosted idea-search path can use a Gemini text model to rerank supplied candidate IDs and explain direct and related matches. Earlier retrieval results remain available if reranking fails.
+- **Structured writing:** the interactive stream adapter supports Gemini JSON responses and schemas. Advanced model policies route writing, development, editing, review, and memory work to configured Google models.
+- **Traceable retrieval:** encoder versions, corpus fingerprints, source IDs, and projection checks help prevent stale or incompatible reference material from silently entering a run.
+
+Retrieved references become selected text and metadata in role packets. The interactive writer also builds continuity directly from saved project writing; retrieval is not automatically invoked for every chapter request.
+
+Implementation: [embedding encoder](paramyth/pipeline/rag/embeddings.py), [retrieval](paramyth/pipeline/retrieval.py), [reranking](paramyth/pipeline/rag/rerank.py), [stream adapter](paramyth/pipeline/creative_stream.py), [Google routing](docs/pipeline/google-routing.md).
+
+### 5. Vultr: generation across writing, sound, and production
+
+**Challenge alignment: Best Use of Vultr.** The integration uses Vultr Serverless Inference as a multimodal creative backend.
+
+- **Creative text:** `muse-glimmer-30b` develops ideas, drafts chapters, reviews writing, and applies revisions through Chat Completions. The interactive provider selection prefers Vultr when its inference key is configured.
+- **Production reasoning:** the same text integration extracts scene requirements and develops operational plans, resource estimates, location criteria, and research-backed recommendations.
+- **Soundtracks:** music-model discovery and asynchronous music jobs support generation, capability checks, status tracking, playback, and downloads. Direction can be derived from selected writing or supplied explicitly.
+- **Visual development:** text generation can enhance image prompts. The separate advanced image backend can discover Vultr image models and supports a recorded backup path after Meta failure; the main studio renderer uses the Meta-specific module.
+- **Separated credentials:** dedicated production and music keys can be configured independently of the general inference key.
+
+Local procedural ambience provides another audio path. Music duration, lyrics, and instrumental support are validated against the selected provider model's capabilities.
+
+Implementation: [creative engine](paramyth/pipeline/creative_studio.py), [production reasoning](paramyth/pipeline/production.py), [music integration](paramyth/pipeline/soundtracks.py), [advanced image backend](paramyth/pipeline/image_studio.py).
+
+### 6. Tiger Data: durable identity and permissioned creative teams
+
+**Challenge alignment: Best Use of Tiger Data.** Tiger Cloud/PostgreSQL provides the relational foundation for accounts and studios through Psycopg.
+
+- Users, salted scrypt password hashes, expiring/revocable sessions, persistent authentication throttling, studios, memberships, and invitations.
+- Owner/admin/editor/viewer authorization enforced on server requests, plus project revision/comment tables used by collaboration APIs.
+- Explicit, transactional migrations, a separate restricted runtime role, parameterized SQL, and certificate-verified TLS.
+- A team runtime that shares project files and jobs while keeping each member's Calendar authorization and workspace selection personal.
+
+The full creative workspace additionally persists manuscripts, drafts, media, and jobs on disk. Tiger holds identity and relational collaboration data; literary vectors and community Discovery use separate SQLite stores. Backups must include the database, workspace volume, and encryption key.
+
+**Demo:** sign in as two members, open a shared project, observe saved changes, then compare editor and viewer permissions.
+
+Implementation: [database and migrations](paramyth/studio/studio_db.py), [sessions](paramyth/studio/studio_security.py), [studio API](paramyth/studio/studios.py), [database setup](docs/TIGER.md).
+
+### 7. .TECH and the infrastructure around the experience
+
+**Additional challenge alignment: Best Domain from .TECH.** `paramyth.tech` gives the public creative studio a distinct project identity. GitHub Pages builds and publishes the frontend, Railway runs the documented FastAPI deployment with persistent storage, and Google Calendar OAuth connects a creator's schedule to their own account. These complement the generation providers with a navigable product, durable work, and practical exports.
+
+The opening-ceremony deck limits entries to three tracks excluding Overall/Novice. For a focused judging narrative, lead with **Meta's collaborative creative experience**, **SerpAPI's production intelligence**, and **Northmark's reusable agent infrastructure**; the Gemini, Vultr, Tiger, and .TECH sections explain the additional engineering behind that demonstration. Confirm final submission selections against the event's current form.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI[React and TypeScript Studio] --> API[FastAPI project and job APIs]
+    API --> Identity[Tiger PostgreSQL accounts and team permissions]
+    API --> Files[Persistent project files and generated media]
+    API --> Community[SQLite community snapshots]
+    API --> Writing[Streaming writing and revision]
+    API --> Retrieval[SQLite FTS5 and NumPy retrieval]
+    Retrieval --> Gemini[Gemini embeddings and relevance ranking]
+    Writing --> Text[Vultr or Gemini text generation]
+    API --> Visuals[Meta Muse Image]
+    API --> Music[Vultr music or local ambience]
+    API --> Planning[Production breakdown and Python calculations]
+    Planning --> Search[SerpAPI Search, Maps, Hotels and Flights]
+    Planning --> Exports[Documents, CSV, ICS and Google Calendar]
+    Advanced[Advanced workflow workspace] --> Actions[GitHub Actions role graph]
+    Actions --> Inference[Hosted Google inference or GH-INFERENCE CPU workers]
+    Inference --> Gates[Review, repair and memory verification]
+    Gates --> Canon[Accepted canon and recoverable artifacts]
 ```
 
-The existing studio remains `paramyth-studio`. For the advanced workspace,
-build `frontend-pipeline/` with `pnpm install --frozen-lockfile && pnpm build`,
-then run `paramyth-pipeline-studio --port 8770`. It includes the full workflow
-browser, account pages, shared writing materials, and project tools. Both APIs
-use the same hardened Tiger accounts and SerpAPI research implementation.
-Run from a checkout for the corpus, workflow definitions, examples and web
-assets; set `PARAMYTH_PIPELINE_ROOT` to that checkout when using an installed wheel.
+### Writing, revision, and source-aware media
 
-See [the pipeline guide](docs/pipeline/README.md) and
-[API routes](docs/pipeline/API.md). Live workflows are manual-only; importing
-the code does not start generation. The advanced test workflow runs fixtures
-and mocked providers on pushes and pull requests.
+The browser submits an operation and project identity. The backend resolves the authorized workspace, validates the input, loads the brief and relevant earlier writing, and starts a persisted background job. For chapter generation, context includes selected draft versions and manual edits from up to eight earlier scene/chapter entries, within text budgets.
 
-## Included
+Provider output streams into Python, which extracts safe partial JSON fields, saves previews, and publishes job progress through server-sent events. Completed output is validated and retained as a generation record. Manual edits are tied to their base draft; saving to the manuscript is explicit. Targeted revisions must resolve to one source passage before the replacement is inserted.
 
-- Validated story requests, scene plans, reviews, and memory updates.
-- Atomic JSON writes and a single-writer lock for run folders.
-- Deterministic fixtures for testing coordination without model calls.
+The media resolver can select the active chapter, latest writing, a specific generation, the manuscript, or a standalone brief. Source signatures identify the input snapshot used for imagery, soundtrack direction, and production planning. Finished assets stay attached to the material that produced them as the project evolves.
 
-## Run checks
+### Production calculations and research
 
-Requires Python 3.11 or newer. Core contract and storage tests need no third-party
-dependencies. For the full suite, install `.[test,api,rag,tiger,production]`.
-Provider tests use fixtures and mocks. PostgreSQL integration tests additionally
-require an explicitly configured disposable test database; they skip otherwise.
+Models propose filmable scenes and resource rows. Python validates them, constructs a dependency-aware single-unit shooting schedule, and calculates low/high budget ranges with `Decimal`. Scheduling considers availability, setup and moves, meal breaks, lighting groups, and turnaround. Crew quantities account for headcount and working days; detailed logistics adds room-night and per-traveler allowances from research.
+
+Recalculation can update schedules and budgets without another model call. Exports include Word/PDF dossiers, schedule/budget/task CSVs, tentative calendar files, call sheets, and JSON. Google Calendar uses per-user OAuth, checks overlapping events, and uses stable event identities to avoid duplicates.
+
+### Shared work and recovery
+
+Team edits autosave after a short debounce. Visible team workspaces refresh periodically, with revision and field-hash checks preventing silent stale writes. Conflicts retain local edits for comparison. Discussions refresh separately; writing jobs use streaming progress. This is near-real-time collaboration with explicit conflict handling.
+
+Project files use temporary writes, flush/fsync, and atomic replacement. Generated work has saved status and result records. Browser reconnection watches existing jobs rather than automatically resubmitting generation. Advanced runs additionally preserve scoped packets, reviews, evidence bindings, and resumable checkpoints.
+
+## Advanced narrative orchestration
+
+The interactive studio provides direct writing/review/revise actions. For larger experiments, `paramyth.pipeline` provides an explicit role graph:
+
+```text
+Request + retrieval
+  -> refinement and development review
+  -> outline and scene design
+  -> isolated character proposals
+  -> director -> writer -> editor
+  -> story review | rhetoric review | memory extraction
+  -> bounded repair and refreshed checks
+  -> independent memory verification
+  -> acceptance, canon, and next scene
+```
+
+Parallel branches share the intended candidate/state snapshot. Evidence can bind to paragraph IDs, source offsets, and a prose hash; changed prose requires matching checks. Accepted facts remain in an append-only history with validated supersession. Character visibility is applied before projecting current knowledge, allowing an uninformed character to retain an older belief.
+
+The reusable `Executor` combines role instructions, schemas, validators, model selection, call budgets, output caching, and diagnostics. Some workflows distribute stages across GitHub Actions jobs, with character matrices and independent review branches. GH-INFERENCE and llama.cpp can execute CPU models on the allocated runner; other routes call hosted Google models. Main studio chapter requests run on the application backend and do not automatically dispatch Actions.
+
+See [the pipeline guide](docs/pipeline/README.md), [three story modes](docs/pipeline/THREE_MODES.md), [API routes](docs/pipeline/API.md), and [runner workflow](.github/workflows/story.yml). Foundation `paramyth` checkpoints and advanced `paramyth.pipeline` checkpoints use different formats; retain each run with its originating engine.
+
+## Technology stack
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite 8, pnpm, Tailwind CSS 4, custom CSS, Anime.js. |
+| Geographic discovery | Three.js, Leaflet, marker clustering, D3 Geo, TopoJSON, World Atlas/Natural Earth data. |
+| Backend | Python 3.11+, FastAPI, Uvicorn, Pydantic and application validators, thread-pool jobs, SSE. |
+| Relational persistence | Tiger Cloud/PostgreSQL, Psycopg, explicit SQL migrations. |
+| Retrieval and local stores | SQLite FTS5, NumPy, Gemini embeddings; SQLite research cache and Discovery store. |
+| Generation | Meta Model API, Vultr Serverless Inference, Google Generative Language API. |
+| Research | SerpAPI Google Search, Maps, Hotels, and Flights engines. |
+| Exports and scheduling | python-docx, ReportLab, Decimal, timezone-aware Python scheduling, Google Calendar OAuth/API. |
+| Execution and hosting | GitHub Actions/Pages, GH-INFERENCE, llama.cpp, Docker, Railway; optional Caddy/Compose. |
+
+## Run locally
+
+Requirements: Python 3.11+, Node.js 22.12+ or 24, and pnpm. Use a virtual environment for Python dependencies.
+
+```sh
+git clone https://github.com/TanishC4444/ParaMyth.git
+cd ParaMyth
+python -m venv .venv
+```
+
+Activate with `source .venv/bin/activate` on macOS/Linux or `.venv\Scripts\Activate.ps1` in Windows PowerShell. Then:
+
+```sh
+python -m pip install -e ".[studio,tiger,api,rag,docx,hosted,production,test]"
+cd frontend
+pnpm install --frozen-lockfile
+pnpm build
+cd ..
+python -m paramyth.studio.serve --port 8770
+```
+
+Open **http://127.0.0.1:8770**. The bundled Story Atlas can be explored without model credentials; generation requires the relevant server connections.
+
+For local personal mode, leave `PARAMYTH_ACCOUNT_WORKSPACES` unset or set it to `0`, and leave `PARAMYTH_PUBLIC_ORIGIN` unset. The sample environment file enables hosted account mode, so configure it deliberately rather than copying its hosted defaults unchanged. Server settings load from root `.env`, `deploy/.env`, or the owner-selected `PARAMYTH_ENV_FILE`; process values take precedence.
+
+For frontend development, run `pnpm dev` inside `frontend/`; its backend proxy defaults to port 8770. Build `frontend-pipeline/` separately and run `paramyth-pipeline-studio --port 8770` for the advanced workspace instead of the main launcher.
+
+### Provider configuration
+
+Use [.env.example](.env.example) as the variable reference. Configure only the services you need; actual credentials stay in the backend environment or an ignored settings file.
+
+| Variable | Enables |
+| --- | --- |
+| `MUSE_IMAGE_API_KEY` | Meta Muse Image. `MODEL_API_KEY` is an accepted alias. |
+| `GEMINI_API_KEY` | Embeddings, relevance ranking, and supported Gemini text paths. |
+| `GEMINI_API_KEYS` | Optional JSON backup array for supported Google clients; full pool routing is an advanced-client feature. |
+| `VULTR_INFERENCE_API_KEY` | Creative text, prompt enhancement, and general Vultr inference. |
+| `VULTR_PRODUCTION_API_KEY` | Optional dedicated production-planning connection. |
+| `VULTR_MUSIC_API_KEY` | Optional dedicated music connection. |
+| `SERPAPI_API_KEY`, `SERPAPI_BACKUP_KEYS` | Cached web/travel/local research; backups are comma-separated. |
+| `PARAMYTH_DATABASE_URL` | Restricted Tiger/PostgreSQL runtime connection. |
+| `PARAMYTH_ENCRYPTION_KEY` | Persistent Fernet key required for hosted account workspaces. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional per-user Calendar authorization. |
+
+Do not put provider secrets into frontend build variables. A split frontend uses `VITE_API_BASE` only for the public backend origin. Google model IDs and provider capabilities are configuration choices; live account access and quotas must be checked independently.
+
+### Hosted accounts and teams
+
+Follow [Tiger setup](docs/TIGER.md) to run migrations explicitly with `PARAMYTH_MIGRATION_DATABASE_URL` and grant a separate application role. Set `PARAMYTH_ACCOUNT_WORKSPACES=1`, a durable `PARAMYTH_WORKSPACE`, and a stable encryption key. Database migrations do not run automatically at startup.
+
+For deployment, see [hosting and persistent workspaces](docs/HOSTING.md) and [Railway with a GitHub Pages frontend](deploy/railway.md). Run one application process/replica against the persistent workspace volume. Provider credentials stay server-side, sessions use HttpOnly cookies, and each user connects their own Calendar.
+
+## Verification
+
+Backend checks use fixtures and mocked providers unless a test explicitly requires external configuration. PostgreSQL integration tests require a disposable database. Linux is the reference environment for the full advanced runner suite; some advanced accounting code currently imports Unix-only `fcntl`.
 
 ```sh
 python -X utf8 -m unittest discover -s tests -v
 ```
 
-The backend-tests workflow checks contracts and storage on Python 3.11 and 3.12. The fixture-checks workflow checks fixture responses against the contracts.
-
-The sequential coordinator supports plan approval, bounded retries, character-scoped memory, atomic scene acceptance, checkpoints, chapter export, and resumable runs. Retrieval and role transports can be injected. An explicit HTTPS chat-completions adapter is available. Fixture output is synthetic test data, not generated fiction.
-
-## Frontend
-
-The React studio and story atlas live in `frontend/`. See `frontend/README.md`
-for setup (Node.js 22.12+ and pnpm).
-
-## Start and resume
+Frontend checks:
 
 ```sh
-python -m paramyth.cli --request example.json --out runs/harbor
-python -m paramyth.cli --out runs/harbor --resume --approve-plan --stop-after 2
-python -m paramyth.cli --out runs/harbor --resume
+cd frontend
+pnpm exec tsc --noEmit
+pnpm test:atlas
+pnpm test:cinematic
+pnpm test:site
+pnpm build
 ```
 
-Review `plan.json` before approving it. Rejected drafts stay under `work/`; accepted scenes and memory are committed together in `state.json`. Changing a request requires a new run folder. Completed runs can be resumed without repeating accepted work.
+GitHub Actions includes contract/storage tests, retrieval, editorial integration, studio/account checks, frontend checks, and deployment. Live generation workflows are explicitly dispatched. Fixture success verifies orchestration and contracts; it does not establish live provider availability or literary quality.
 
-## Live scenes and benchmarks
+## Repository map
 
-The live adapter requires `PARAMYTH_BASE_URL` (an HTTPS API base URL ending in `/v1`),
-`PARAMYTH_MODEL`, and `PARAMYTH_API_KEY` in the environment. No provider or paid model
-is selected automatically. It sends chat-completions requests with a
-`max_completion_tokens` limit; endpoint/model compatibility must be checked by a live run.
-Keys are not stored in run files. Do not put keys in requests or command arguments.
+| Path | Contents |
+| --- | --- |
+| `frontend/` | Main studio, account entry, Story Atlas, Discovery, research, writing, and production UI. |
+| `frontend-pipeline/` | Advanced workflow workspace. |
+| `paramyth/studio/` | Main FastAPI application, accounts, teams, research, Discovery, jobs, and private media. |
+| `paramyth/pipeline/` | Advanced narrative orchestration, role execution, memory, retrieval, and production tools. |
+| `paramyth/` | Foundation coordinator, shared provider adapters, storage, and compatibility CLIs. |
+| `data/`, `skills/`, `examples/` | Literary records/index, role guidance, and example requests. |
+| `.github/`, `scripts/` | Runner graphs, CI/deployment, workflow builders, and developer tools. |
+| `deploy/`, `docs/`, `tests/` | Hosting, detailed guides, and validation suites. |
 
-```sh
-python -m paramyth.cli --backend live --request example.json --out runs/live
-python -m paramyth.cli --backend live --out runs/live --resume --approve-plan --stop-after 1
-python -m paramyth.benchmark --backend live --case single --out runs/live-single
-```
+## Current boundaries and provenance
 
-Live benchmarks also accept `sequence` (three scenes) and `resume` (stop after one
-accepted scene, then verify its prefix is unchanged on continuation). Run `single`
-first and inspect the prose and reviews before larger runs. Fixtures exercise the
-same orchestration without network calls. Neither fixture success nor model review
-establishes literary quality.
+Generation and synthesis remain editable proposals. Automated reviews can miss contradictions; preserved history does not guarantee that every old fact fits in a working context. Production schedules are heuristic single-unit plans, prices are estimates or dated leads, and permits/availability require confirmation. The integrations research and prepare work; they do not book travel or secure permissions.
 
-Character proposals use isolated character packets. Only the viewpoint character's
-proposal reaches the director, so other actors' private proposals cannot leak into
-writer direction. All proposals remain separate from accepted canon. Source-bound
-review assessments cover continuity, viewpoint and scene change; memory assessment
-covers evidence and knowledge. Repairs remain bounded.
+Long-running generation depends on the hosting process. Saved files survive on a persistent volume, while interrupted execution may require inspection or explicit recovery. Main and advanced image/provider paths differ; use the source-linked implementation and dedicated guides for exact capabilities.
 
-Provider 5xx failures have at most two retries. Authentication and rate-limit errors
-open a cooldown; ambiguous connection failures stop without duplicating generation.
-Resume after resolving configuration or waiting for provider recovery. There is no
-silent provider/model fallback. Endpoint, model and output budget are pinned on resume.
-`attempts/` retains timing, finish reasons, available usage and redacted provider
-attempt diagnostics. Missing usage stays unknown. No prompt bodies or keys enter those
-provider diagnostics. Context enforcement is a character budget, not tokenizer-based.
-
-**Live scene benchmark** is manual-only. Configure repository secret
-`PARAMYTH_API_KEY` and variables `PARAMYTH_BASE_URL` and `PARAMYTH_MODEL` first.
-It runs one scene before the three-scene and checkpoint cases and retains outputs
-on failure. Missing configuration fails preflight without contacting a provider.
-
-## Retrieval and persistent canon
-
-Build a local keyword index from your own JSON corpus (objects with `id`, `title`,
-and `text`):
-
-```sh
-python -m paramyth.retrieval --corpus corpus.json --out corpus.db
-```
-
-Put `retrieval_index` in the story request and optionally pin the printed digest
-as `corpus_hash`. Results retain source IDs, excerpts, index version and corpus
-fingerprint. A mismatched version/hash is rejected. Retrieval is frozen in the run
-checkpoint; resuming does not silently change its sources. The command above
-builds the dependency-free FTS5 keyword index.
-
-### Hybrid retrieval
-
-Install the optional dependencies and set `GEMINI_API_KEY` in your environment
-or a local `.env` in the working directory. Environment values take precedence.
-The encoder uses `gemini-embedding-001` with normalized 768-dimensional vectors
-and separate document/query task types. Ingestion sends corpus projections to
-Gemini; hybrid search sends the query. Both can incur provider charges.
-
-```sh
-python -m pip install '.[rag]'
-python -m paramyth.rag.ingest --corpus examples/rag-corpus.json --out data/literary_rag.db
-python -m paramyth.rag.search "a duty conflicts with a promise" --index data/literary_rag.db
-```
-
-The corpus can be a JSON array or an object containing `title` and `records`.
-Each record needs a unique string `id` and a `title`. Supply `text` or literary
-fields such as `summary`, `theme_keywords`, `narrative_mechanism`, and
-`references.version_notes`. The included corpus contains synthetic examples.
-Your existing keyword corpus format is accepted, but the two index formats are
-separate: use a different output path for each.
-
-Ingestion resumes completed batches, embeds changed projections only, refreshes
-metadata, and removes deleted records after every batch succeeds. A failed build
-remains unavailable to searches until ingestion completes. Use one ingestion
-process per index and avoid ingesting while a search is running.
-
-Set `"retrieval_mode": "hybrid"` and `"retrieval_index": "data/literary_rag.db"`
-in a story request to use this index in the coordinator. Optionally set
-`corpus_hash` to the digest printed by ingestion. Hybrid results keep source IDs,
-excerpts, source limits, semantic and keyword ranks, encoder version, and corpus
-hash. Existing run checkpoints retain their original retrieval packet on resume.
-Hybrid mode requires an index or an explicitly injected retrieval provider.
-
-The search command supports `--semantic-weight` from 0 to 1, `--record-type`,
-`--location`, and `--adaptation-mode` (`Balanced`, `Focused adaptation`, or
-`Combinatory`). A semantic weight of 0 searches the hybrid index with keywords
-only and makes no provider calls. Disabled records are excluded. Ties use source
-IDs for deterministic ordering. Semantic and keyword ranks are combined using
-weighted reciprocal ranks; these scores are not confidence probabilities.
-Search behavior is tested with synthetic vectors, not a retrieval-quality benchmark.
-
-`PARAMYTH_RAG_DATABASE` supplies the default index path when `--out` or `--index`
-is omitted. Relative paths resolve from the working directory. Run the full
-offline test suite after installing the optional dependencies:
-
-```sh
-python -X utf8 -m unittest discover -s tests -v
-```
-
-`state.json` owns the append-only fact history; `canon.json` is a derived readable
-projection. Fact updates explicitly supersede existing current records with matching
-keys and kinds. Resource updates reconcile integer amounts and changes. Extracted
-witnesses must participate; public knowledge needs an explicitly public scene.
-Evidence must quote accepted prose. These checks validate structure and arithmetic,
-not the semantic truth of a model's interpretation.
-
-Actor visibility is applied before current-state projection. An absent character
-can retain an older fact without gaining a later private update. Working context
-prioritizes resources, relationships and unresolved threads; omitted IDs are explicit
-and the full ledger remains in checkpoints.
-
-## Parallel reviews and recovery
-
-Character proposals execute independently; only the POV proposal reaches direction.
-Story review, rhetoric review and memory extraction run concurrently against one
-immutable prose hash. A changed repair invalidates all three results and refreshes
-memory before independent verification. Canon commits remain sequential and atomic.
-
-Scene drafts, completed review branches and stage checkpoints stay under `work/`.
-Resume uses the same request/provider settings and accepted-state anchor. A failed
-memory review can be retried within the configured stage retry budget without
-regenerating the draft. Prose repair remains bounded by `max_repairs`; exhaustion
-requires inspecting diagnostics and starting a revised request in a new run folder.
-Custom transports must support concurrent calls. Hosted attempt diagnostics are
-isolated per worker thread.
-
-Completed scenes remain provisional until chapter checks and the whole-story audit
-pass. `FINAL_STORY.txt` and compatibility `story.txt` are written only after final
-acceptance; `PROVISIONAL_STORY.txt` remains available on failure. Whole-story audits
-have bounded recovery. Very long whole-story inputs can exceed the configured
-context budget; hierarchical long-book auditing is not implemented.
-
-This run format uses schema version 2. Retain earlier run folders as historical
-checkpoints and start a fresh folder rather than silently reinterpreting older state.
-
-## Creative studio
-
-`paramyth.creative` develops ideas, drafts prose, reviews it and revises it with
-Vultr Serverless Inference (`muse-glimmer-30b`). Set `VULTR_INFERENCE_API_KEY` in
-the process environment. Each call can incur provider charges.
-
-```sh
-python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json
-python -m paramyth.creative --folder runs/harbor --request examples/creative-ideas.json --stream
-```
-
-A request picks one `operation`: `ideas`, `draft`, `review`, `revise` or `loop`.
-`loop` drafts (or starts from `text`), then reviews and revises for up to `rounds`
-(1–3) and stops early when the critic passes. `words` sets the target length
-(100–3000). With `use_story` (default true) the first three story artifacts from
-the run folder are sent as context. `guidance_mode` is `suggest` (keep the idea and
-offer up to three optional improvements) or `use_idea` (develop it as written).
-
-Records are saved under `creative/` with every step, its output and token usage.
-With `--stream`, partial text is saved as it arrives, so a dropped connection
-keeps the words already received. Failed attempts are recorded as failed and are
-not retried automatically. Inferred details stay editable proposals, never
-accepted canon.
-
-## Soundtracks
-
-`paramyth.soundtracks` builds a sound cue from the run folder's story, characters
-and world, then either renders it locally or asks Vultr for music.
-
-```sh
-python -m paramyth.soundtracks --folder runs/harbor plan --mode ambience
-python -m paramyth.soundtracks --folder runs/harbor ambience --seconds 60 --out harbor.wav
-python -m paramyth.soundtracks --folder runs/harbor create --mode score --model minimax-music3 --seconds 60
-python -m paramyth.soundtracks --folder runs/harbor status music_<id>
-python -m paramyth.soundtracks --folder runs/harbor download music_<id> --out harbor.mp3
-```
-
-`ambience` and the local drone `score` are synthesized on your machine as 16 kHz
-mono WAV (wind, water, rumble and fire layers chosen from the story). They make
-no provider calls, and the same cue always sounds the same. `create` starts a
-Vultr score or song job and needs `VULTR_INFERENCE_API_KEY`; it can incur
-charges. Scores are forced instrumental. Songs need lyrics when the model
-requires them, and durations must fit the model's limits (5–360 seconds).
-Cues and jobs are recorded under `soundtracks/`. Downloads are capped at 64 MB.
-
-## Production planning
-
-`paramyth.production` turns a story run folder into a draft shoot plan. Muse
-Glimmer on Vultr breaks the story into at most 16 filmable scene units with
-cast, lighting, dependencies, props, risks and estimated budget rows. A local
-scheduler then places them on shoot days, and the budget is recalculated with
-exact decimal arithmetic. Set `VULTR_INFERENCE_API_KEY`; each plan makes two
-model calls and can incur charges.
-
-```sh
-python -m paramyth.production --folder runs/harbor --constraints examples/production-constraints.json
-python -m paramyth.production --folder runs/harbor --image harbor-scene.png
-```
-
-Constraints set the filming `region`, `currency`, `start_date`, `timezone`, workday
-hours, setup and move minutes, contingency percent, an optional `budget_cap`,
-weekend skipping, blackout dates and cast or location unavailability. The
-scheduler respects dependencies and availability, keeps day and night shoots
-apart, adds a meal break by hour five and a 12-hour turnaround, and reports
-scenes it cannot fit. Up to three PNG, JPEG or WebP scene images (5 MB each)
-can guide scouting criteria; they never prove a real address or permission.
-
-With a filming `region` and `SERPAPI_API_KEY` set, up to `search_limit` (0–3)
-targeted web searches look for film offices, location libraries and permit
-rules. Results are cached in `production/search-cache.sqlite` (24 hours, 6 for
-legal), capped at `PARAMYTH_SEARCH_DAILY_LIMIT` searches a day (default 10), and
-can fail over to comma-separated `SERPAPI_BACKUP_KEYS`. Keys are never stored.
-Recommendations may name a real place only when a search result supports it,
-and every cited result stays a lead to verify.
-
-Export a saved plan as a tentative calendar, sheets or call sheets:
-
-```sh
-python -m paramyth.production_exports --plan runs/harbor/production/plans/<id>.json --kind calendar.ics --out harbor.ics
-```
-
-Kinds are `calendar.ics`, `schedule.csv`, `budget.csv`, `tasks.csv`,
-`call-sheets.txt` and `plan.json`. Calendar events are marked tentative, and CSV
-cells that start with `=`, `+`, `-` or `@` are quoted so spreadsheets don't run them.
-
-`paramyth.calendar_sync.GoogleCalendar` adds a plan's shoot days to Google
-Calendar only when asked. Events are private and tentative, with no attendees.
-Their IDs come from the plan, so syncing again skips events already there.
-Overlapping busy events are reported instead of booked over, and a failure
-partway keeps the IDs already created. It reads `GOOGLE_CALENDAR_ACCESS_TOKEN`,
-or refreshes with `GOOGLE_CALENDAR_REFRESH_TOKEN`, `GOOGLE_CLIENT_ID` and
-`GOOGLE_CLIENT_SECRET`. Tokens stay in memory and are never written to plans.
-
-Plans are saved under `production/plans/` as drafts. Rates are model estimates,
-not quotes, and unknown costs are left out of totals. Permits, availability and
-legal requirements always need verification. Install the `production` extra for
-time-zone data on systems without it.
-
-## Meta image generation
-
-The image backend prepares story-aware prompts locally and generates one PNG per
-request using Meta's `muse-image-1.0` model. It uses the Python standard library.
-Set `MUSE_IMAGE_API_KEY` (or `MODEL_API_KEY`) in the process environment before
-generation. The image backend does not load `.env` automatically.
-
-Prepare a prompt from a run folder, inspect the saved request, then generate:
-
-```sh
-python -m paramyth.image_studio --folder runs/harbor prepare --request examples/image-brief.json --out runs/harbor/image-request.json
-python -m paramyth.image_studio --folder runs/harbor generate --request runs/harbor/image-request.json
-python -m paramyth.image_studio --folder runs/harbor gallery
-```
-
-The installed `paramyth-images` command offers the same operations. `prepare`
-makes no provider calls. It selects story passages for the subject and applies
-automatic or explicit art direction. Supported kinds are character, scene,
-location, prop, storyboard, and custom. Set `use_story` to false with a subject or
-direction to prepare a standalone image prompt. Story context reads an allowlist
-of narrative files and excludes provider logs and environment files.
-
-`generate` sends the prompt to Meta's Responses API with `store: false`. It can
-incur provider charges. Use `aspect_ratio` of `1:1`, `3:2`, or `2:3` and `resolution`
-of `1K` in the saved request. Shape guides composition; actual pixel dimensions
-can differ. This backend accepts one image per request and rejects seed and step
-controls. See [Meta's image API documentation](https://dev.meta.ai/docs/image-generation).
-
-Each attempt gets a record in `images/` with generating, completed, or failed
-status. Successful PNGs have checked chunk framing, checksums, bounded dimensions,
-and a saved SHA-256 digest. Gallery records retain the prompt, model, actual
-dimensions, and available token counts. Keys and raw provider errors are not
-saved. A timeout may leave billing uncertain; there are no automatic retries or
-provider fallbacks. Interrupted processes may leave a generating record for
-manual inspection.
-
-Add `--enhance` to `prepare` to have Muse Glimmer on Vultr write the prompt from
-the selected story passages and art direction instead of the local template. It
-needs `VULTR_INFERENCE_API_KEY`, makes one model call and records its token usage
-and any invented visual choices as assumptions. Tests use synthetic PNGs
-and mocked provider responses; they do not establish live account access or
-image quality.
-
-## Tiger accounts and shared studios
-
-The optional Tiger/PostgreSQL backend adds accounts, revocable sessions, studio
-memberships and invitations, shared projects, version history, and comments to
-the studio API. Install `.[studio,tiger]` and follow [database setup](docs/TIGER.md)
-for the explicit migration, restricted runtime role, verified TLS, and API routes.
-Existing local projects remain file-backed; shared-account frontend integration
-is separate work. No cloud database is created or migrated by application startup.
-
-## Role guidance
-
-Role prompts for the architect, writer and reviewers live in `skills/`:
-`story_architect.md`, `design_review.md`, `distinct_writing.md`,
-`story_quality.md`, `rhetoric_quality.md` and `memory_quality.md`. Interface
-copy follows `.claude/skills/site-copy/SKILL.md`.
+Original project code is [MIT licensed](LICENSE). External libraries, model terms, corpus sources, and artwork retain their own terms and attribution. [PROVENANCE.json](PROVENANCE.json) records upstream components; [art credits](frontend/public/art/manifest.json) and [geography sources](frontend/public/atlas/GEOGRAPHY.md) document bundled reference assets. Curated artwork and fixture stories are distinct from new generated results.
