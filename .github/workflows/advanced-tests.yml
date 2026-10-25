@@ -1,0 +1,37 @@
+name: Advanced pipeline tests
+on: [push, pull_request]
+permissions:
+  contents: read
+env:
+  GEMINI_DISTINCT_PROJECTS: 'true'
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pipeline test dependencies
+        run: python -m pip install -e '.[test,api,rag,tiger,production]' -q
+      - run: python -m unittest discover -s tests -p "test_advanced_*.py" -v
+      - run: python -m scripts.copy_lint --strict
+  workspace:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.25.0'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm build
+      - run: pnpm test:atlas
+      - run: node --test tests/advanced_account_ui.cjs
+        working-directory: .

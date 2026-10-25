@@ -1,6 +1,34 @@
 # ParaMyth
 
-Early backend foundations for a file-backed storytelling workflow.
+File-backed storytelling, creative tools, production planning and shared studios.
+
+## Advanced pipelines
+
+The complete orchestration engine lives in `paramyth.pipeline`: sequential and
+parallel story generation, living universes, chapter review, continuation,
+recovery, hosted inference, and explicit GitHub Actions runners. Its run format
+is separate from the foundation coordinator's schema-version-2 checkpoints.
+Keep each run folder with the engine that created it.
+
+From a checkout, install `python -m pip install -e '.[api,rag,production,tiger,test]'`.
+Run a provider-free pipeline with:
+
+```sh
+python -m paramyth.pipeline.cli --request examples/harbor.json --out runs/pipeline-harbor --approve-plan
+```
+
+The existing studio remains `paramyth-studio`. For the advanced workspace,
+build `frontend-pipeline/` with `pnpm install --frozen-lockfile && pnpm build`,
+then run `paramyth-pipeline-studio --port 8770`. It includes the full workflow
+browser, account pages, shared writing materials, and project tools. Both APIs
+use the same hardened Tiger accounts and SerpAPI research implementation.
+Run from a checkout for the corpus, workflow definitions, examples and web
+assets; set `PARAMYTH_PIPELINE_ROOT` to that checkout when using an installed wheel.
+
+See [the pipeline guide](docs/pipeline/README.md) and
+[API routes](docs/pipeline/API.md). Live workflows are manual-only; importing
+the code does not start generation. The advanced test workflow runs fixtures
+and mocked providers on pushes and pull requests.
 
 ## Included
 
@@ -10,10 +38,10 @@ Early backend foundations for a file-backed storytelling workflow.
 
 ## Run checks
 
-Requires Python 3.11 or newer. Core tests need no third-party dependencies.
-Hybrid retrieval tests require the optional `rag` dependencies and skip when those
-are absent. All tests use local fixtures or mocked providers; no credentials or
-network calls are needed.
+Requires Python 3.11 or newer. Core contract and storage tests need no third-party
+dependencies. For the full suite, install `.[test,api,rag,tiger,production]`.
+Provider tests use fixtures and mocks. PostgreSQL integration tests additionally
+require an explicitly configured disposable test database; they skip otherwise.
 
 ```sh
 python -X utf8 -m unittest discover -s tests -v
