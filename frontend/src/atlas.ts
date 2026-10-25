@@ -15,7 +15,9 @@ const apiBases = () => {
   let stored = "";
   try { stored = (localStorage.getItem("paramyth-api-base") || "").replace(/\/$/, ""); } catch { /* optional */ }
   // Same origin first: the studio launcher serves this app and the API together.
-  return [...new Set(["", stored].filter((b, i) => i === 0 || b))];
+  // It only listens on loopback, so the static website skips straight to the saved base.
+  const local = ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+  return [...new Set([local ? "" : null, stored || null].filter((b): b is string => b !== null))];
 };
 
 let snapshot: Promise<{ corpus: string; regions: string[]; stories: AtlasStory[] }> | null = null;

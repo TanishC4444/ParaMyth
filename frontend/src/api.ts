@@ -1,6 +1,10 @@
 /** All product actions use the same-origin live server. No fixture fallback. */
+// The studio API only answers on loopback, so a public host (the static website) never has it.
+export const studioHost = () => ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname)
+const offline = "Studio tools run on your own computer. Start the studio there to use them."
 let csrf: Promise<string> | undefined
 async function token() {
+  if (!studioHost()) throw Error(offline)
   if (!csrf)
     csrf = fetch("/api/ui/session", {
       credentials: "same-origin",
@@ -21,6 +25,7 @@ export async function api<T = any>(
   body?: unknown,
   method?: string,
 ): Promise<T> {
+  if (!studioHost()) throw Error(offline)
   const verb = method || (body === undefined ? "GET" : "POST")
   const headers: Record<string, string> = { Accept: "application/json" }
   if (body !== undefined) headers["Content-Type"] = "application/json"
