@@ -109,6 +109,40 @@ class ResearchTests(unittest.TestCase):
                 self.assertFalse(client('query')['cached'])
                 self.assertEqual(call.call_count, 1)
 
+    def test_structured_engines_reject_malformed_results_without_caching_or_failover(self):
+        cases = [
+            ('google_maps', {'local_results': None}),
+            ('google_maps', {'local_results': [None]}),
+            ('google_maps', {'local_results': {'places': 'invalid'}}),
+            ('google_maps', {'local_results': [{'types': None}]}),
+            ('google_hotels', {'properties': None}),
+            ('google_hotels', {'properties': [None]}),
+            ('google_hotels', {'properties': [{'rate_per_night': None}]}),
+            ('google_hotels', {'properties': [{'total_rate': []}]}),
+            ('google_hotels', {'properties': [{'amenities': None}]}),
+            ('google_flights', {'best_flights': None}),
+            ('google_flights', {'other_flights': {}}),
+            ('google_flights', {'best_flights': [None]}),
+            ('google_flights', {'best_flights': [{'flights': [None]}]}),
+        ]
+        params = {'check_in_date': '2027-01-01', 'check_out_date': '2027-01-03',
+                  'adults': 2, 'currency': 'USD', 'departure_id': 'AUS', 'arrival_id': 'LAX',
+                  'outbound_date': '2027-01-01', 'return_date': '2027-01-03'}
+        for index, (engine, body) in enumerate(cases):
+            with self.subTest(engine=engine, body=body):
+                client = Search(self.root / str(index), keys=['primary', 'backup'], plan_limit=2)
+                with patch('paramyth.production_research.request_json', return_value=body) as call:
+                    with self.assertRaisesRegex(ProviderError, 'invalid results'):
+                        client.search('Austin', engine=engine, parameters=params)
+                    self.assertEqual(call.call_count, 1)
+                with client.connect() as conn:
+                    self.assertEqual(conn.execute('SELECT count(*) FROM cache').fetchone()[0], 0)
+                with patch('paramyth.production_research.request_json', return_value={}) as call:
+                    result = client.search('Austin', engine=engine, parameters=params)
+                    self.assertFalse(result['cached'])
+                    self.assertEqual(result['results'], [])
+                    self.assertEqual(call.call_count, 1)
+
     @patch.dict(os.environ, {'VULTR_INFERENCE_API_KEY': 'test-key', 'SERPAPI_API_KEY': 'serp-key'})
     def test_plan_uses_serpapi_by_default_when_configured(self):
         (self.root / 'story.txt').write_text('A Troy story')

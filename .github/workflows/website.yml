@@ -25,11 +25,7 @@ jobs:
         working-directory: frontend
         run: |
           corepack pnpm exec tsc --noEmit
-          corepack pnpm test:atlas
-          corepack pnpm test:cinematic
-          node --test tests/account-entry.test.cjs
-          node --test tests/transport.test.cjs
-          corepack pnpm test:site
+          corepack pnpm test
       - name: Build frontend
         working-directory: frontend
         env:
