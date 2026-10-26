@@ -127,6 +127,21 @@ class Search:
 
 def normalize_results(engine,body,parameters,query):
     """Persist public leads and prices only, never raw credential-bearing URLs."""
+    def objects(value):
+        if not isinstance(value,list) or any(not isinstance(item,dict) for item in value):
+            raise ProviderError('Search provider returned invalid results')
+        return value
+
+    def mapping(value):
+        if not isinstance(value,dict):
+            raise ProviderError('Search provider returned invalid results')
+        return value
+
+    def sequence(value):
+        if not isinstance(value,list):
+            raise ProviderError('Search provider returned invalid results')
+        return value
+
     results=[]
     if engine=='google':
         organic=body.get('organic_results',[])
@@ -137,20 +152,20 @@ def normalize_results(engine,body,parameters,query):
     elif engine=='google_maps':
         places=body.get('local_results',[])
         if isinstance(places,dict):places=places.get('places',[])
-        for item in places[:5]:
+        for item in objects(places)[:5]:
             name=str(item.get('title',''))[:300];address=str(item.get('address',''))[:500]
             url=safe_url(item.get('website','')) or 'https://www.google.com/maps/search/?'+urlencode({'api':1,'query':name+' '+address})
-            results.append({'title':name,'url':url,'snippet':address,'address':address,'rating':item.get('rating'),'price_level':item.get('price'),'coordinates':item.get('gps_coordinates'),'types':item.get('types',[])[:8]})
+            results.append({'title':name,'url':url,'snippet':address,'address':address,'rating':item.get('rating'),'price_level':item.get('price'),'coordinates':item.get('gps_coordinates'),'types':sequence(item.get('types',[]))[:8]})
     elif engine=='google_hotels':
-        for item in body.get('properties',[])[:5]:
-            rate=item.get('rate_per_night',{});total=item.get('total_rate',{})
+        for item in objects(body.get('properties',[]))[:5]:
+            rate=mapping(item.get('rate_per_night',{}));total=mapping(item.get('total_rate',{}))
             name=str(item.get('name',''))[:300]
             url=safe_url(item.get('link','')) or 'https://www.google.com/travel/hotels?'+urlencode({'q':name+' '+query})
             amount=rate.get('extracted_lowest');amount=amount if isinstance(amount,(int,float)) and amount>=0 else None
-            results.append({'title':name,'url':url,'snippet':str(item.get('description',''))[:900],'coordinates':item.get('gps_coordinates'),'rating':item.get('overall_rating'),'amenities':item.get('amenities',[])[:12],'rate':amount,'currency':parameters.get('currency'),'rate_unit':'room-night','total_rate':total.get('extracted_lowest'),'dates':{k:parameters[k] for k in ('check_in_date','check_out_date','adults')},'price_status':'live search lead; room capacity, taxes, fees and availability need confirmation'})
+            results.append({'title':name,'url':url,'snippet':str(item.get('description',''))[:900],'coordinates':item.get('gps_coordinates'),'rating':item.get('overall_rating'),'amenities':sequence(item.get('amenities',[]))[:12],'rate':amount,'currency':parameters.get('currency'),'rate_unit':'room-night','total_rate':total.get('extracted_lowest'),'dates':{k:parameters[k] for k in ('check_in_date','check_out_date','adults')},'price_status':'live search lead; room capacity, taxes, fees and availability need confirmation'})
     elif engine=='google_flights':
-        for item in (body.get('best_flights',[])+body.get('other_flights',[]))[:5]:
-            legs=[{'airline':f.get('airline'),'flight_number':f.get('flight_number'),'departure':f.get('departure_airport'),'arrival':f.get('arrival_airport')} for f in item.get('flights',[])]
+        for item in (objects(body.get('best_flights',[]))+objects(body.get('other_flights',[])))[:5]:
+            legs=[{'airline':f.get('airline'),'flight_number':f.get('flight_number'),'departure':f.get('departure_airport'),'arrival':f.get('arrival_airport')} for f in objects(item.get('flights',[]))]
             amount=item.get('price');amount=amount if isinstance(amount,(int,float)) and amount>=0 else None
             results.append({'title':parameters['departure_id']+' to '+parameters['arrival_id'],'url':'https://www.google.com/travel/flights?'+urlencode({'q':query}),'snippet':'Round-trip economy fare lead; baggage, transfers and availability need confirmation.','rate':amount,'currency':parameters['currency'],'rate_unit':'person-return','itinerary':legs,'duration_minutes':item.get('total_duration'),'dates':{k:parameters[k] for k in ('outbound_date','return_date')}})
     return results

@@ -19,6 +19,21 @@ def vector(axis=0):
 
 @unittest.skipUnless(AVAILABLE, 'Install paramyth[rag] for hybrid retrieval tests')
 class RAGTests(unittest.TestCase):
+    def test_bundled_index_is_searchable_without_provider_credentials(self):
+        from paramyth.rag.db import connection, index_metadata, search
+        from paramyth.rag.documents import document_text
+        from paramyth.rag.settings import Settings
+        from paramyth.retrieval import fingerprint
+        root = Path(__file__).resolve().parents[1]
+        records = json.loads((root / 'data/literary-corpus.json').read_text())['records']
+        settings = Settings(str(root / 'data/literary_rag.db'))
+        with connection(settings, readonly=True) as conn:
+            self.assertEqual(index_metadata(conn)['fingerprint'], fingerprint(records))
+            indexed = dict(conn.execute('SELECT record_id,content FROM rag_documents'))
+        self.assertEqual(indexed, {r['id']: document_text(r) for r in records})
+        with patch('paramyth.rag.db.encode_query', side_effect=AssertionError('Unexpected API call')):
+            self.assertTrue(search(settings, 'secret', semantic_weight=0))
+
     def setUp(self):
         from paramyth.rag.settings import Settings
         self.temp = tempfile.TemporaryDirectory()
