@@ -34,6 +34,32 @@ across GitHub Actions runners.
 | A real-world documentary topic | Source leads, cited provisional claims, interview questions, and a research dossier | [Research](paramyth/studio/research.py) |
 | A creative team | Permissioned studios, revision history, comments, and conflict-aware edits | [Teams](paramyth/studio/team_workspace.py) |
 
+## Model stack and backend responsibilities
+
+| Layer | What actually runs | Responsibility |
+| --- | --- | --- |
+| Interactive writing and production reasoning | Vultr Serverless Inference, `muse-glimmer-30b` | Stream drafts/revisions; propose validated scene breakdowns, visual direction, resources, and production plans |
+| Visual generation | Meta Model API, `muse-image-1.0` | Render story-conditioned characters, scenes, props, locations, and storyboard images; retain source signatures and reference-image identities |
+| Soundtracks | Vultr music-model discovery and asynchronous jobs | Generate and archive audio; local procedural ambience provides a separate path |
+| Literary search | Gemini `gemini-embedding-001`, 768 dimensions; SQLite FTS5/BM25 | Retrieve from 605 literary records (603 enabled) using cosine similarity and weighted reciprocal-rank fusion |
+| Identity and collaboration | Tiger Cloud/PostgreSQL through Psycopg | Accounts, hashed sessions, memberships, invitations, revisions/comments, and owner/admin/editor/viewer authorization |
+| Manuscripts, media, and work execution | Persistent project files, FastAPI, bounded Python background workers | Save drafts and generated artifacts, stream progress, retain interrupted-job state, and track source ownership |
+| External production intelligence | SerpAPI Google Search, Maps, Hotels, Flights | Research filming regions, suppliers, accommodation, and airfares; preserve dated source evidence for schedules and budgets |
+
+The advanced engine adds an explicit orchestration stack: **retrieval and refinement
+→ planning/scene contracts → character proposals → direction and writing → editing
+→ parallel story/rhetoric review and memory extraction → targeted repair → independent
+memory verification → acceptance and canon**. Its shared executor handles scoped
+packets, model routing, schemas, budgets, retries, and diagnostics; Actions artifacts
+carry state between separate role runners. Hosted Google routes and GH-INFERENCE/
+llama.cpp CPU workers are configurable there. Interactive chapter generation runs
+on the FastAPI backend and does not execute that entire Actions graph.
+
+Tiger stores relational identity and collaboration records. The literary vector
+index and research cache use SQLite; manuscripts and media live in persistent
+project directories. These stores have distinct ownership and backup requirements.
+[See the complete request lifecycles and orchestration boundaries →](docs/ARCHITECTURE.md)
+
 ## Engineering worth opening the code for
 
 - **605 indexed literary records; 603 enabled for retrieval.** Each has a normalized
