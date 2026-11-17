@@ -7,7 +7,7 @@ from test_studio_projects import StudioTestCase, TestClient
 
 
 class ServeTests(StudioTestCase):
-    def test_built_frontend_is_served_beside_the_api(self):
+    def test_built_frontend_is_served_beside_the_api_without_account_pages(self):
         from paramyth.studio.app import create_app
         with tempfile.TemporaryDirectory() as dist:
             (Path(dist) / 'index.html').write_text('<!doctype html><head><title>ParaMyth</title></head>')
@@ -21,18 +21,14 @@ class ServeTests(StudioTestCase):
             self.assertIn('name="paramyth-studio" content="live"', client.get('/index.html').text)
             self.assertEqual(client.get('/assets/app.js').text, 'console.log(1)')
             self.assertEqual(client.get('/api/v1/health').json(), {'status': 'ok'})
-            page = client.get('/studio/teams.html?mode=signup')
-            self.assertEqual(page.status_code, 200)
-            self.assertIn('id="account-form"', page.text)
-            self.assertEqual(client.get('/studio/js/teams.js').status_code, 200)
-            self.check_account_assets(client)
+            self.assertEqual(client.get('/studio/teams.html?mode=signup').status_code, 404)
+            self.assertEqual(client.get('/studio/js/teams.js').status_code, 404)
+            self.check_public_assets(client)
 
-    def test_account_page_is_available_without_frontend_build(self):
-        self.assertEqual(self.client.get('/studio/teams.html?mode=signup').status_code, 200)
-        self.assertIn('/accounts/${mode}', self.client.get('/studio/js/teams.js').text)
-        self.check_account_assets(self.client)
+    def test_account_page_is_not_available_on_main_without_frontend_build(self):
+        self.assertEqual(self.client.get('/studio/teams.html?mode=signup').status_code, 404)
 
-    def check_account_assets(self, client):
+    def check_public_assets(self, client):
         for path, media_type in [('/art/castle.webp', 'image/webp'),
                                  ('/art/paper.webp', 'image/webp'),
                                  ('/brand/paramyth-logo.png', 'image/png'),

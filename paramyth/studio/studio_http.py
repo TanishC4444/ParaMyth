@@ -39,8 +39,13 @@ class StudioHTTPMiddleware:
 
         async def secure_send(message):
             if message['type'] == 'http.response.start':
-                message['headers'] = list(message.get('headers', [])) + [
-                    (b'cache-control', b'no-store'), (b'x-content-type-options', b'nosniff')]
+                headers = list(message.get('headers', []))
+                present = {key.lower() for key, _ in headers}
+                if b'cache-control' not in present:
+                    headers.append((b'cache-control', b'no-store'))
+                if b'x-content-type-options' not in present:
+                    headers.append((b'x-content-type-options', b'nosniff'))
+                message['headers'] = headers
             await send(message)
 
         await self.app(scope, replay, secure_send)

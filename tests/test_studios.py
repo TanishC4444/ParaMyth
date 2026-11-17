@@ -10,11 +10,13 @@ import unittest
 from unittest.mock import patch
 
 try:
+    from cryptography.fernet import Fernet
     from fastapi.testclient import TestClient
     import tempfile
     from paramyth.studio.app import create_app
     _workspace = tempfile.TemporaryDirectory()
-    app = create_app(_workspace.name, frontend=None)
+    with patch.dict(os.environ, {'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode()}):
+        app = create_app(_workspace.name, frontend=None, account_workspaces=True)
     from paramyth.studio.studio_db import connection
     from paramyth.studio.studio_security import digest, password_hash, password_matches, rate_limit
 except ImportError:
@@ -235,5 +237,5 @@ if __name__ == '__main__':
 
 def tearDownModule():
     if TestClient:
-        app.state.runtime.close()
+        app.state.workspaces.close()
         _workspace.cleanup()
