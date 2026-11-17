@@ -1,4 +1,8 @@
-# Account workspaces and public hosting
+# Account workspaces on `studio-auth`
+
+This guide applies to the separate `studio-auth` branch. The public `main`
+branch uses anonymous, per-browser workspaces and does not require sign-in; see
+[`deploy/railway.md`](../deploy/railway.md).
 
 Use `paramyth.studio.app:create_app` for the hosted author workspace. Setting
 `PARAMYTH_PUBLIC_ORIGIN=https://your-domain.tech` enables required sign-in and

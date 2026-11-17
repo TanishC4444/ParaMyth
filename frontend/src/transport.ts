@@ -24,6 +24,23 @@ export function backendUrl(path: string) {
     if (selected && selected !== studioIdentity) throw Error('Your team workspace changed. Reopen this project.')
     if (studioIdentity) url.searchParams.set('studio_id', studioIdentity)
   }
+  const guestMode = !!API_BASE || document.querySelector('meta[name="paramyth-studio"]')?.getAttribute('content') === 'live'
+  if (guestMode && (/^\/media\//.test(url.pathname) || /^\/export\//.test(url.pathname) || (/^\/api\/ui\/creative\/jobs\//.test(url.pathname) && url.pathname.endsWith('/events'))))
+    url.searchParams.set('guest_id', guestId())
   return API_BASE || absolute ? url.href : url.pathname + url.search + url.hash
 }
-export const backendFetch = (path: string, options: RequestInit = {}) => fetch(backendUrl(path), { ...options, credentials: 'include' })
+const guestKey = 'paramyth-guest:' + (API_BASE || location.origin)
+function guestId() {
+  let id = localStorage.getItem(guestKey) || ''
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    id = crypto.randomUUID()
+    localStorage.setItem(guestKey, id)
+  }
+  return id
+}
+export const backendFetch = (path: string, options: RequestInit = {}) => {
+  const headers = new Headers(options.headers)
+  if (API_BASE || document.querySelector('meta[name="paramyth-studio"]')?.getAttribute('content') === 'live')
+    headers.set('X-ParaMyth-Guest', guestId())
+  return fetch(backendUrl(path), { ...options, headers, credentials: 'omit' })
+}

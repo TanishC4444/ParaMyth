@@ -75,7 +75,6 @@ const lessons = [
     view: "discovery",
     action: "Open discovery",
     steps: [
-      "Team settings lets an owner invite collaborators. A team project is shared with that team; personal projects stay personal.",
       "Discovery shares a separate post about a project, story or character. Choose exactly what text to include, preview it and confirm publication.",
       "Other signed-in members can read your post and copy its link. You can edit or withdraw your posts. Withdrawing a post does not delete your private project.",
     ],
@@ -101,7 +100,7 @@ const lessons = [
     steps: [
       "Use Tab to move through controls, Enter or Space to activate them, and Escape to close dialogs. The skip link jumps past navigation.",
       "Information buttons open short explanations with a tap or keyboard. Optional settings stay collapsed until you need them.",
-      "If generation is unavailable, open Connections. Shared provider keys are managed by the studio owner. Your account password and private project text are never requested by a help bubble.",
+      "If generation is unavailable, open Connections. Shared provider keys are managed on the server and never requested by a help bubble.",
     ],
   },
 ] as const

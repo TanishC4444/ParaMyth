@@ -17,6 +17,12 @@ def get_runtime(request: Request) -> Runtime:
         if studio:
             return request.app.state.workspaces.for_studio(account['id'], studio)
         return request.app.state.workspaces.get(account['id'])
+    if getattr(request.app.state, 'public_workspaces', False):
+        guest_id = getattr(request.state, 'guest_id', None)
+        if not guest_id:
+            from .hosting import guest_identity
+            guest_id = guest_identity(request)
+        return request.app.state.workspaces.get_guest(guest_id)
     return request.app.state.runtime
 
 
@@ -24,6 +30,10 @@ def local(request: Request):
     if getattr(request.app.state, 'account_workspaces', False):
         from .accounts import user
         user(request)
+        return
+    if getattr(request.app.state, 'public_workspaces', False):
+        from .hosting import guest_identity
+        guest_identity(request)
         return
     if request.url.hostname not in LOCAL_HOSTS or (request.client and request.client.host not in LOCAL_CLIENTS):
         raise HTTPException(403, 'The studio is a local workspace. Start it on 127.0.0.1 and open it on this machine.')
@@ -35,6 +45,12 @@ def write(request: Request, runtime: Runtime = Depends(get_runtime)):
     if getattr(request.app.state, 'account_workspaces', False):
         from .accounts import require_csrf
         require_csrf(request)
+        return
+    if getattr(request.app.state, 'public_workspaces', False):
+        from .accounts import same_origin
+        same_origin(request)
+        if request.headers.get(TOKEN_HEADER) != runtime.token:
+            raise HTTPException(403, 'Refresh this page before saving changes')
         return
     if request.headers.get(TOKEN_HEADER) != runtime.token:
         raise HTTPException(403, 'Refresh this page to get its local request token')

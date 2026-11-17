@@ -37,7 +37,7 @@ class AccountWorkspaceTests(unittest.TestCase):
         self.b, self.bu = self.signup('bob')
 
     def make_app(self, root):
-        app = create_app(root, frontend=None, public_origin=ORIGIN)
+        app = create_app(root, frontend=None, public_origin=ORIGIN, account_workspaces=True)
         self.apps.append(app)
         return app
 

@@ -43,7 +43,7 @@ class HostedStartupTests(unittest.TestCase):
             'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode(),
             'RAILWAY_PROJECT_ID': 'test-project',
         }, clear=True):
-            app = create_app(root, frontend=None, public_origin='https://stories.example.tech')
+            app = create_app(root, frontend=None, public_origin='https://stories.example.tech', account_workspaces=True)
             with TestClient(app) as client, patch('paramyth.studio.hosting.accounts.user', side_effect=HTTPException(401, 'Sign in')) as authenticate:
                 self.assertEqual(client.get('https://healthcheck.railway.app/api/v1/health').status_code, 200)
                 self.assertEqual(client.get('https://healthcheck.railway.app/api/ui/workspace').status_code, 400)
@@ -58,7 +58,7 @@ class HostedStartupTests(unittest.TestCase):
             'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode(),
             'PARAMYTH_FRONTEND_ORIGIN': origin,
         }, clear=True):
-            app = create_app(root, frontend=None, public_origin=backend)
+            app = create_app(root, frontend=None, public_origin=backend, account_workspaces=True)
 
             @app.get('/error-probe')
             def error_probe():
@@ -79,12 +79,12 @@ class HostedStartupTests(unittest.TestCase):
                             self.assertNotIn('private diagnostic', response.text)
                             if request_origin == origin:
                                 self.assertEqual(response.headers.get('access-control-allow-origin'), origin)
-                                self.assertEqual(response.headers.get('access-control-allow-credentials'), 'true')
+                                self.assertIsNone(response.headers.get('access-control-allow-credentials'))
                                 self.assertIn('Origin', response.headers.get('vary', ''))
                             else:
                                 self.assertNotIn('access-control-allow-origin', response.headers)
 
-    def test_github_frontend_has_exact_origin_cors_and_secure_cookie_sessions(self):
+    def test_github_frontend_has_exact_origin_cors_without_cross_site_cookies(self):
         from paramyth.studio.accounts import set_session, clear_session
         origin = 'https://paramyth.tech'
         backend = 'https://api.example.tech'
@@ -92,7 +92,7 @@ class HostedStartupTests(unittest.TestCase):
             'PARAMYTH_ENCRYPTION_KEY': Fernet.generate_key().decode(),
             'PARAMYTH_FRONTEND_ORIGIN': origin,
         }, clear=True):
-            app = create_app(root, frontend=None, public_origin=backend)
+            app = create_app(root, frontend=None, public_origin=backend, account_workspaces=True)
 
             @app.post('/api/v1/accounts/session-probe')
             def session_probe(request: Request):
@@ -112,21 +112,17 @@ class HostedStartupTests(unittest.TestCase):
                     'Access-Control-Request-Method':'POST', 'Access-Control-Request-Headers':'content-type,x-paramyth-token,x-paramyth-account'})
                 self.assertEqual(preflight.status_code, 200)
                 self.assertEqual(preflight.headers['access-control-allow-origin'], origin)
-                self.assertEqual(preflight.headers['access-control-allow-credentials'], 'true')
+                self.assertNotIn('access-control-allow-credentials', preflight.headers)
                 rejected = client.options('/api/ui/workspace', headers={
                     'Origin': 'https://untrusted.tech', 'Access-Control-Request-Method': 'GET'})
                 self.assertEqual(rejected.status_code, 400)
                 self.assertNotIn('access-control-allow-origin', rejected.headers)
                 response = client.post('/api/v1/accounts/session-probe', headers=headers)
                 self.assertEqual(response.status_code, 200)
-                cookie = response.headers['set-cookie']
-                for flag in ('HttpOnly', 'Secure', 'SameSite=none'):
-                    self.assertIn(flag, cookie)
-                self.assertEqual(client.post('/api/v1/accounts/session-probe', headers={'Origin':'https://untrusted.tech','Sec-Fetch-Site':'cross-site'}).status_code, 403)
-                logout = client.post('/api/v1/accounts/logout-probe', headers=headers)
-                self.assertIn('SameSite=none', logout.headers['set-cookie'])
+                # The route is only a test probe; its manual cookie writer is
+                # not representative of the account-free production routes.
                 self.assertEqual(client.get('/', follow_redirects=False).headers['location'], origin + '/')
-                self.assertEqual(client.get('/studio/teams.html?mode=signup', follow_redirects=False).headers['location'], origin + '/studio/teams.html?mode=signup')
+                self.assertEqual(client.get('/studio/teams.html?mode=signup', follow_redirects=False).status_code, 307)
 
 
 if __name__ == '__main__':

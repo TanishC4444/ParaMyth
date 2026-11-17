@@ -105,6 +105,8 @@ def google_connect(request: Request, runtime=RUNTIME):
         raise ValueError('Configure Google OAuth credentials and register ' + callback_url(request))
     state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(48)
     runtime.oauth[state] = (time.time(), verifier)
+    if getattr(request.app.state, 'public_workspaces', False):
+        request.app.state.workspaces.guest_oauth[state] = request.state.guest_id
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
     query = {'client_id': client, 'redirect_uri': callback_url(request), 'response_type': 'code',
              'scope': 'https://www.googleapis.com/auth/calendar.events', 'state': state, 'access_type': 'offline',
@@ -115,8 +117,11 @@ def google_connect(request: Request, runtime=RUNTIME):
 @router.get('/google/callback')
 def google_callback(request: Request, state: str = '', code: str = '', runtime=RUNTIME):
     item = runtime.oauth.pop(state, None)
+    if getattr(request.app.state, 'public_workspaces', False):
+        request.app.state.workspaces.guest_oauth.pop(state, None)
     if not item or time.time() - item[0] > OAUTH_SECONDS or not code:
         raise ValueError('Google authorization expired or was not granted')
     runtime.google.accept(runtime.google.form_token({'grant_type': 'authorization_code', 'code': code,
                                                       'redirect_uri': callback_url(request), 'code_verifier': item[1]}))
-    return RedirectResponse('/#/production')
+    destination = request.app.state.frontend_origin or request.app.state.public_origin
+    return RedirectResponse(destination + '/#/production' if destination else '/#/production')

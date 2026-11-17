@@ -2,7 +2,7 @@ name: Deploy ParaMyth website
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', 'web/teams.*', 'web/account.html', 'web/js/teams.js', 'web/js/account.js', '.github/workflows/website.yml']
+    paths: ['frontend/**', '.github/workflows/website.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,7 +27,6 @@ jobs:
           corepack pnpm exec tsc --noEmit
           corepack pnpm test:atlas
           corepack pnpm test:cinematic
-          node --test tests/account-entry.test.cjs
           node --test tests/transport.test.cjs
           corepack pnpm test:site
       - name: Build frontend

@@ -13,7 +13,6 @@ from fastapi.staticfiles import StaticFiles
 from . import images, library, music, news, planning, projects, search, workspace, writing
 from .deps import LOCAL, TOKEN_HEADER, get_runtime, local, write
 from .runtime import Runtime
-from .studios import router as accounts_router
 from .studio_http import StudioHTTPMiddleware, studio_path
 
 FRONTEND = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
@@ -29,8 +28,8 @@ class StudioApp(FastAPI):
         # Keep the FastAPI instance so routes, state and lifespan work as usual.
         if self.state.frontend_origin:
             stack = CORSMiddleware(stack, allow_origins=[self.state.frontend_origin],
-                allow_credentials=True, allow_methods=['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-                allow_headers=['Accept', 'Content-Type', 'Authorization', 'X-ParaMyth-Token', 'X-ParaMyth-Account'],
+                allow_credentials=False, allow_methods=['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+                allow_headers=['Accept', 'Content-Type', 'Authorization', 'X-ParaMyth-Token', 'X-ParaMyth-Account', 'X-ParaMyth-Guest'],
                 expose_headers=['Content-Disposition'], max_age=600)
         return stack
 
@@ -44,8 +43,11 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
     # Slim Linux images may omit the system MIME database used by StaticFiles.
     mimetypes.add_type('image/webp', '.webp')
     public_origin = public_origin if public_origin is not None else os.getenv('PARAMYTH_PUBLIC_ORIGIN', '')
-    account_workspaces = account_workspaces if account_workspaces is not None else os.getenv('PARAMYTH_ACCOUNT_WORKSPACES') == '1'
-    app.state.account_workspaces = bool(account_workspaces or public_origin)
+    # Account workspaces live on the studio-auth branch. Main uses isolated,
+    # account-free public workspaces whenever it has a public origin.
+    account_workspaces = account_workspaces if account_workspaces is not None else False
+    app.state.account_workspaces = bool(account_workspaces)
+    app.state.public_workspaces = bool(public_origin and not app.state.account_workspaces)
     app.state.public_origin = ''
     app.state.frontend_origin = ''
     if public_origin:
@@ -57,13 +59,13 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
             raise ValueError('Hosted mode requires PARAMYTH_WORKSPACE on a persistent volume')
     root = root or os.getenv('PARAMYTH_WORKSPACE') or Path.cwd()
     app.state.shared_root = Path(root).resolve()
-    if app.state.account_workspaces:
+    if app.state.account_workspaces or app.state.public_workspaces:
         from cryptography.fernet import Fernet
         from .hosting import HostedRequests
         from .user_workspaces import Workspaces
         key = os.getenv('PARAMYTH_ENCRYPTION_KEY', '')
         if not key:
-            raise ValueError('Set a persistent PARAMYTH_ENCRYPTION_KEY before enabling account workspaces')
+            raise ValueError('Set a persistent PARAMYTH_ENCRYPTION_KEY before enabling hosted workspaces')
         Fernet(key)  # Fail before accepting requests if the encryption key is invalid.
         app.state.workspaces = Workspaces(root, key)
         app.router.on_shutdown.append(app.state.workspaces.close)
@@ -92,47 +94,54 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
     @app.get('/api/ui/session', tags=['studio configuration'])
     def session(request: Request):
         local(request)
-        from .accounts import csrf, user
         runtime = get_runtime(request)
-        account = user(request) if app.state.account_workspaces else None
-        return JSONResponse({'csrf': csrf(request) if account else runtime.token, 'header': TOKEN_HEADER,
-                             'mode': 'live', 'user_id': str(account['id']) if account else None},
+        if app.state.account_workspaces:
+            from .accounts import csrf, user
+            account = user(request)
+            token = csrf(request)
+            user_id = str(account['id'])
+        else:
+            token, user_id = runtime.token, None
+        return JSONResponse({'csrf': token, 'header': TOKEN_HEADER, 'mode': 'live', 'user_id': user_id},
                             headers={'Cache-Control': 'no-store'})
 
     @app.get('/api/ui/public-config', tags=['studio configuration'])
     def public_config():
         return {'accounts_required': app.state.account_workspaces,
-                'shared_keys': app.state.account_workspaces, 'github_admin': not app.state.account_workspaces}
+                'shared_keys': app.state.account_workspaces,
+                'github_admin': not (app.state.account_workspaces or app.state.public_workspaces)}
 
     app.include_router(projects.router)
-    if app.state.account_workspaces:
-        # Full author/media workspace, with every dependency using the signed-in
-        # user's runtime. Do not expose the shared GitHub administration router.
+    if app.state.account_workspaces or app.state.public_workspaces:
+        # Full author/media workspace, scoped to the account or anonymous browser.
         from ..pipeline.api import ui_workspace, studio_routes, atlas
         app.dependency_overrides[studio_routes.get_runtime] = get_runtime
         app.dependency_overrides[studio_routes.local] = local
         app.dependency_overrides[studio_routes.write] = write
         app.include_router(ui_workspace.router)
-        from .team_workspace import router as team_router
-        app.include_router(team_router)
+        if app.state.account_workspaces:
+            from .team_workspace import router as team_router
+            app.include_router(team_router)
         app.include_router(atlas.router)
     else:
         app.include_router(workspace.router)
         app.include_router(writing.router)
     app.include_router(music.router)
-    if not app.state.account_workspaces:
+    if not app.state.account_workspaces and not app.state.public_workspaces:
         app.include_router(music.local_router)
     app.include_router(images.router)
     app.include_router(planning.router)
     app.include_router(library.router)
     app.include_router(search.router)
     app.include_router(news.router)
-    app.include_router(accounts_router)
+    if app.state.account_workspaces:
+        from .studios import router as accounts_router
+        app.include_router(accounts_router)
     from .discovery import router as discovery_router
     from .research import router as research_router
     app.include_router(discovery_router)
     app.include_router(research_router)
-    if not app.state.account_workspaces:
+    if not app.state.account_workspaces and not app.state.public_workspaces:
         @app.get('/api/ui/writing/export', dependencies=LOCAL)
         def writing_export(request: Request, format: str = 'docx', scene_id: str = '', packet: str = 'manuscript'):
             from urllib.parse import quote
@@ -142,12 +151,12 @@ def create_app(root=None, frontend=FRONTEND, *, account_workspaces=None, public_
             body, mime, filename = export_writing(folder(request, app.state.runtime), format, scene_id, packet)
             return Response(body, media_type=mime, headers={'Content-Disposition': "attachment; filename*=UTF-8''" + quote(filename)})
     # Register before the frontend catch-all so its account links resolve.
-    if app.state.frontend_origin:
+    if app.state.account_workspaces and app.state.frontend_origin:
         @app.get('/studio/{path:path}', include_in_schema=False)
         def frontend_account(request: Request, path: str):
             query = '?' + request.url.query if request.url.query else ''
             return RedirectResponse(app.state.frontend_origin + '/studio/' + path + query)
-    elif ACCOUNTS_UI.is_dir():
+    elif app.state.account_workspaces and ACCOUNTS_UI.is_dir():
         app.mount('/studio', StaticFiles(directory=ACCOUNTS_UI, html=True), name='accounts-ui')
     # Account-page artwork must also work when only the API has been started.
     # Prefer built assets when a frontend is supplied, with source assets as fallback.

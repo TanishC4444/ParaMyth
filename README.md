@@ -104,24 +104,20 @@ Local procedural ambience provides another audio path. Music duration, lyrics, a
 
 Implementation: [creative engine](paramyth/pipeline/creative_studio.py), [production reasoning](paramyth/pipeline/production.py), [music integration](paramyth/pipeline/soundtracks.py), [advanced image backend](paramyth/pipeline/image_studio.py).
 
-### 6. Tiger Data: durable identity and permissioned creative teams
+### 6. Tiger Data: the optional account branch
 
-**Challenge alignment: Best Use of Tiger Data.** Tiger Cloud/PostgreSQL provides the relational foundation for accounts and studios through Psycopg.
+The account and team implementation is preserved on the separate `studio-auth` branch. It is not part of the account-free `main` experience. That branch uses Tiger Cloud/PostgreSQL for the following:
 
 - Users, salted scrypt password hashes, expiring/revocable sessions, persistent authentication throttling, studios, memberships, and invitations.
 - Owner/admin/editor/viewer authorization enforced on server requests, plus project revision/comment tables used by collaboration APIs.
 - Explicit, transactional migrations, a separate restricted runtime role, parameterized SQL, and certificate-verified TLS.
 - A team runtime that shares project files and jobs while keeping each member's Calendar authorization and workspace selection personal.
 
-The full creative workspace additionally persists manuscripts, drafts, media, and jobs on disk. Tiger holds identity and relational collaboration data; literary vectors and community Discovery use separate SQLite stores. Backups must include the database, workspace volume, and encryption key.
-
-**Demo:** sign in as two members, open a shared project, observe saved changes, then compare editor and viewer permissions.
-
 Implementation: [database and migrations](paramyth/studio/studio_db.py), [sessions](paramyth/studio/studio_security.py), [studio API](paramyth/studio/studios.py), [database setup](docs/TIGER.md).
 
 ### 7. .TECH and the infrastructure around the experience
 
-**Additional challenge alignment: Best Domain from .TECH.** `paramyth.tech` gives the public creative studio a distinct project identity. GitHub Pages builds and publishes the frontend, Railway runs the documented FastAPI deployment with persistent storage, and Google Calendar OAuth connects a creator's schedule to their own account. These complement the generation providers with a navigable product, durable work, and practical exports.
+`paramyth.tech` hosts the public studio frontend on GitHub Pages. Railway runs FastAPI and stores a separate anonymous workspace for each browser. The guest ID stays in browser storage; no account or third-party cookie is needed. Google Calendar OAuth is available when configured.
 
 The opening-ceremony deck limits entries to three tracks excluding Overall/Novice. For a focused judging narrative, lead with **Meta's collaborative creative experience**, **SerpAPI's production intelligence**, and **Northmark's reusable agent infrastructure**; the Gemini, Vultr, Tiger, and .TECH sections explain the additional engineering behind that demonstration. Confirm final submission selections against the event's current form.
 
@@ -130,7 +126,7 @@ The opening-ceremony deck limits entries to three tracks excluding Overall/Novic
 ```mermaid
 flowchart TD
     UI[React and TypeScript Studio] --> API[FastAPI project and job APIs]
-    API --> Identity[Tiger PostgreSQL accounts and team permissions]
+    API --> Guest[Random browser guest ID and isolated workspace]
     API --> Files[Persistent project files and generated media]
     API --> Community[SQLite community snapshots]
     API --> Writing[Streaming writing and revision]
@@ -227,7 +223,7 @@ python -m paramyth.studio.serve --port 8770
 
 Open **http://127.0.0.1:8770**. The bundled Story Atlas can be explored without model credentials; generation requires the relevant server connections.
 
-For local personal mode, leave `PARAMYTH_ACCOUNT_WORKSPACES` unset or set it to `0`, and leave `PARAMYTH_PUBLIC_ORIGIN` unset. The sample environment file enables hosted account mode, so configure it deliberately rather than copying its hosted defaults unchanged. Server settings load from root `.env`, `deploy/.env`, or the owner-selected `PARAMYTH_ENV_FILE`; process values take precedence.
+For local personal mode, leave `PARAMYTH_PUBLIC_ORIGIN` unset. Public deployments use anonymous browser workspaces by default; the account and team implementation is on `studio-auth`. Server settings load from root `.env`, `deploy/.env`, or the owner-selected `PARAMYTH_ENV_FILE`; process values take precedence.
 
 For frontend development, run `pnpm dev` inside `frontend/`; its backend proxy defaults to port 8770. Build `frontend-pipeline/` separately and run `paramyth-pipeline-studio --port 8770` for the advanced workspace instead of the main launcher.
 
@@ -244,15 +240,14 @@ Use [.env.example](.env.example) as the variable reference. Configure only the s
 | `VULTR_PRODUCTION_API_KEY` | Optional dedicated production-planning connection. |
 | `VULTR_MUSIC_API_KEY` | Optional dedicated music connection. |
 | `SERPAPI_API_KEY`, `SERPAPI_BACKUP_KEYS` | Cached web/travel/local research; backups are comma-separated. |
-| `PARAMYTH_DATABASE_URL` | Restricted Tiger/PostgreSQL runtime connection. |
-| `PARAMYTH_ENCRYPTION_KEY` | Persistent Fernet key required for hosted account workspaces. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional per-user Calendar authorization. |
+| `PARAMYTH_ENCRYPTION_KEY` | Persistent Fernet key for hosted private workspace data. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional Calendar authorization. |
 
 Do not put provider secrets into frontend build variables. A split frontend uses `VITE_API_BASE` only for the public backend origin. Google model IDs and provider capabilities are configuration choices; live account access and quotas must be checked independently.
 
-### Hosted accounts and teams
+### Account and team branch
 
-Follow [Tiger setup](docs/TIGER.md) to run migrations explicitly with `PARAMYTH_MIGRATION_DATABASE_URL` and grant a separate application role. Set `PARAMYTH_ACCOUNT_WORKSPACES=1`, a durable `PARAMYTH_WORKSPACE`, and a stable encryption key. Database migrations do not run automatically at startup.
+The previous account creation, sign-in, and team features are preserved on the [`studio-auth` branch](https://github.com/TanishC4444/ParaMyth/tree/studio-auth). They are intentionally absent from the public `main` build.
 
 For deployment, see [hosting and persistent workspaces](docs/HOSTING.md) and [Railway with a GitHub Pages frontend](deploy/railway.md). Run one application process/replica against the persistent workspace volume. Provider credentials stay server-side, sessions use HttpOnly cookies, and each user connects their own Calendar.
 
@@ -281,9 +276,9 @@ GitHub Actions includes contract/storage tests, retrieval, editorial integration
 
 | Path | Contents |
 | --- | --- |
-| `frontend/` | Main studio, account entry, Story Atlas, Discovery, research, writing, and production UI. |
+| `frontend/` | Public account-free studio, Story Atlas, Discovery, research, writing, and production UI. |
 | `frontend-pipeline/` | Advanced workflow workspace. |
-| `paramyth/studio/` | Main FastAPI application, accounts, teams, research, Discovery, jobs, and private media. |
+| `paramyth/studio/` | Main FastAPI application, anonymous workspaces, research, Discovery, jobs, and media. |
 | `paramyth/pipeline/` | Advanced narrative orchestration, role execution, memory, retrieval, and production tools. |
 | `paramyth/` | Foundation coordinator, shared provider adapters, storage, and compatibility CLIs. |
 | `data/`, `skills/`, `examples/` | Literary records/index, role guidance, and example requests. |

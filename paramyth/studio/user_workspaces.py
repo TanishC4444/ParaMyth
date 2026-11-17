@@ -93,6 +93,8 @@ class Workspaces:
         self.slots = threading.BoundedSemaphore(16)
         self.guard = threading.RLock()
         self.runtimes = {}
+        self.guests = {}
+        self.guest_oauth = {}
         self.studios = {}
         self.stopping = threading.Event()
         self.archiver = threading.Thread(target=self.archive_music, daemon=True, name='music-archive')
@@ -101,6 +103,7 @@ class Workspaces:
     def archive_music_once(self):
         from .music_archive import archive
         paths = (*self.root.glob('users/*/runs/**/soundtracks/music_*.json'),
+                 *self.root.glob('guests/*/runs/**/soundtracks/music_*.json'),
                  *self.root.glob('studios/*/runs/**/soundtracks/music_*.json'))
         for path in paths:
             if self.stopping.is_set():
@@ -121,6 +124,14 @@ class Workspaces:
             if ident not in self.runtimes:
                 self.runtimes[ident] = UserRuntime(self.root / 'users' / ident, self)
             return self.runtimes[ident]
+
+    def get_guest(self, guest_id):
+        """Return an anonymous browser's isolated workspace, without an account row."""
+        ident = str(UUID(str(guest_id)))
+        with self.guard:
+            if ident not in self.guests:
+                self.guests[ident] = UserRuntime(self.root / 'guests' / ident, self)
+            return self.guests[ident]
 
     def for_studio(self, user_id, studio):
         from .team_workspace import StudioRuntime, import_existing_projects

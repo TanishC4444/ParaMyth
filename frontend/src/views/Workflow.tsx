@@ -7,15 +7,11 @@ import Music from "./Music";
 import Production from "./Production";
 import ProjectWorkspace from "./ProjectWorkspace";
 import "../workflow.css";
-import { ShareProject, TeamDiscussion } from '../TeamWorkspace';
-import { useAccess } from '../AccountGate';
-import SharedReader from './SharedReader';
 import type { ProjectTab } from '../types';
 import Research from './Research';
 import { HelpTip, WorkspaceGuide } from '../Guide';
 
 export default function Workflow() {
-  const {studio}=useAccess();
   const {project,jobs,go,setTab}=useStudio();
   const {writing,images,source,setSource,sourceTitle,current,streaming}=useMaterials();
   const initial=location.hash.split('?')[0].split('/').at(-1);
@@ -30,10 +26,8 @@ export default function Workflow() {
     const changed=()=>{const route=location.hash.split('?')[0].split('/').at(-1);if(['images','music','production'].includes(route||'')){setSection('media');setTool(route!)}else if(route==='creative'||route==='project'){setSection('writing');setPane(route==='project'?'manuscript':'creative')}};
     changed();window.addEventListener('hashchange',changed);return()=>window.removeEventListener('hashchange',changed);
   },[setSection,setTool,setPane]);
-  if(studio?.role==='viewer')return <SharedReader />;
   return <div className="page project-workflow two-tab-workflow">
-    <header className="workflow-heading"><div><h1>{project.title}</h1><p>{studio?studio.name+' · Shared with your team. Saved changes update automatically.':project.brief.medium+' · '+(project.brief.genre || 'Project workspace')}</p></div><div className="modal-actions"><ShareProject /><button className="secondary" onClick={()=>go('projects')}>Change project</button></div></header>
-    <TeamDiscussion />
+    <header className="workflow-heading"><div><h1>{project.title}</h1><p>{project.brief.medium+' · '+(project.brief.genre || 'Project workspace')}</p></div><div className="modal-actions"><button className="secondary" onClick={()=>go('projects')}>Change project</button></div></header>
     <WorkspaceGuide />
     <nav className="workflow-primary-tabs" aria-label="Project workflow tabs"><button aria-pressed={section==='writing'} onClick={()=>setSection('writing')}>Writing</button><button aria-pressed={section==='media'} onClick={()=>setSection('media')}>Visuals, sound & production</button>{active.length>0&&<span role="status">{active.length} running</span>}</nav>
     <section hidden={section!=='writing'} aria-label="Writing workspace">

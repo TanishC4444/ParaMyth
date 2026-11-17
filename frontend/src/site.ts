@@ -1,7 +1,7 @@
 import { studioHost } from "./api"
 
-/** Controls the optional landing-page sign-in shortcut; studio authentication remains available in production. */
-export const AUTH_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ENABLE_AUTH === "true"
+/** Account access ships on the separate studio-auth branch. */
+export const AUTH_ENABLED = false
 
 /** A GitHub Pages build can connect to the configured hosted backend. */
 export const STATIC_SITE = !studioHost()

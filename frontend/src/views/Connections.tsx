@@ -46,7 +46,7 @@ export default function Connections() {
       <section className="panel">
         <div className="service-heading"><h2>Story search</h2><Status>{semantic ? "Connected" : "Keywords available"}</Status></div>
         <p>
-          {access.shared_keys ? 'Your studio owner manages the search connection for this workspace.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
+          {access.shared_keys ? 'Search services are configured on the server and shared with visitors.' : 'Story keyword search works with your corpus now. Add a Gemini embedding key to also search by meaning.'}
         </p>
         {access.shared_keys ? <p>Shared service keys stay on the server and are never sent to your browser.</p> : !semanticSupported ? <p className="hint">Search by meaning isn't available in this studio yet. You can still search by story keywords.</p> : <form
           onSubmit={async (e) => {

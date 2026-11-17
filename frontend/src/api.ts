@@ -15,7 +15,6 @@ async function token() {
       cache: "no-store",
     })
       .then(async (r) => {
-        if (r.status === 401) window.dispatchEvent(new Event('paramyth-sign-in-required'))
         if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw Error("We couldn't reach your studio. Try again in a moment.")
         return (await r.json()).csrf as string
       })
@@ -52,7 +51,7 @@ export async function api<T = any>(
   const json = (r.headers.get("content-type") || "").includes("json")
   const value = json ? await r.json().catch(() => null) : null
   if (!r.ok || !json || value === null) {
-    if (r.status === 401) { csrf = undefined; window.dispatchEvent(new Event('paramyth-sign-in-required')) }
+    if (r.status === 401) csrf = undefined
     if (r.status === 403) csrf = undefined
     const detail = value?.detail || value?.error
     const raw = (

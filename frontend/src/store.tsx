@@ -256,7 +256,6 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     return queue.current
   }, [])
   const refresh = useCallback(async () => {
-    if (access.accounts_required && !access.authenticated) { setReady(true); return }
     if (STATIC_SITE) {
       setReady(true)
       return
@@ -307,7 +306,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setError(e instanceof Error ? e.message : "Live studio unavailable")
       setReady(true)
     }
-  }, [flush, access.accounts_required, access.authenticated, access.studio?.id])
+  }, [flush, access.studio?.id])
   useEffect(() => {
     void refresh()
     const changed = () => {
@@ -474,7 +473,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     toast,
     seed,
     ideate: (s) => {
-      if (!studioHost() || access.accounts_required && !access.authenticated) { location.hash = '#/signup'; return }
+      if (!studioHost()) { notify('The live studio is not connected yet. Open the deployed studio to create a project.'); return }
       if (startingAtlas.current) return
       startingAtlas.current = true
       void (async () => {

@@ -4,24 +4,35 @@ const { resolve } = require('node:path');
 const { test } = require('node:test');
 const vm = require('node:vm');
 const ts = require('typescript');
+const { webcrypto } = require('node:crypto');
 
 function transport(base = '', hostname = 'paramyth.tech') {
   const requests = [];
+  const values = new Map();
   const source = readFileSync(resolve(__dirname, '../src/transport.ts'), 'utf8').replaceAll('import.meta.env.VITE_API_BASE', JSON.stringify(base));
   const code = ts.transpileModule(source, {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
   const exports = {};
-  vm.runInNewContext(code, {exports, URL, location:{hostname,origin:`https://${hostname}`}, document:{querySelector:()=>null}, fetch:async (...args)=>{requests.push(args);return {ok:true}}});
+  vm.runInNewContext(code, {exports, URL, Headers, crypto:webcrypto, localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)}, location:{hostname,origin:`https://${hostname}`}, document:{querySelector:()=>null}, fetch:async (...args)=>{requests.push(args);return {ok:true}}});
   return {client:exports, requests};
 }
 
 test('GitHub frontend sends API and media paths to the configured Railway backend', async () => {
   const {client,requests} = transport('https://studio.up.railway.app');
   assert.equal(client.studioHost(),true);
-  assert.equal(client.backendUrl('/media/images/image/0.png?project_id=p'), 'https://studio.up.railway.app/media/images/image/0.png?project_id=p');
+  const media = new URL(client.backendUrl('/media/images/image/0.png?project_id=p'));
+  assert.equal(media.origin, 'https://studio.up.railway.app');
+  assert.equal(media.pathname, '/media/images/image/0.png');
+  assert.equal(media.searchParams.get('project_id'), 'p');
+  assert.match(media.searchParams.get('guest_id'), /^[0-9a-f-]{36}$/i);
   await client.backendFetch('/api/ui/session');
   assert.equal(requests[0][0], 'https://studio.up.railway.app/api/ui/session');
-  assert.equal(requests[0][1].credentials, 'include');
-  assert.equal(client.backendUrl(requests[0][0]), requests[0][0]);
+  assert.equal(requests[0][1].credentials, 'omit');
+  assert.match(requests[0][1].headers.get('X-ParaMyth-Guest'), /^[0-9a-f-]{36}$/i);
+  const firstGuest = requests[0][1].headers.get('X-ParaMyth-Guest');
+  await client.backendFetch('/api/ui/session');
+  assert.equal(requests[1][1].headers.get('X-ParaMyth-Guest'), firstGuest);
+  assert.equal(requests[0][1].credentials, 'omit');
+  assert.equal(new URL(client.backendUrl(requests[0][0])).origin, 'https://studio.up.railway.app');
   assert.throws(()=>client.backendUrl('https://unrelated.example/api'),/Unexpected backend/);
   assert.throws(()=>client.backendUrl('//unrelated.example/api'),/Expected a backend/);
 });

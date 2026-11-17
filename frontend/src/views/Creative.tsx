@@ -112,7 +112,7 @@ export default function Creative({ ideasOnly = false, chapter = 1, sceneId = "",
     if (!streamingIds) return;
     let active = true;
     const connections = streamingIds.split(",").map((id) => {
-      const events = new EventSource(backendUrl(projectPath(`/api/ui/creative/jobs/${id}/events`, project.id)), { withCredentials: true });
+      const events = new EventSource(backendUrl(projectPath(`/api/ui/creative/jobs/${id}/events`, project.id)));
       events.addEventListener("progress", (event) => {
         if (!active) return;
         const next = JSON.parse((event as MessageEvent).data) as Job;

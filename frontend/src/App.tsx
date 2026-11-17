@@ -2,7 +2,6 @@ import { lazy, type ReactElement, Suspense, useEffect, useRef, useState } from "
 
 import { StudioProvider, useStudio } from "./store"
 import AccountGate, { useAccess } from './AccountGate'
-import { WorkspacePicker, SharedConflicts } from './TeamWorkspace'
 
 import type { View } from "./types"
 
@@ -11,7 +10,7 @@ import { BrandLogo } from "./brand"
 
 import Journey from "./Journey"
 
-import { STATIC_SITE } from "./site"
+import { AUTH_ENABLED, STATIC_SITE } from "./site"
 
 import { AppErrorBoundary, NotFound, PageLoading } from "./system-pages"
 
@@ -130,7 +129,7 @@ function Shell() {
   const isLanding = view === "landing" || view === "atlas"
   const missing = view === "notfound"
   const legal = view === "legal"
-  const publicTutorial = view === 'tutorials' && (!access.authenticated && access.accounts_required || STATIC_SITE)
+  const publicTutorial = view === 'tutorials' && STATIC_SITE
   const [visitedLanding, setVisitedLanding] = useState(isLanding)
   if (isLanding && !visitedLanding) setVisitedLanding(true)
 
@@ -177,7 +176,6 @@ function Shell() {
           <button className="studio-brand" aria-label="ParaMyth home" onClick={() => go("landing")}><BrandLogo /><span className="studio-badge">Studio</span></button>
           <button className="sidebar-close icon-button" aria-label="Close navigation" onClick={() => setMobile(false)}><Icon name="close" /></button>
         </div>
-        <WorkspacePicker />
         <nav aria-label="Primary">
           {NAV.map((g) => (
             <div key={g.group} className="nav-group">
@@ -206,7 +204,6 @@ function Shell() {
         </nav>
         <div className="sidebar-bottom">
           {project.id && <button className="current-project" onClick={() => go("workflow")}><span className="current-project-icon"><Icon name="canon" /></span><span><small>Current project</small><b>{project.title}</b><small>{project.brief.medium}</small></span><Icon name="arrow" size={15} /></button>}
-          {(!access.teams?.length || access.teams.some(team=>['owner','admin'].includes(team.role))) && <a className="studio-team-link" href="/studio/teams.html"><Icon name="connections" size={17} /><span>Team settings</span><span aria-hidden="true">↗</span></a>}
           <a className="sidebar-help" href="#/contact"><Icon name="message" size={17} />Help & support</a>
           <button className="sidebar-help" aria-current={view==='tutorials'?'page':undefined} onClick={()=>go('tutorials')}><Icon name="ideas" size={17}/>Tutorials</button>
         </div>
@@ -221,13 +218,12 @@ function Shell() {
       <main ref={content} id="studio-content" className="studio-content" tabIndex={-1} inert={mobile}>
         <header className="studio-topbar">
           <button ref={menu} className="mobile-menu icon-button" aria-label="Open navigation" aria-expanded={mobile} aria-controls="studio-navigation" onClick={() => setMobile(true)}><Icon name="menu" /></button>
-          <div className="workspace-context"><Icon name={access.studio ? "connections" : "projects"} size={18} /><span>{access.studio?.name || "Personal workspace"}</span>{access.studio?.role === "viewer" && <span className="workspace-role">View only</span>}</div>
+          <div className="workspace-context"><Icon name="projects" size={18} /><span>Personal workspace</span></div>
           <div className="header-actions">
             <span role="status" className={`local-label${saving ? " saving" : ""}${error ? " save-error" : ""}`}><Icon name={error ? "alert" : saving ? "refresh" : "check"} size={14} />{error ? "Changes need attention" : saving ? "Saving changes…" : "All changes saved"}</span>
-            <a className="studio-account" href={access.authenticated ? "/studio/account.html" : "#/signin"} aria-label={access.authenticated ? "Manage account and sign out" : "Sign in"}><span className="account-initials" aria-hidden="true">{access.account?.display_name.split(/\s+/).map(part => part[0]).slice(0,2).join("").toUpperCase() || "U"}</span><span>{access.authenticated ? access.account?.display_name || "Account" : "Sign in"}</span><Icon name="chevron" size={14} /></a>
+            {AUTH_ENABLED && <a className="studio-account" href={access.authenticated ? "/studio/account.html" : "#/signin"} aria-label={access.authenticated ? "Manage account and sign out" : "Sign in"}><span className="account-initials" aria-hidden="true">{access.account?.display_name.split(/\s+/).map(part => part[0]).slice(0,2).join("").toUpperCase() || "U"}</span><span>{access.authenticated ? access.account?.display_name || "Account" : "Sign in"}</span><Icon name="chevron" size={14} /></a>}
           </div>
         </header>
-        <SharedConflicts />
         {error && (
           <div className="live-error" role="alert">
             {error}
