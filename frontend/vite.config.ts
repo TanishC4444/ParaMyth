@@ -19,7 +19,7 @@ export default defineConfig({
       const web = fileURLToPath(new URL('../web/', import.meta.url))
       const output = resolve('dist/studio')
       await mkdir(resolve(output, 'js'), { recursive: true })
-      for(const name of (process.env.VITE_ENABLE_AUTH === 'true' ? ['teams','account'] : [])){
+      for(const name of ['teams','account']){
         const html = await readFile(resolve(web, name+'.html'), 'utf8')
         await writeFile(resolve(output, name+'.html'), html.replace('<head>', `<head><meta name="paramyth-api" content="${base}">`))
         await copyFile(resolve(web, 'js/'+name+'.js'), resolve(output, 'js/'+name+'.js'))

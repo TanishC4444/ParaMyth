@@ -1,9 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { backendFetch, currentAccountIdentity, currentStudioIdentity, setStudioIdentity, setAccountIdentity, studioHost } from './api'
-import { NotFound, PageLoading, RecoveryPage } from './system-pages'
+import { PageLoading, RecoveryPage } from './system-pages'
 import { LEGAL_ROUTES } from './legal-routes'
 import { resolveRoute } from './routes'
-import { AUTH_ENABLED } from './site'
 import AccountPage from './AccountPage'
 import JoinTeam from './JoinTeam'
 
@@ -85,12 +84,11 @@ export default function AccountGate({children}: {children:ReactNode}) {
   },[])
   const joining=route==='join'
   const authRoute=route==='signin' || route==='signup'
-  const publicRoute=route==='' || route==='atlas' || route==='tutorials' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!joining && !authRoute && resolveRoute('#/'+route)==='notfound') || (!AUTH_ENABLED && authRoute)
+  const publicRoute=route==='' || route==='atlas' || route==='tutorials' || (LEGAL_ROUTES as readonly string[]).includes(route) || (!joining && !authRoute && resolveRoute('#/'+route)==='notfound')
   const provided=access || {accounts_required:true,shared_keys:true,github_admin:false,authenticated:false}
   if(publicRoute)return <AccessContext.Provider value={provided}><div key={(account?.id||'local')+':'+(access?.studio?.id||'personal')+':'+(access?.studio?.role||'owner')}>{children}</div></AccessContext.Provider>
   if(error)return <RecoveryPage message="We couldn’t connect to your Studio. Please check your connection and try again." />
   if(!access || account===undefined)return <div className="night-page"><PageLoading label="Opening your workspace…" /></div>
-  if(!AUTH_ENABLED && (joining || access.accounts_required && !account))return <NotFound />
   if(authRoute || (!publicRoute && (!studioHost() || access.accounts_required&&!account))) return <AccountPage key={route==='signup'?'signup':'signin'} invitation={invitation} signup={route==='signup'} available={studioHost()} onSignedIn={()=>checkAccount.current()} />
   if(joining)return <AccessContext.Provider value={access}><JoinTeam token={invitation} accountId={account?.id || ''} /></AccessContext.Provider>
   return <AccessContext.Provider value={access}><div key={(account?.id||'local')+':'+(access.studio?.id||'personal')+':'+(access.studio?.role||'owner')}>{children}</div></AccessContext.Provider>
