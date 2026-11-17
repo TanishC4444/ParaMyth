@@ -6,7 +6,8 @@ and use the workspace on the frontend; provider credentials stay on the server.
 
 Set the GitHub repository variable `PARAMYTH_API_BASE` to the Railway API
 origin. The website workflow supplies it as the public `VITE_API_BASE` build
-setting. Account and team pages are included in the GitHub Pages artifact too.
+setting. Production builds omit the sign-in links and account/team pages by
+default. Set `VITE_ENABLE_AUTH=true` on the frontend build to publish them.
 Set Railway's `PARAMYTH_FRONTEND_ORIGIN` to `https://paramyth.tech` and
 `PARAMYTH_PUBLIC_ORIGIN` to the backend's HTTPS origin. The backend permits
 credentialed requests only from that exact frontend and redirects its own
@@ -52,6 +53,8 @@ selected by `PARAMYTH_ENV_FILE`. Existing platform variables take precedence.
 Do not set that variable on Railway unless the referenced file exists there.
 
 Deployment checks: `/api/v1/health` returns `ok`, `/api/ui/public-config` reports
-account workspaces, the homepage offers Sign in and Create account, and an
-anonymous request to `/api/ui/workspace` is rejected. After signing in, confirm
+account workspaces, the homepage omits sign-in entry points by default, and an
+anonymous request to `/api/ui/workspace` is rejected. For an account-enabled
+frontend build (`VITE_ENABLE_AUTH=true`), confirm the homepage offers Sign in
+and Create account. After signing in, confirm
 project creation, generation and restoration with the configured live providers.

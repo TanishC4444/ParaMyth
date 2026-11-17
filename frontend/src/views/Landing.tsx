@@ -3,6 +3,7 @@ import { Artwork } from "../art";
 import { useStudio } from "../store";
 import { Icon } from "../ui";
 import { useAccess } from "../AccountGate";
+import { AUTH_ENABLED } from "../site";
 import "../about.css";
 import Instagram from "../Instagram";
 import { CONTACT_EMAIL } from "../contact";
@@ -47,7 +48,7 @@ export default function Landing({ focusAtlas, active = true }: { focusAtlas: boo
       <section className="about-section" aria-labelledby="purpose-title" onFocusCapture={prepareAtlas}>
         <div className="about-intro">
           <div><span className="about-eyebrow">About ParaMyth</span><h2 id="purpose-title" tabIndex={-1}>Story Development<br /><em>for Creative Directors</em></h2></div>
-          <div className="about-description"><p>Brainstorm concepts, draft treatments, and explore production ideas before committing to a direction. ParaMyth brings classic stories, early writing, and visual planning into one creative workspace.</p><div className="about-actions"><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{!access.authenticated && <a href="#/signin">Sign In</a>}</div></div>
+          <div className="about-description"><p>Brainstorm concepts, draft treatments, and explore production ideas before committing to a direction. ParaMyth brings classic stories, early writing, and visual planning into one creative workspace.</p><div className="about-actions"><button onClick={() => go("overview")}>Explore the Studio <span aria-hidden="true">↗</span></button>{AUTH_ENABLED && !access.authenticated && <a href="#/signin">Sign In</a>}</div></div>
         </div>
         <ol className="about-workflow"><li><h3>Discover</h3><p>Find a starting point in myths, fairy tales, and epics.</p></li><li><h3>Develop</h3><p>Shape the premise, characters, tone, and rough draft.</p></li><li><h3>Plan</h3><p>Explore scenes, visual direction, and production ideas.</p></li></ol>
         <Instagram enabled={active && !bookVisible} />
