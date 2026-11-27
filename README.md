@@ -39,3 +39,9 @@ The frontend passed its production build, TypeScript check, and all 40 existing 
 ![Actual local preview](docs/local-preview.jpg)
 
 [Detailed project guide](docs/project-guide.md)
+
+## Story atlas preview
+
+The local atlas loaded its bundled 385 story records and search was checked. This capture shows the atlas interface; it does not demonstrate every connected generation service.
+
+![Local story atlas with search results](docs/story-atlas-preview.jpg)
