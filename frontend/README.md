@@ -62,14 +62,14 @@ The production build is written to `frontend/dist/`. Serve it at the origin root
 
 The interface covers:
 
-- **Overview** — current project progress, runner capacity (2 workers, 4 queued or running), and scenes awaiting acceptance.
+- **Overview** — current project progress, available runner status, and scenes awaiting acceptance; values depend on the connected backend.
 - **Projects** — create from a brief (six media, with premise-based medium detection), search and filter by medium and manuscript state.
 - **Project workspace**
   - *Brief*: premise, medium, genre, tone, POV, themes, immutable world rules, must-avoid constraints, chapter/scene counts, guided or strict scene length, and deep character design (goal, fear, voice, four-step arc). Validation and JSON export.
   - *Manuscript*: scenes by chapter with Draft / Provisional / In review / Accepted states; deterministic local checks (length, must-avoid terms, repetition, screenplay and audio-drama form); evidence-quoted findings by story, rhetoric and memory dimension; acceptance blocked by open blocking findings and bound to a prose hash; Partial / Provisional / Final exports; checkpoints.
   - *Canon & memory*: fact ledger (event, belief, claim, resource, relationship, thread) with knowledge holders, provisional facts promoted on scene acceptance, quarantine, and thread setup / escalation / payoff.
   - *Pipeline*: dispatch sequential, deep planned parallel, parallel scene reconciler, living universe or classic expansion runs.
-- **Story atlas** — the 385 enabled top-level works of the literary corpus on an interactive world map (Leaflet, Natural Earth 1:50m land and borders, Esri shaded relief when reachable). Pins sit where a tale is set or where it was told, collected or composed, and cluster with rings showing which traditions they hold; search, tradition filters and an in-view list. Selecting a story loads its record (summary, story engine, characters, episodes and provenance). *Ideate on this story* and *Draw inspiration* open the creative workspace seeded with a retelling or engine-only brief and the record as context; episodes can be used the same way, and stories can be pinned to the current project as explicit references. Results adopted as a project keep that pin.
+- **Story atlas** — the 385 enabled top-level works of the literary corpus on an interactive Three.js globe, with an optional Leaflet flat map and bundled Natural Earth geography. Pins sit where a tale is set or where it was told, collected or composed, and cluster with rings showing which traditions they hold; search, tradition filters and an in-view list. Selecting a story loads its record (summary, story engine, characters, episodes and provenance). *Ideate on this story* and *Draw inspiration* open the creative workspace seeded with a retelling or engine-only brief and the record as context; episodes can be used the same way, and stories can be pinned to the current project as explicit references. Results adopted as a project keep that pin.
 - **Pipelines & runs** — run history with stage progress, event timelines, cancel and fresh recovery.
 - **Creative workspace** — Ideas / Draft / Review / Revise with 100–3000 word targets, 1–3 rounds and optional story context; results can be revised or adopted as a project. Idea board.
 - **Literary retrieval** — focused / balanced / combinatory search over a corpus sample with semantic, keyword and mechanism weights that must sum to one, adaptation controls and pinned references by scope.
@@ -85,7 +85,7 @@ runs, creative work, images, music, the file library and Connections) call the
 ParaMyth studio API on the same origin. Without it, those screens ask you to
 start the live studio server. During `pnpm dev`, Vite proxies `/api`, `/studio`,
 `/media` and the other studio routes to `PARAMYTH_BACKEND` (default
-`http://127.0.0.1:8770`). The studio API isn't part of this repository yet.
+`http://127.0.0.1:8770`). The studio API is included at `paramyth/studio/`; follow the root README to start it.
 
 The story atlas reads `GET /api/v1/atlas/stories` and `/api/v1/atlas/stories/{id}`
 from the same origin, then from the API base saved on Connections. Without a
